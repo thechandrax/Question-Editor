@@ -562,13 +562,13 @@ export default function BulkEditor() {
 
                 <textarea
                   spellCheck="true"
-                  className="w-full min-h-[100px] p-4 pt-5 pl-6 outline-none resize-y transition-all bg-transparent rounded-t-xl"
+                  className="w-full min-h-[60px] p-3 pt-4 pl-8 outline-none resize-y transition-all bg-transparent rounded-t-xl text-sm"
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
                 />
                 {opt.body_html && (
-                  <div className="py-4 px-5 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
+                  <div className="py-2 px-4 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
                 )}
