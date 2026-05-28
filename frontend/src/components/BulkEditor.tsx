@@ -24,7 +24,6 @@ export default function BulkEditor() {
   const [isGotoOpen, setIsGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
   const [isImporting, setIsImporting] = useState(false);
-  const [showBrToast, setShowBrToast] = useState(false);
   
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -135,10 +134,28 @@ export default function BulkEditor() {
     setBulkQuestions(newQuestions);
   };
 
-  const handleEnterKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => {
     if (e.key === 'Enter') {
-      setShowBrToast(true);
-      setTimeout(() => setShowBrToast(false), 5000);
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const newValue = currentValue.substring(0, start) + '<br>\n' + currentValue.substring(end);
+      updateFn(newValue);
+      
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + 5;
+      }, 0);
+
+      // Remove the <br> after 5 seconds silently
+      setTimeout(() => {
+        setBulkQuestions(currentQs => currentQs.map(q => ({
+          ...q,
+          bodyHtml: q.bodyHtml.replace(/<br>\n/g, '\n'),
+          options: q.options.map(o => ({ ...o, body_html: o.body_html.replace(/<br>\n/g, '\n') })),
+          solutionText: q.solutionText.replace(/<br>\n/g, '\n')
+        })));
+      }, 5000);
     }
   };
 
@@ -531,7 +548,7 @@ export default function BulkEditor() {
               placeholder="Question goes here..."
               value={currentQ.bodyHtml}
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
-              onKeyDown={handleEnterKey}
+              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val), currentQ.bodyHtml)}
             />
             {currentQ.bodyHtml && (
               <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium">
@@ -581,7 +598,7 @@ export default function BulkEditor() {
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
-                  onKeyDown={handleEnterKey}
+                  onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(idx, val), opt.body_html)}
                 />
                 {opt.body_html && (
                   <div className="py-3 pr-4 pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
@@ -618,7 +635,7 @@ export default function BulkEditor() {
               placeholder="Provide a detailed explanation here if needed..."
               value={currentQ.solutionText}
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
-              onKeyDown={handleEnterKey}
+              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('solutionText', val), currentQ.solutionText)}
             />
             {currentQ.solutionText && (
               <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
@@ -626,14 +643,6 @@ export default function BulkEditor() {
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Enter Key Toast */}
-      {showBrToast && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-emerald-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl font-bold shadow-2xl flex items-center gap-3 z-50 animate-bounce">
-           <div className="bg-white/20 px-2 py-0.5 rounded font-mono text-sm tracking-widest">&lt;br&gt;</div>
-           Registered successfully!
         </div>
       )}
 
