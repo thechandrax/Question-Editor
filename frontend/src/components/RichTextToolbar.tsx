@@ -1,7 +1,19 @@
 import React from 'react';
 import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload } from 'lucide-react';
 
-export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload = false, imageFile, setImageFile, imagePosition, setImagePosition, uploadId = 'file-upload' }: any) => {
+interface ToolbarProps {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  value: string;
+  onChange: (val: string) => void;
+  showImageUpload?: boolean;
+  imageFile?: File | null;
+  setImageFile?: (file: File | null) => void;
+  imagePosition?: string;
+  setImagePosition?: (pos: string) => void;
+  uploadId?: string;
+}
+
+export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload = false, imageFile, setImageFile, imagePosition, setImagePosition, uploadId = 'file-upload' }: ToolbarProps) => {
   const insertTag = (startTag: string, endTag: string) => {
     if (!textareaRef.current) return;
     const textarea = textareaRef.current;

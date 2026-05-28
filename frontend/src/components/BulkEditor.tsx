@@ -53,7 +53,7 @@ export default function BulkEditor() {
     if (saved) {
       try {
         setBulkQuestions(JSON.parse(saved));
-      } catch (e) {}
+      } catch {}
     }
   }, []);
 
@@ -116,7 +116,7 @@ export default function BulkEditor() {
     }
   };
 
-  const updateBulkQuestion = (field: keyof BulkEditorQuestion, value: any) => {
+  const updateBulkQuestion = (field: keyof BulkEditorQuestion, value: BulkEditorQuestion[keyof BulkEditorQuestion]) => {
     const newQuestions = [...bulkQuestions];
     newQuestions[currentQuestionIndex] = { ...newQuestions[currentQuestionIndex], [field]: value };
     setBulkQuestions(newQuestions);
@@ -158,10 +158,10 @@ export default function BulkEditor() {
       const data = await res.json();
       if (res.ok) {
         if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
-          const mappedQuestions = data.questions.map((q: any) => ({
-            id: q.id || Math.random().toString(),
-            bodyHtml: q.bodyHtml || '',
-            options: q.options || [
+          const mappedQuestions = data.questions.map((q: Record<string, unknown>) => ({
+            id: (q.id as string) || Math.random().toString(),
+            bodyHtml: (q.bodyHtml as string) || '',
+            options: (q.options as any[]) || [
               { label: 'A', body_html: '' },
               { label: 'B', body_html: '' },
               { label: 'C', body_html: '' },
@@ -181,7 +181,7 @@ export default function BulkEditor() {
       } else {
         alert(`Error parsing document: ${data.message || data.error}`);
       }
-    } catch (error) {
+    } catch {
       alert("Error uploading document.");
     } finally {
       setIsImporting(false);
