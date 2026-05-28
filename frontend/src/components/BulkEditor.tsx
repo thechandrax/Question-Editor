@@ -76,7 +76,13 @@ export default function BulkEditor() {
       alert("At least one question is required.");
       return;
     }
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bulkQuestions, null, 2));
+    const exportData = bulkQuestions.map(q => ({
+      ...q,
+      bodyHtml: q.bodyHtml.replace(/\n/g, '<br/>'),
+      options: q.options.map(o => ({ ...o, body_html: o.body_html.replace(/\n/g, '<br/>') })),
+      solutionText: q.solutionText.replace(/\n/g, '<br/>')
+    }));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const a = document.createElement('a');
     a.href = dataStr;
     a.download = `parsed_questions_${new Date().toISOString().slice(0,10)}.json`;
@@ -126,21 +132,6 @@ export default function BulkEditor() {
     const newQuestions = [...bulkQuestions];
     newQuestions[currentQuestionIndex].options[optionIndex].body_html = value;
     setBulkQuestions(newQuestions);
-  };
-
-  const handleEnterKey = (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const target = e.currentTarget;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const newValue = currentValue.substring(0, start) + '<br>\n' + currentValue.substring(end);
-      updateFn(newValue);
-      
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + 5;
-      }, 0);
-    }
   };
 
   const handleGotoSubmit = (e: React.FormEvent) => {
@@ -216,18 +207,18 @@ export default function BulkEditor() {
       if (!q.bodyHtml) return;
       htmlContent += '  <div class="items">\n';
       htmlContent += '    <div class="furnished">\n';
-      htmlContent += `      <div class="Q">${q.bodyHtml}</div>\n`;
+      htmlContent += `      <div class="Q">${q.bodyHtml.replace(/\n/g, '<br/>')}</div>\n`;
       htmlContent += `      <div class="Y">${q.year || ''}</div>\n`;
       
       const letterMap = ['A', 'B', 'C', 'D', 'E'];
       q.options.forEach((opt, index) => {
          const letter = letterMap[index] || 'A';
-         htmlContent += `      <div class="${letter}">${opt.body_html}</div>\n`;
+         htmlContent += `      <div class="${letter}">${opt.body_html.replace(/\n/g, '<br/>')}</div>\n`;
       });
       
       htmlContent += `      <div class="Answer">${q.correctOptionLabel || ''}</div>\n`;
       htmlContent += '    </div>\n';
-      htmlContent += `    <div class="roughEdits">${q.bodyHtml}</div>\n`;
+      htmlContent += `    <div class="roughEdits">${q.bodyHtml.replace(/\n/g, '<br/>')}</div>\n`;
       htmlContent += '  </div>\n';
     });
     
@@ -532,7 +523,6 @@ export default function BulkEditor() {
               placeholder="Question goes here..."
               value={currentQ.bodyHtml}
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
-              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val), currentQ.bodyHtml)}
             />
             {currentQ.bodyHtml && (
               <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium">
@@ -582,7 +572,6 @@ export default function BulkEditor() {
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
-                  onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(idx, val), opt.body_html)}
                 />
                 {opt.body_html && (
                   <div className="py-3 pr-4 pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
@@ -619,7 +608,6 @@ export default function BulkEditor() {
               placeholder="Provide a detailed explanation here if needed..."
               value={currentQ.solutionText}
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
-              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('solutionText', val), currentQ.solutionText)}
             />
             {currentQ.solutionText && (
               <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
