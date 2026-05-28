@@ -504,7 +504,7 @@ export default function BulkEditor() {
             />
           </div>
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Question Text</h3>
-          <div className="border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all bg-slate-50/50">
+          <div className="border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 bg-slate-50/50">
             <RichTextToolbar 
               textareaRef={questionTextareaRef} 
               value={currentQ.bodyHtml} 
@@ -533,7 +533,7 @@ export default function BulkEditor() {
             return (
               <div
                 key={idx}
-                className={`relative rounded-xl border-2 transition-all duration-200 ${
+                className={`relative rounded-xl border-2 ${
                   isCorrect
                     ? 'border-green-500 bg-green-50 shadow-md'
                     : 'border-slate-200 bg-slate-50/50'
@@ -551,7 +551,7 @@ export default function BulkEditor() {
                   type="button"
                   title={isCorrect ? 'Correct Answer' : 'Click to set as correct answer'}
                   onClick={() => updateBulkQuestion('correctOptionLabel', opt.label)}
-                  className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-lg font-black transition-all duration-200 shadow ${
+                  className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-lg font-black shadow ${
                     isCorrect
                       ? 'bg-green-500 text-white scale-110'
                       : 'bg-red-100 text-red-500 hover:bg-red-200'
@@ -562,7 +562,7 @@ export default function BulkEditor() {
 
                 <textarea
                   spellCheck="true"
-                  className="w-full min-h-[40px] p-2 pt-3 pl-8 outline-none resize-y transition-all bg-transparent rounded-t-xl text-sm"
+                  className="w-full min-h-[40px] p-2 pt-3 pl-8 outline-none resize-y bg-transparent rounded-t-xl text-sm"
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
@@ -585,11 +585,11 @@ export default function BulkEditor() {
 
       {/* Explanation Separate Card */}
       {!isPreviewMode && (
-        <div className="mt-8 shadow-2xl rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 md:p-8 print:hidden transform transition-all duration-500 hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] hover:-translate-y-1">
+        <div className="mt-8 shadow-2xl rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 md:p-8 print:hidden transform hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] hover:-translate-y-1">
           <h3 className="text-lg font-black text-amber-600 uppercase tracking-wider mb-4 flex items-center gap-3">
             Explanation (Optional)
           </h3>
-          <div className="border-2 border-amber-100 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/20 transition-all bg-white shadow-sm">
+          <div className="border-2 border-amber-100 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/20 bg-white shadow-sm">
             <RichTextToolbar 
               textareaRef={solutionTextareaRef} 
               value={currentQ.solutionText} 
