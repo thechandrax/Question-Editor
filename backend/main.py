@@ -1,3 +1,4 @@
+import os
 import re
 import random
 import logging
@@ -219,3 +220,8 @@ async def parse_pdf(file: UploadFile = File(...)):
         })
 
     return {"questions": parsed_questions, "message": "Parsed successfully using Magic PDF Engine"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
