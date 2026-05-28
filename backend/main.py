@@ -22,7 +22,9 @@ app.add_middleware(
 def convert_math(text: str, wrapper: str) -> str:
     """Converts $...$ into \(...\) if inline_parentheses is selected."""
     if wrapper == 'inline_parentheses':
-        return re.sub(r'\$(.+?)\$', r'\\(\1\\)', text)
+        text = re.sub(r'\$\$(.+?)\$\$', r'\\[\1\\]', text, flags=re.DOTALL)
+        text = re.sub(r'(?<!\$)\$([^\$]+)\$(?!\$)', r'\\(\1\\)', text)
+        return text
     return text
 
 @app.post("/api/parse-document")
@@ -49,7 +51,7 @@ async def parse_document(
     for line in text.split('\n'):
         line = line.strip()
         if not line: continue
-        q_match = re.match(r'^(?:\$|\\\()\s*(\d+)\s*(?:\.\s*\$|\$\s*\.|\.\s*\\\)|\\\)\s*\.)\s*(.*)', line)
+        q_match = re.match(r'^(?:Q\s*|Question\s*)?(?:\$|\\\()?\s*\(?\s*(\d+)\s*(?:\)|\.|\]|\})?\s*(?:\$|\\\))?\s*\.?\s+(.*)', line, re.IGNORECASE)
         if q_match:
             if current_q:
                 parsed_questions.append(current_q)
@@ -70,7 +72,7 @@ async def parse_document(
             continue
             
         if current_q:
-            opt_match = re.match(r'^(?:\$|\\\()?\s*\(([a-d])\)\s*(?:\$|\\\))?\s*(.*)', line, re.IGNORECASE)
+            opt_match = re.match(r'^(?:\$|\\\()?\s*(?:\\text\s*\{)?\s*\(?\s*([a-e])\s*(?:\)|\.|\]|\})?\s*\}?\s*(?:\$|\\\))?\s*\.?\s+(.*)', line, re.IGNORECASE)
             if opt_match:
                 label = opt_match.group(1).upper()
                 idx = ord(label) - 65
@@ -78,7 +80,7 @@ async def parse_document(
                     current_q['options'][idx]['body_html'] = opt_match.group(2).strip()
                 continue
                 
-            ans_match = re.match(r'^Correct:\s*Option\s*(?:\$|\\\()?\s*\(([a-d])\)\s*(?:\$|\\\))?', line, re.IGNORECASE)
+            ans_match = re.match(r'^Correct(?:\s*Answer)?\s*[:\-]?\s*(?:Option)?\s*(?:\$|\\\()?\s*(?:\\text\s*\{)?\s*\(?\s*([a-e])\s*(?:\)|\.|\]|\})?\s*\}?\s*(?:\$|\\\))?', line, re.IGNORECASE)
             if ans_match:
                 current_q['correctOptionLabel'] = ans_match.group(1).upper()
                 continue
