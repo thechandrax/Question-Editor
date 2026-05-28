@@ -666,7 +666,11 @@ export default function BulkEditor() {
     .q-body { 
       font-size: 1.15rem; 
       line-height: 1.7; 
-      margin-bottom: 24px; 
+      margin-bottom: 24px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 8px;
     }
     .options { 
       display: grid;
