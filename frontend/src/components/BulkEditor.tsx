@@ -52,7 +52,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
 
   return (
     <div className="mb-12" id={`qeb-${index}`}>
-      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-xl px-6 pt-5 pb-6">
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-xl px-4 sm:px-6 pt-5 pb-6">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
           <span className="text-sm font-black text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-lg">Question {index + 1}</span>
         </div>
@@ -113,7 +113,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                     : 'border-slate-200 bg-slate-50/50'
                 }`}
               >
-                <div className={`absolute -left-4 -top-4 w-11 h-11 text-xl rounded-xl flex items-center justify-center font-black shadow-lg z-10 ${
+                <div className={`absolute -left-2 sm:-left-4 -top-3 sm:-top-4 w-9 h-9 sm:w-11 sm:h-11 text-lg sm:text-xl rounded-xl flex items-center justify-center font-black shadow-lg z-10 ${
                   isCorrect ? 'bg-green-500 text-white' : 'bg-slate-700 text-white'
                 }`}>
                   {opt.label}
@@ -134,14 +134,14 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
 
                 <textarea
                   spellCheck="true"
-                  className="w-full min-h-[40px] py-3 pr-4 pl-12 outline-none resize-y bg-transparent rounded-t-xl text-sm"
+                  className="w-full min-h-[40px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-t-xl text-sm"
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
                   onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
                 />
                 {opt.body_html && (
-                  <div className="py-3 pr-4 pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
+                  <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
                 )}
@@ -838,14 +838,14 @@ export default function BulkEditor() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-1 print:hidden relative px-5 py-2.5 rounded-b-xl border-b border-x border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/90 backdrop-blur-xl overflow-hidden group">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-1 print:hidden relative px-5 py-2.5 rounded-b-xl border-b border-x border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/90 backdrop-blur-xl overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-100/50 via-transparent to-indigo-100/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
         <h1 className="relative text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-[length:200%_auto] transform transition-transform duration-500 hover:scale-[1.02]">
           Question Editor
         </h1>
 
-        <div className="flex items-center gap-3 relative">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-3 relative">
           <div className="flex rounded-lg border border-emerald-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:scale-105 hover:border-emerald-300 overflow-hidden bg-white">
             <input 
               type="file" 
