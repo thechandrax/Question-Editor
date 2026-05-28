@@ -519,7 +519,7 @@ export default function BulkEditor() {
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
             />
             {currentQ.bodyHtml && (
-              <div className="p-4 bg-white border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-lg font-medium">
+              <div className="py-5 px-4 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-lg font-medium">
                 {renderLatex(currentQ.bodyHtml)}
               </div>
             )}
@@ -540,7 +540,7 @@ export default function BulkEditor() {
                 }`}
               >
                 {/* Label Badge */}
-                <div className={`absolute -left-3 -top-3 w-8 h-8 rounded-lg flex items-center justify-center font-black shadow-md z-10 ${
+                <div className={`absolute -left-4 -top-4 w-11 h-11 text-xl rounded-xl flex items-center justify-center font-black shadow-lg z-10 ${
                   isCorrect ? 'bg-green-500 text-white' : 'bg-slate-700 text-white'
                 }`}>
                   {opt.label}
@@ -568,7 +568,7 @@ export default function BulkEditor() {
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
                 />
                 {opt.body_html && (
-                  <div className="p-4 pt-2 bg-white/60 border-t border-slate-200/60 text-slate-700 prose prose-sm max-w-none rounded-b-xl border-dashed">
+                  <div className="py-4 px-5 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
                 )}
@@ -604,7 +604,7 @@ export default function BulkEditor() {
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
             />
             {currentQ.solutionText && (
-              <div className="p-5 bg-white border-t border-amber-100 text-slate-700 prose prose-sm max-w-none border-dashed">
+              <div className="py-5 px-4 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm max-w-none border-dashed rounded-b-xl">
                 {renderLatex(currentQ.solutionText)}
               </div>
             )}
