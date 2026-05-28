@@ -50,7 +50,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
   const idx = index;
 
   return (
-    <div className="mb-12">
+    <div className="mb-12" id={`qeb-${index}`}>
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-xl px-6 pt-5 pb-6">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
           <span className="text-sm font-black text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-lg">Question {index + 1}</span>
@@ -573,7 +573,7 @@ export default function BulkEditor() {
         : '';
 
       return `
-        <div class="question-card">
+        <div class="question-card" id="q-${idx}">
           <div class="q-num">Q${idx + 1}</div>
           ${imageHtml}
           <div class="q-body">${q.bodyHtml.replace(/\n/g, '<br/>')}</div>
@@ -613,7 +613,7 @@ export default function BulkEditor() {
 
     const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    window.open(url + `#q-${currentQuestionIndex}`, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
@@ -876,7 +876,17 @@ export default function BulkEditor() {
 
             <button
               type="button"
-              onClick={() => setIsListView(!isListView)}
+              onClick={() => {
+                const willBeList = !isListView;
+                setIsListView(willBeList);
+                if (willBeList) {
+                  setTimeout(() => {
+                    document.getElementById(`qeb-${currentQuestionIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className={`px-3 py-1 rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm ${isListView ? 'bg-emerald-500/40 text-emerald-900' : 'bg-black/20 hover:bg-black/30 text-white'}`}
               title="Toggle List View"
             >
