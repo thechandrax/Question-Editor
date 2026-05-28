@@ -147,7 +147,7 @@ export default function BulkEditor() {
         target.selectionStart = target.selectionEnd = start + 5;
       }, 0);
 
-      // Remove the <br> after 5 seconds silently
+      // Remove the <br> after 3 seconds silently
       setTimeout(() => {
         setBulkQuestions(currentQs => currentQs.map(q => ({
           ...q,
@@ -155,7 +155,7 @@ export default function BulkEditor() {
           options: q.options.map(o => ({ ...o, body_html: o.body_html.replace(/<br>\n/g, '\n') })),
           solutionText: q.solutionText.replace(/<br>\n/g, '\n')
         })));
-      }, 5000);
+      }, 3000);
     }
   };
 
@@ -272,7 +272,7 @@ export default function BulkEditor() {
       } else if (part.startsWith('$') && part.endsWith('$')) {
         return <InlineMath key={index} math={part.slice(1, -1)} />;
       }
-      return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br/>') }} />;
+      return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/<br>\n/g, '\n').replace(/\n/g, '<br/>') }} />;
     });
   };
 
