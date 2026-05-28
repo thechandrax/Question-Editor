@@ -513,13 +513,13 @@ export default function BulkEditor() {
             <textarea 
               ref={questionTextareaRef}
               spellCheck="true"
-              className="w-full min-h-[100px] p-3 text-base outline-none resize-y bg-transparent"
+              className="w-full min-h-[40px] p-2 text-base outline-none resize-y bg-transparent"
               placeholder="Question goes here..."
               value={currentQ.bodyHtml}
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
             />
             {currentQ.bodyHtml && (
-              <div className="py-3 px-4 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-base font-medium">
+              <div className="py-1 px-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-base font-medium">
                 {renderLatex(currentQ.bodyHtml)}
               </div>
             )}
@@ -562,13 +562,13 @@ export default function BulkEditor() {
 
                 <textarea
                   spellCheck="true"
-                  className="w-full min-h-[60px] p-3 pt-4 pl-8 outline-none resize-y transition-all bg-transparent rounded-t-xl text-sm"
+                  className="w-full min-h-[40px] p-2 pt-3 pl-8 outline-none resize-y transition-all bg-transparent rounded-t-xl text-sm"
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
                 />
                 {opt.body_html && (
-                  <div className="py-2 px-4 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
+                  <div className="py-1 px-3 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
                 )}
@@ -598,13 +598,13 @@ export default function BulkEditor() {
             <textarea 
               ref={solutionTextareaRef}
               spellCheck="true"
-              className="w-full min-h-[100px] p-4 text-sm outline-none resize-y bg-transparent"
+              className="w-full min-h-[40px] p-2 text-sm outline-none resize-y bg-transparent"
               placeholder="Provide a detailed explanation here if needed..."
               value={currentQ.solutionText}
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
             />
             {currentQ.solutionText && (
-              <div className="py-3 px-4 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm max-w-none border-dashed rounded-b-xl">
+              <div className="py-1 px-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm max-w-none border-dashed rounded-b-xl">
                 {renderLatex(currentQ.solutionText)}
               </div>
             )}
