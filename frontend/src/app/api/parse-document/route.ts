@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface Option {
+    label: string;
+    body_html: string;
+}
+
+interface Question {
+    id: string;
+    bodyHtml: string;
+    options: Option[];
+    correctOptionLabel: string;
+    solutionText: string;
+    year: string;
+    source: string;
+}
+
 function convertMath(text: string, wrapper: string): string {
     if (wrapper === 'inline_parentheses') {
         return text.replace(/\$(.+?)\$/g, '\\($1\\)');
@@ -28,11 +43,11 @@ export async function POST(req: NextRequest) {
         const text = await file.text();
         const lines = text.split('\n');
         
-        const parsedQuestions: any[] = [];
-        let currentQ: any = null;
+        const parsedQuestions: Question[] = [];
+        let currentQ: Question | null = null;
 
         for (let i = 0; i < lines.length; i++) {
-            let line = lines[i].trim();
+            const line = lines[i].trim();
             if (!line) continue;
 
             const qMatch = line.match(/^(?:\$|\\\()\s*(\d+)\s*(?:\.\s*\$|\$\s*\.|\.\s*\\\)|\\\)\s*\.)\s*(.*)/);
@@ -74,7 +89,7 @@ export async function POST(req: NextRequest) {
                     continue;
                 }
 
-                const hasOpts = currentQ.options.some((opt: any) => opt.body_html !== '');
+                const hasOpts = currentQ.options.some((opt: Option) => opt.body_html !== '');
                 if (!hasOpts) {
                     currentQ.bodyHtml += '\n' + line;
                 } else {
@@ -109,8 +124,8 @@ export async function POST(req: NextRequest) {
             message: "Parsed successfully using Native TypeScript MD Parser" 
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("API Error:", error);
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
     }
 }

@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, FileText, Eye, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
@@ -19,11 +17,9 @@ export interface BulkEditorQuestion {
 }
 
 export default function BulkEditor() {
-  const router = useRouter();
-
   // Removed metadata state variables
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [isGotoOpen, setIsGotoOpen] = useState(false);
