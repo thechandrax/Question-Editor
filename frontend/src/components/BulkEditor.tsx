@@ -519,7 +519,7 @@ export default function BulkEditor() {
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
             />
             {currentQ.bodyHtml && (
-              <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-base font-medium">
+              <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium">
                 {renderLatex(currentQ.bodyHtml)}
               </div>
             )}
@@ -568,7 +568,7 @@ export default function BulkEditor() {
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
                 />
                 {opt.body_html && (
-                  <div className="py-3 pr-4 pl-10 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm max-w-none rounded-b-xl border-dashed">
+                  <div className="py-3 pr-4 pl-10 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
                 )}
@@ -604,7 +604,7 @@ export default function BulkEditor() {
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
             />
             {currentQ.solutionText && (
-              <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm max-w-none border-dashed rounded-b-xl">
+              <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
                 {renderLatex(currentQ.solutionText)}
               </div>
             )}
