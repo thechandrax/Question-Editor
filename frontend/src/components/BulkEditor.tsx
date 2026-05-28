@@ -592,56 +592,59 @@ export default function BulkEditor() {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Question Preview (${bulkQuestions.length} Questions)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\\\(', right: '\\\\)', display: false}, {left: '\\\\[', right: '\\\\]', display: true}]});"></script>
   <style>
     :root {
-      --bg: #f3f4f6;
+      --bg: #f8fafc;
       --card-bg: #ffffff;
-      --text: #1f2937;
-      --text-light: #6b7280;
-      --border: #e5e7eb;
-      --success-bg: #f0fdf4;
-      --success-border: #bbf7d0;
-      --success-text: #166534;
-      --solution-bg: #f9fafb;
-      --solution-border: #f3f4f6;
-      --solution-text: #4b5563;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      --success-text: #065f46;
+      --solution-bg: #fefce8;
+      --solution-border: #fde68a;
+      --solution-text: #854d0e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
-      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+      font-family: Georgia, 'Times New Roman', serif;
       background: var(--bg); 
       color: var(--text);
       line-height: 1.6;
-      padding: 40px 16px;
+      padding: 0;
     }
     .header {
-      max-width: 800px;
-      margin: 0 auto 30px auto;
-      padding-bottom: 20px;
-      border-bottom: 2px solid var(--border);
+      width: 100%;
+      background: #10b981; /* Emerald green accent */
+      padding: 30px 40px;
+      color: white;
       text-align: center;
+      margin-bottom: 0;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .header h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: 700;
-      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #d1fae5;
+      font-size: 1.1rem;
     }
     .container {
-      max-width: 800px;
-      margin: 0 auto;
+      width: 100%;
       background: var(--card-bg);
-      padding: 50px 60px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    @media (max-width: 600px) {
-      .container { padding: 30px 20px; }
+      padding: 40px;
+      min-height: 100vh;
     }
     .question-card { 
-      margin-bottom: 40px; 
-      padding-bottom: 30px;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 50px; 
+      padding-bottom: 40px;
+      border-bottom: 2px dashed var(--border);
     }
     .question-card:last-child {
       border-bottom: none;
@@ -649,36 +652,36 @@ export default function BulkEditor() {
       padding-bottom: 0;
     }
     .q-num { 
-      font-size: 0.9rem; 
+      font-size: 1rem; 
       font-weight: 700; 
-      color: var(--text-light); 
-      text-transform: uppercase; 
-      letter-spacing: 0.05em; 
+      color: #047857;
       margin-bottom: 16px; 
     }
     .q-image { 
       max-width: 100%; 
       margin-bottom: 20px; 
       display: block;
+      border: 1px solid var(--border);
+      padding: 4px;
       border-radius: 4px;
     }
     .q-body { 
-      font-size: 1.05rem; 
-      line-height: 1.6; 
-      margin-bottom: 20px; 
-      color: #111827;
+      font-size: 1.15rem; 
+      line-height: 1.7; 
+      margin-bottom: 24px; 
     }
     .options { 
       display: flex; 
       flex-direction: column; 
       gap: 12px; 
       margin-bottom: 24px; 
+      padding-left: 20px;
     }
     .option { 
       display: flex; 
       align-items: flex-start; 
-      gap: 12px; 
-      font-size: 1rem; 
+      gap: 14px; 
+      font-size: 1.1rem; 
     }
     .option.correct { 
       background: var(--success-bg); 
@@ -695,30 +698,30 @@ export default function BulkEditor() {
       color: var(--success-text);
     }
     .solution { 
-      margin-top: 20px; 
-      padding: 16px; 
+      margin-top: 24px; 
+      padding: 20px; 
       background: var(--solution-bg); 
-      border-radius: 6px; 
-      border: 1px solid var(--border); 
-      font-size: 0.95rem; 
+      border-left: 4px solid #f59e0b;
+      font-size: 1rem; 
       color: var(--solution-text);
     }
     .solution strong {
       display: block;
-      margin-bottom: 4px;
-      color: var(--text);
+      margin-bottom: 8px;
+      color: #92400e;
     }
     .year { 
-      margin-top: 12px; 
-      font-size: 0.85rem; 
+      margin-top: 16px; 
+      font-size: 0.9rem; 
       color: var(--text-light); 
+      font-style: italic;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Question Preview</h1>
-    <p style="color: #6b7280; margin-top: 8px;">Showing ${bulkQuestions.length} Questions</p>
+    <p>Showing ${bulkQuestions.length} Questions</p>
   </div>
   <div class="container">
     ${questionsHtml}
