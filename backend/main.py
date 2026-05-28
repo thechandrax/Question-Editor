@@ -3,6 +3,8 @@ import re
 import json
 import random
 import logging
+import fitz
+import base64
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -108,3 +110,115 @@ async def parse_document(
         })
 
     return {"questions": parsed_questions, "message": "Parsed successfully using Native Python MD Parser"}
+
+@app.post("/api/parse-pdf")
+async def parse_pdf(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Must be a PDF file.")
+        
+    content = await file.read()
+    doc = fitz.open(stream=content, filetype="pdf")
+    
+    parsed_questions = []
+    
+    for page_num in range(len(doc)):
+        page = doc[page_num]
+        blocks = page.get_text("blocks")
+        if not blocks:
+            continue
+            
+        # Sort blocks top-to-bottom
+        blocks.sort(key=lambda b: b[1])
+        
+        q_blocks = []
+        for b in blocks:
+            text = b[4].strip()
+            # Enforce 'Q' or 'Question' to avoid treating options (1., 2.) as new questions
+            if re.match(r'^(?:Q|Question)\s*\.?\s*\d+', text, re.IGNORECASE):
+                q_blocks.append(b)
+                
+        if not q_blocks:
+            continue
+            
+        for i, qb in enumerate(q_blocks):
+            start_y = max(0, qb[1] - 5)
+            next_q_y = q_blocks[i+1][1] - 5 if i+1 < len(q_blocks) else page.rect.y1
+            
+            # Find the actual bottom of the text for this question
+            content_bottom_y = start_y
+            for b in blocks:
+                if b[1] >= start_y and b[1] < next_q_y:
+                    if b[3] > content_bottom_y:
+                        content_bottom_y = b[3]
+                        
+            # Add +25 padding to include any drawn borders, but don't exceed next_q_y
+            end_y = min(next_q_y, content_bottom_y + 25)
+            
+            crop_rect = fitz.Rect(0, start_y, page.rect.width, end_y)
+            
+            # Extract image
+            pix = page.get_pixmap(clip=crop_rect, matrix=fitz.Matrix(2, 2))
+            img_data = pix.tobytes("png")
+            b64_img = base64.b64encode(img_data).decode('utf-8')
+            img_url = f"data:image/png;base64,{b64_img}"
+            
+            # Extract text
+            raw_text = page.get_text("text", clip=crop_rect)
+            
+            current_q = {
+                'id': str(random.randint(10000, 99999)),
+                'bodyHtml': '',
+                'options': [
+                    {'label': 'A', 'body_html': ''},
+                    {'label': 'B', 'body_html': ''},
+                    {'label': 'C', 'body_html': ''},
+                    {'label': 'D', 'body_html': ''},
+                ],
+                'correctOptionLabel': 'A',
+                'solutionText': '',
+                'year': '',
+                'source': 'PDF Auto-Cropper',
+                'originalImageUrl': img_url
+            }
+            
+            lines = raw_text.split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line: continue
+                
+                line_no_ans = re.sub(r'^Ans\s*(?:X|✔|v|x)?\s*', '', line, flags=re.IGNORECASE).strip()
+                
+                opt_match = re.match(r'^[\(\[]?([a-d1-4])[\)\]\.]\s+(.*)', line_no_ans, re.IGNORECASE)
+                if opt_match:
+                    lbl = opt_match.group(1).upper()
+                    if lbl == '1': lbl = 'A'
+                    elif lbl == '2': lbl = 'B'
+                    elif lbl == '3': lbl = 'C'
+                    elif lbl == '4': lbl = 'D'
+                    
+                    idx = ord(lbl) - 65
+                    if 0 <= idx < 4:
+                        current_q['options'][idx]['body_html'] = opt_match.group(2).strip()
+                        if '✔' in line or 'v ' in line.lower() or 'correct' in line.lower():
+                            current_q['correctOptionLabel'] = lbl
+                    continue
+                
+                has_opts = any(opt['body_html'] != '' for opt in current_q['options'])
+                if not has_opts:
+                    if current_q['bodyHtml'] == '':
+                        line = re.sub(r'^(?:Q\s*|Question\s*)?\.?\s*\d+\s*[\.\)]\s*', '', line, flags=re.IGNORECASE)
+                    current_q['bodyHtml'] += ('\n' if current_q['bodyHtml'] else '') + line
+                else:
+                    current_q['solutionText'] += ('\n' if current_q['solutionText'] else '') + line
+                    
+            parsed_questions.append(current_q)
+            
+    doc.close()
+    
+    if not parsed_questions:
+        return JSONResponse(status_code=200, content={
+            "message": "Parser failed to extract questions. Please check PDF formatting.",
+            "questions": []
+        })
+
+    return {"questions": parsed_questions, "message": "Parsed successfully using Magic PDF Engine"}
