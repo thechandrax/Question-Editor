@@ -161,16 +161,16 @@ export default function BulkEditor() {
           const mappedQuestions = data.questions.map((q: Record<string, unknown>) => ({
             id: (q.id as string) || Math.random().toString(),
             bodyHtml: (q.bodyHtml as string) || '',
-            options: (q.options as any[]) || [
+            options: (q.options as { label: string; body_html: string }[]) || [
               { label: 'A', body_html: '' },
               { label: 'B', body_html: '' },
               { label: 'C', body_html: '' },
               { label: 'D', body_html: '' },
             ],
-            correctOptionLabel: q.correctOptionLabel || 'A',
-            solutionText: q.solutionText || '',
-            year: q.year || '',
-            source: q.source || ''
+            correctOptionLabel: (q.correctOptionLabel as string) || 'A',
+            solutionText: (q.solutionText as string) || '',
+            year: (q.year as string) || '',
+            source: (q.source as string) || ''
           }));
           setBulkQuestions(mappedQuestions);
           setCurrentQuestionIndex(0);
