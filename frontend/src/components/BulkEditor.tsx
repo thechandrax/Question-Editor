@@ -20,7 +20,6 @@ export default function BulkEditor() {
   // Removed metadata state variables
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [autoSaveEnabled] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [isGotoOpen, setIsGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
@@ -48,7 +47,6 @@ export default function BulkEditor() {
     }
   ]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`bulkQuestions`);
