@@ -669,33 +669,47 @@ export default function BulkEditor() {
       margin-bottom: 24px; 
     }
     .options { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 12px; 
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 30px;
+      margin-top: 20px;
       margin-bottom: 24px; 
-      padding-left: 20px;
+    }
+    @media (max-width: 768px) {
+      .options { grid-template-columns: 1fr; gap: 24px; }
     }
     .option { 
-      display: flex; 
-      align-items: flex-start; 
-      gap: 14px; 
-      font-size: 1.1rem; 
-      padding: 12px 16px;
+      position: relative;
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: var(--bg);
+      padding: 20px;
+      font-size: 1.1rem;
     }
     .option.correct { 
       background: var(--success-bg); 
       border-color: var(--success-border); 
-      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
     }
     .opt-label { 
-      font-weight: 700; 
-      color: var(--text); 
+      position: absolute;
+      top: -14px;
+      left: -14px;
+      background: #334155;
+      color: white;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .option.correct .opt-label {
-      color: var(--success-text);
+      background: #10b981;
     }
     .solution { 
       margin-top: 24px; 
