@@ -620,20 +620,20 @@ export default function BulkEditor() {
     .header {
       width: 100%;
       background: #10b981; /* Emerald green accent */
-      padding: 30px 40px;
+      padding: 15px 40px;
       color: white;
       text-align: center;
       margin-bottom: 0;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .header h1 {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     .header p {
       color: #d1fae5;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
     }
     .container {
       width: 100%;
