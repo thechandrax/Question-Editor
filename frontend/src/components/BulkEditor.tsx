@@ -276,7 +276,7 @@ export default function BulkEditor() {
       </div>
 
       {/* Editor Card */}
-      <div className="shadow-2xl rounded-2xl transform transition-all duration-500 hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] hover:-translate-y-1 bg-white border border-slate-200/60 overflow-hidden print:shadow-none print:border-none print:translate-y-0 print:transform-none">
+      <div className="shadow-2xl rounded-2xl bg-white border border-slate-200/60 overflow-hidden print:shadow-none print:border-none">
         {/* Top Navbar Editor */}
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-4 flex items-center justify-between print:hidden">
         
