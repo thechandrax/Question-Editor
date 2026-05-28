@@ -577,7 +577,7 @@ export default function BulkEditor() {
 
       return `
         <div class="question-card" id="q-${idx}">
-          <div class="q-num">Q${idx + 1}</div>
+          <div class="q-num">Question ${idx + 1}</div>
           ${imageHtml}
           <div class="q-body">${q.bodyHtml.replace(/\n/g, '<br/>')}</div>
           <div class="options">${optionsHtml}</div>
@@ -637,19 +637,17 @@ export default function BulkEditor() {
     }
     .container {
       width: 100%;
-      background: var(--card-bg);
-      padding: 40px;
-      min-height: 100vh;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
     }
     .question-card { 
-      margin-bottom: 50px; 
-      padding-bottom: 40px;
-      border-bottom: 2px dashed var(--border);
-    }
-    .question-card:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
+      background: var(--card-bg);
+      margin-bottom: 40px; 
+      padding: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     .q-num { 
       font-size: 1rem; 
