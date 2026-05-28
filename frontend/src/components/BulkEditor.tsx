@@ -471,7 +471,10 @@ export default function BulkEditor() {
     formData.append('file', file);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      if (backendUrl.endsWith('/')) {
+        backendUrl = backendUrl.slice(0, -1);
+      }
       const res = await fetch(`${backendUrl}/api/parse-pdf`, {
         method: 'POST',
         body: formData,
