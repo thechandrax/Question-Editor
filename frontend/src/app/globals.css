@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Dynamic Themes */
+body.theme-emerald {
+  --tw-bg-opacity: 1 !important;
+}
+body.theme-emerald .bg-white { background-color: #022c22 !important; }
+body.theme-emerald .bg-slate-50 { background-color: #021a14 !important; }
+body.theme-emerald .border-slate-200 { border-color: #064e3b !important; }
+body.theme-emerald .bg-blue-600 { background-color: #059669 !important; }
+body.theme-emerald .hover\:bg-blue-700:hover { background-color: #047857 !important; }
+body.theme-emerald .text-blue-400 { color: #34d399 !important; }
+body.theme-emerald .text-blue-500 { color: #10b981 !important; }
+body.theme-emerald .border-blue-500 { border-color: #10b981 !important; }
+
+body.theme-purple .bg-white { background-color: #2e1065 !important; }
+body.theme-purple .bg-slate-50 { background-color: #170536 !important; }
+body.theme-purple .border-slate-200 { border-color: #4c1d95 !important; }
+body.theme-purple .bg-blue-600 { background-color: #7c3aed !important; }
+body.theme-purple .hover\:bg-blue-700:hover { background-color: #6d28d9 !important; }
+body.theme-purple .text-blue-400 { color: #a78bfa !important; }
+body.theme-purple .text-blue-500 { color: #8b5cf6 !important; }
+body.theme-purple .border-blue-500 { border-color: #8b5cf6 !important; }
+
+body.theme-rose .bg-white { background-color: #4c0519 !important; }
+body.theme-rose .bg-slate-50 { background-color: #2a030d !important; }
+body.theme-rose .border-slate-200 { border-color: #881337 !important; }
+body.theme-rose .bg-blue-600 { background-color: #e11d48 !important; }
+body.theme-rose .hover\:bg-blue-700:hover { background-color: #be123c !important; }
+body.theme-rose .text-blue-400 { color: #fb7185 !important; }
+body.theme-rose .text-blue-500 { color: #f43f5e !important; }
+body.theme-rose .border-blue-500 { border-color: #f43f5e !important; }
+
+body.theme-amber .bg-white { background-color: #451a03 !important; }
+body.theme-amber .bg-slate-50 { background-color: #290f02 !important; }
+body.theme-amber .border-slate-200 { border-color: #78350f !important; }
+body.theme-amber .bg-blue-600 { background-color: #d97706 !important; }
+body.theme-amber .hover\:bg-blue-700:hover { background-color: #b45309 !important; }
+body.theme-amber .text-blue-400 { color: #fbbf24 !important; }
+body.theme-amber .text-blue-500 { color: #f59e0b !important; }
+body.theme-amber .border-blue-500 { border-color: #f59e0b !important; }
+
+/* Light Mode Overrides */
+body.theme-light {
+  background-color: #f8fafc !important; /* bg-slate-50 */
+}
+body.theme-light .bg-slate-50 { background-color: #f8fafc !important; }
+body.theme-light .bg-white { background-color: #ffffff !important; }
+body.theme-light .bg-slate-800 { background-color: #f1f5f9 !important; }
+body.theme-light .hover\:bg-slate-900\/50:hover { background-color: #f1f5f9 !important; }
+body.theme-light .hover\:bg-slate-800:hover { background-color: #e2e8f0 !important; }
+body.theme-light .border-slate-200 { border-color: #e2e8f0 !important; }
+body.theme-light .border-slate-700 { border-color: #cbd5e1 !important; }
+body.theme-light .text-white { color: #0f172a !important; }
+body.theme-light .text-slate-200 { color: #1e293b !important; }
+body.theme-light .text-slate-300 { color: #334155 !important; }
+body.theme-light .text-slate-400 { color: #475569 !important; }
+body.theme-light .text-slate-500 { color: #64748b !important; }
+body.theme-light .bg-blue-600 { background-color: #2563eb !important; }
+body.theme-light .hover\:bg-blue-700:hover { background-color: #1d4ed8 !important; }
+body.theme-light .text-blue-400 { color: #3b82f6 !important; }
+body.theme-light .text-blue-500 { color: #2563eb !important; }
+body.theme-light .border-blue-500 { border-color: #2563eb !important; }
+body.theme-light .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025) !important; }
