@@ -157,8 +157,7 @@ export default function BulkEditor() {
     formData.append('source_type', 'auto');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/parse-document`, {
+      const res = await fetch(`/api/parse-document`, {
         method: 'POST',
         body: formData,
       });
