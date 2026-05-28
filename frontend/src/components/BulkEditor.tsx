@@ -444,7 +444,7 @@ export default function BulkEditor() {
           </div>
           <div ref={previewRef} className="space-y-8">
             {bulkQuestions.map((q, i) => (
-              <div key={q.id} className="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50/50 hover:border-emerald-300 transition-colors print:break-inside-avoid print:bg-white print:border-slate-300 print:shadow-none print:m-0 print:p-4">
+              <div key={q.id} className="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50/50 print:break-inside-avoid print:bg-white print:border-slate-300 print:shadow-none print:m-0 print:p-4">
                 <div className="flex gap-4 mb-4">
                 <div className="w-10 h-10 shrink-0 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-black shadow-sm border border-emerald-200">
                   {i + 1}
@@ -456,7 +456,7 @@ export default function BulkEditor() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-14 mb-4">
                 {q.options.map(opt => (
-                  <div key={opt.label} className={`p-4 rounded-xl border-2 transition-all ${
+                  <div key={opt.label} className={`p-4 rounded-xl border-2 ${
                     q.correctOptionLabel === opt.label 
                       ? 'border-emerald-500 bg-emerald-50/50 shadow-sm' 
                       : 'border-slate-200 bg-white'
@@ -585,7 +585,7 @@ export default function BulkEditor() {
 
       {/* Explanation Separate Card */}
       {!isPreviewMode && (
-        <div className="mt-8 shadow-2xl rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 md:p-8 print:hidden transform hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] hover:-translate-y-1">
+        <div className="mt-8 shadow-2xl rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 md:p-8 print:hidden">
           <h3 className="text-lg font-black text-amber-600 uppercase tracking-wider mb-4 flex items-center gap-3">
             Explanation (Optional)
           </h3>
