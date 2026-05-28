@@ -41,9 +41,10 @@ interface QuestionEditorBlockProps {
   updateBulkQuestion: (field: keyof BulkEditorQuestion, value: string, idx?: number) => void;
   updateBulkQuestionOption: (optionIndex: number, value: string, idx?: number) => void;
   handleEnterKey: (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => void;
+  isListView?: boolean;
 }
 
-function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey }: QuestionEditorBlockProps) {
+function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView }: QuestionEditorBlockProps) {
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const currentQ = question;
@@ -150,32 +151,34 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
         </div>
 
         {/* Explanation */}
-        <div className="mt-8 shadow-sm rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 print:hidden">
-          <h3 className="text-lg font-black text-amber-600 uppercase tracking-wider mb-4 flex items-center gap-3">
-            Explanation (Optional)
-          </h3>
-          <div className="border-2 border-amber-100 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/20 bg-white shadow-sm">
-            <RichTextToolbar 
-              textareaRef={solutionTextareaRef} 
-              value={currentQ.solutionText} 
-              onChange={(val: string) => updateBulkQuestion('solutionText', val, idx)}
-            />
-            <textarea 
-              ref={solutionTextareaRef}
-              spellCheck="true"
-              className="w-full min-h-[40px] px-4 py-3 text-sm outline-none resize-y bg-transparent"
-              placeholder="Provide a detailed explanation here if needed..."
-              value={currentQ.solutionText}
-              onChange={(e) => updateBulkQuestion('solutionText', e.target.value, idx)}
-              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('solutionText', val, idx), currentQ.solutionText)}
-            />
-            {currentQ.solutionText && (
-              <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
-                {renderLatex(currentQ.solutionText)}
-              </div>
-            )}
+        {(!isListView || currentQ.solutionText) && (
+          <div className="mt-8 shadow-sm rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200/60 p-6 print:hidden">
+            <h3 className="text-lg font-black text-amber-600 uppercase tracking-wider mb-4 flex items-center gap-3">
+              Explanation (Optional)
+            </h3>
+            <div className="border-2 border-amber-100 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/20 bg-white shadow-sm">
+              <RichTextToolbar 
+                textareaRef={solutionTextareaRef} 
+                value={currentQ.solutionText} 
+                onChange={(val: string) => updateBulkQuestion('solutionText', val, idx)}
+              />
+              <textarea 
+                ref={solutionTextareaRef}
+                spellCheck="true"
+                className="w-full min-h-[40px] px-4 py-3 text-sm outline-none resize-y bg-transparent"
+                placeholder="Provide a detailed explanation here if needed..."
+                value={currentQ.solutionText}
+                onChange={(e) => updateBulkQuestion('solutionText', e.target.value, idx)}
+                onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('solutionText', val, idx), currentQ.solutionText)}
+              />
+              {currentQ.solutionText && (
+                <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
+                  {renderLatex(currentQ.solutionText)}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -977,6 +980,7 @@ export default function BulkEditor() {
                   updateBulkQuestion={updateBulkQuestion} 
                   updateBulkQuestionOption={updateBulkQuestionOption} 
                   handleEnterKey={handleEnterKey} 
+                  isListView={isListView}
                 />
               ))}
             </div>
