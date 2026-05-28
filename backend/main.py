@@ -1,6 +1,4 @@
-import os
 import re
-import json
 import random
 import logging
 import fitz
@@ -38,7 +36,6 @@ async def parse_document(
     if not file.filename.lower().endswith(('.md', '.txt')):
         raise HTTPException(status_code=400, detail="Invalid file type. Only MD and TXT are supported in this streamlined parser.")
 
-    ext = file.filename.lower().split('.')[-1]
     
     logging.info(f"--- INCOMING MD REQUEST ---")
     logging.info(f"Filename: {file.filename}")
