@@ -518,6 +518,11 @@ export default function BulkEditor() {
               value={currentQ.bodyHtml}
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value)}
             />
+            {currentQ.bodyHtml && (
+              <div className="p-4 bg-white border-t border-slate-200 text-slate-800 prose prose-slate max-w-none text-lg font-medium">
+                {renderLatex(currentQ.bodyHtml)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -557,11 +562,16 @@ export default function BulkEditor() {
 
                 <textarea
                   spellCheck="true"
-                  className="w-full min-h-[100px] p-4 pt-5 pl-6 outline-none resize-y transition-all bg-transparent rounded-xl"
+                  className="w-full min-h-[100px] p-4 pt-5 pl-6 outline-none resize-y transition-all bg-transparent rounded-t-xl"
                   placeholder={`Option ${opt.label}...`}
                   value={opt.body_html}
                   onChange={(e) => updateBulkQuestionOption(idx, e.target.value)}
                 />
+                {opt.body_html && (
+                  <div className="p-4 pt-2 bg-white/60 border-t border-slate-200/60 text-slate-700 prose prose-sm max-w-none rounded-b-xl border-dashed">
+                    {renderLatex(opt.body_html)}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -593,6 +603,11 @@ export default function BulkEditor() {
               value={currentQ.solutionText}
               onChange={(e) => updateBulkQuestion('solutionText', e.target.value)}
             />
+            {currentQ.solutionText && (
+              <div className="p-5 bg-white border-t border-amber-100 text-slate-700 prose prose-sm max-w-none border-dashed">
+                {renderLatex(currentQ.solutionText)}
+              </div>
+            )}
           </div>
         </div>
       )}
