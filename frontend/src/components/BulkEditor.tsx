@@ -637,7 +637,7 @@ export default function BulkEditor() {
     }
     .container {
       width: 100%;
-      max-width: 1000px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 40px 20px;
     }
@@ -680,13 +680,15 @@ export default function BulkEditor() {
       align-items: flex-start; 
       gap: 14px; 
       font-size: 1.1rem; 
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
     }
     .option.correct { 
       background: var(--success-bg); 
-      padding: 10px 14px;
-      margin-left: -14px;
-      border-radius: 6px;
-      border: 1px solid var(--success-border); 
+      border-color: var(--success-border); 
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
     }
     .opt-label { 
       font-weight: 700; 
