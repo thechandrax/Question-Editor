@@ -592,25 +592,190 @@ export default function BulkEditor() {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Question Preview (${bulkQuestions.length} Questions)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #334155;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --success-bg: #dcfce7;
+      --success-border: #86efac;
+      --success-text: #166534;
+      --solution-bg: #fefce8;
+      --solution-border: #fde68a;
+      --solution-text: #854d0e;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 32px 16px; color: #1e293b; }
-    h1 { text-align: center; color: #0f766e; font-size: 1.6rem; margin-bottom: 28px; }
-    .question-card { background: #fff; border-radius: 14px; padding: 24px 28px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); border-left: 5px solid #14b8a6; }
-    .q-num { font-size: 0.75rem; font-weight: 800; color: #0f766e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
-    .q-image { max-width: 100%; border-radius: 8px; margin-bottom: 14px; border: 1px solid #e2e8f0; }
-    .q-body { font-size: 1rem; line-height: 1.7; margin-bottom: 16px; font-weight: 500; }
-    .options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-    .option { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.93rem; }
-    .option.correct { background: #dcfce7; border-color: #86efac; }
-    .opt-label { font-weight: 800; color: #0f766e; min-width: 18px; }
-    .solution { margin-top: 12px; padding: 10px 14px; background: #fefce8; border-radius: 8px; border: 1px solid #fde68a; font-size: 0.9rem; color: #78350f; }
-    .year { margin-top: 8px; font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
+    body { 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+      background: var(--bg); 
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+      padding: 60px 20px;
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
+    }
+    .hero-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: inline-block;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .hero h1 { 
+      font-size: 2.2rem; 
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px 60px 20px;
+    }
+    .question-card { 
+      background: var(--card-bg); 
+      border-radius: 16px; 
+      padding: 32px; 
+      margin-bottom: 30px; 
+      box-shadow: 0 4px 25px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--primary);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06), 0 2px 5px rgba(0,0,0,0.03);
+    }
+    .q-num { 
+      font-size: 0.85rem; 
+      font-weight: 800; 
+      color: var(--primary); 
+      text-transform: uppercase; 
+      letter-spacing: 0.1em; 
+      margin-bottom: 16px; 
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .q-num::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+    .q-image { 
+      max-width: 100%; 
+      border-radius: 12px; 
+      margin-bottom: 24px; 
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      display: block;
+    }
+    .q-body { 
+      font-size: 1.1rem; 
+      line-height: 1.7; 
+      margin-bottom: 24px; 
+      font-weight: 500;
+      color: #1e293b;
+    }
+    .options { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px; 
+      margin-bottom: 20px; 
+    }
+    .option { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 14px; 
+      padding: 14px 18px; 
+      border-radius: 12px; 
+      background: var(--bg); 
+      border: 1px solid var(--border); 
+      font-size: 1rem; 
+      transition: all 0.2s ease;
+    }
+    .option:hover {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+    }
+    .option.correct { 
+      background: var(--success-bg); 
+      border-color: var(--success-border); 
+      box-shadow: 0 2px 10px rgba(134, 239, 172, 0.2);
+    }
+    .opt-label { 
+      font-weight: 800; 
+      color: var(--text-light); 
+      min-width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .option.correct .opt-label {
+      background: #22c55e;
+      color: white;
+    }
+    .solution { 
+      margin-top: 24px; 
+      padding: 16px 20px; 
+      background: var(--solution-bg); 
+      border-radius: 12px; 
+      border: 1px solid var(--solution-border); 
+      font-size: 0.95rem; 
+      color: var(--solution-text);
+      line-height: 1.6;
+    }
+    .solution strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #713f12;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .year { 
+      margin-top: 16px; 
+      font-size: 0.85rem; 
+      color: var(--text-light); 
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: #f1f5f9;
+      border-radius: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>📋 Question Preview — ${bulkQuestions.length} Questions</h1>
-  ${questionsHtml}
+  <div class="hero">
+    <div class="hero-icon">✨</div>
+    <h1>Document Preview</h1>
+    <p>Viewing ${bulkQuestions.length} beautifully formatted questions</p>
+  </div>
+  <div class="container">
+    ${questionsHtml}
+  </div>
 </body>
 </html>`;
 
