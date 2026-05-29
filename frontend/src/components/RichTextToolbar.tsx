@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload, Undo, Redo, Divide, X } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload, Undo, Redo, Divide, X, Delete } from 'lucide-react';
 
 interface ToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -46,16 +46,33 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       <button type="button" onClick={() => insertTag('<sup>', '</sup>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Superscript"><Superscript size={16}/></button>
       <button type="button" onClick={() => insertTag('<sub>', '</sub>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Subscript"><Subscript size={16}/></button>
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <button type="button" onClick={() => insertTag('\\(', '\\)')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Inline Math"><Sigma size={14}/> Inline</button>
-      <button type="button" onClick={() => insertTag('$$', '$$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Block Math"><Sigma size={14}/> Block</button>
-      <button type="button" onClick={() => insertTag('$', '$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Single Dollar Math">$</button>
-      <button type="button" onClick={() => insertTag('\\(', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Open Math Parenthesis">\(</button>
-      <button type="button" onClick={() => insertTag('\\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Close Math Parenthesis">\)</button>
+      <button type="button" onClick={() => insertTag('\\(', '\\)')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Inline Math \\( ... \\)"><Sigma size={14}/> Inline</button>
+      <button type="button" onClick={() => insertTag('$', '$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Math $ ... $"><Sigma size={14}/> $ ... $</button>
+      <button type="button" onClick={() => insertTag('\\(', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Open Parenthesis">\(</button>
+      <button type="button" onClick={() => insertTag('\\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Close Parenthesis">\)</button>
+      
+      <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('\\frac{', '}{}')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Fraction">a/b</button>
+      <button type="button" onClick={() => insertTag('^{2}', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Squared">x²</button>
+      <button type="button" onClick={() => insertTag('^{\\text{th}}', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="th (superscript)">th</button>
+      <button type="button" onClick={() => insertTag('\\sqrt{', '}')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Square Root">√x</button>
+      
+      <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('\\div ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Divide"><Divide size={14}/></button>
       <button type="button" onClick={() => insertTag('\\times ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Multiply"><X size={14}/></button>
+      <button type="button" onClick={() => insertTag('\\pm ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Plus Minus">±</button>
+      <button type="button" onClick={() => insertTag('\\infty ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Infinity">∞</button>
+      <button type="button" onClick={() => insertTag('\\approx ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Approximately">≈</button>
+      <button type="button" onClick={() => insertTag('\\pi ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Pi">π</button>
+      <button type="button" onClick={() => insertTag('\\theta ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Theta">θ</button>
+      
+      <div className="w-px h-5 bg-slate-300 mx-1"></div>
+      <button type="button" onClick={() => insertTag('\\%', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Percent">\%</button>
+      <button type="button" onClick={() => insertTag('₹', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Rupee">₹</button>
+      
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('<br/>\n', '')} className="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors font-bold text-xs" title="Line Break">↵ Br</button>
+      <button type="button" onClick={() => { textareaRef.current?.focus(); document.execCommand('delete'); }} className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Backspace/Delete"><Delete size={14}/> Del</button>
       
       {showImageUpload && setImageFile && setImagePosition && (
         <div className="flex items-center gap-2 ml-auto">
