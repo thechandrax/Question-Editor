@@ -62,15 +62,16 @@ export async function POST(req: NextRequest) {
     let responseText = result.response.text();
     
     // Automatically convert any $$ block math to \( inline math
-    responseText = responseText.replace(/\$\$(.*?)\$\$/gs, '\\($1\\)');
+    responseText = responseText.replace(/\$\$([\s\S]*?)\$\$/g, '\\($1\\)');
     
     // Also convert any \[ \] block math to \( \) inline math just in case Gemini uses them
-    responseText = responseText.replace(/\\\[(.*?)\\\]/gs, '\\($1\\)');
+    responseText = responseText.replace(/\\\[([\s\S]*?)\\\]/g, '\\($1\\)');
 
     return NextResponse.json({ result: responseText });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gemini OCR Error:", error);
-    return NextResponse.json({ error: error.message || 'Failed to process image with Gemini' }, { status: 500 });
+    const err = error as Error;
+    return NextResponse.json({ error: err.message || 'Failed to process image with Gemini' }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import ReactCrop from 'react-image-crop';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2, ScanText, Copy, Save } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
@@ -322,7 +322,7 @@ export default function BulkEditor() {
     isOpen: boolean;
     imageUrl: string;
     questionIndex: number | null;
-    crop: any;
+    crop: Crop;
     isProcessing: boolean;
     isAutoProcessing: boolean;
     resultLatex: string;
@@ -353,7 +353,7 @@ export default function BulkEditor() {
     }));
   };
 
-  const processOcr = async (overrideImageUrl?: string, overrideCrop?: any) => {
+  const processOcr = async (overrideImageUrl?: string, overrideCrop?: Crop) => {
     const targetImageUrl = overrideImageUrl || ocrState.imageUrl;
     const targetCrop = overrideCrop || ocrState.crop;
 
@@ -443,7 +443,7 @@ export default function BulkEditor() {
       }
       const data = await res.json();
       setOcrState(prev => ({ ...prev, resultLatex: data.result }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("OCR Error:", err);
       showAlert(err instanceof Error ? err.message : "Failed to extract math. Please try again or check your API key.", "OCR Failed");
     } finally {
@@ -483,21 +483,21 @@ export default function BulkEditor() {
   const [undoStack, setUndoStack] = useState<BulkEditorQuestion[][]>([]);
   const [redoStack, setRedoStack] = useState<BulkEditorQuestion[][]>([]);
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (undoStack.length === 0) return;
     const previousState = undoStack[undoStack.length - 1];
     setRedoStack(prev => [...prev, bulkQuestions]);
     setBulkQuestions(previousState);
     setUndoStack(prev => prev.slice(0, -1));
-  };
+  }, [undoStack, bulkQuestions]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return;
     const nextState = redoStack[redoStack.length - 1];
     setUndoStack(prev => [...prev, bulkQuestions]);
     setBulkQuestions(nextState);
     setRedoStack(prev => prev.slice(0, -1));
-  };
+  }, [redoStack, bulkQuestions]);
 
   const undoRef = useRef(handleUndo);
   const redoRef = useRef(handleRedo);
@@ -616,8 +616,9 @@ export default function BulkEditor() {
         } else {
           showAlert("Invalid draft file format.", "Error");
         }
-      } catch (err) {
-        showAlert("Failed to parse the draft file.", "Error");
+      } catch (_) {
+        // console.error("Failed to parse JSON draft:", err);
+        showAlert("Failed to load draft file. Please make sure it's a valid JSON.", "Error");
       }
     };
     reader.readAsText(file);

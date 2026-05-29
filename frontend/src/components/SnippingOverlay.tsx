@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 
 interface SnippingOverlayProps {
