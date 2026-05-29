@@ -19,7 +19,7 @@ export interface BulkEditorQuestion {
 
 const renderLatex = (text: string) => {
   if (!text) return null;
-  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
+  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
   
   return parts.map((part, index) => {
     if (part.startsWith('$$') && part.endsWith('$$')) {
@@ -28,6 +28,8 @@ const renderLatex = (text: string) => {
       return <BlockMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
       return <InlineMath key={index} math={part.slice(2, -2)} />;
+    } else if (part.startsWith('\\begin{')) {
+      return <BlockMath key={index} math={part} />;
     } else if (part.startsWith('$') && part.endsWith('$')) {
       return <InlineMath key={index} math={part.slice(1, -1)} />;
     }
@@ -690,7 +692,7 @@ export default function BulkEditor() {
   <title>Question Preview (${bulkQuestions.length} Questions)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\\\(', right: '\\\\)', display: false}, {left: '\\\\[', right: '\\\\]', display: true}]});"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\\\[', right: '\\\\]', display: true}, {left: '\\\\begin{array}', right: '\\\\end{array}', display: true}, {left: '\\\\begin{align}', right: '\\\\end{align}', display: true}, {left: '\\\\begin{align*}', right: '\\\\end{align*}', display: true}, {left: '\\\\begin{equation}', right: '\\\\end{equation}', display: true}, {left: '\\\\begin{pmatrix}', right: '\\\\end{pmatrix}', display: true}, {left: '\\\\begin{bmatrix}', right: '\\\\end{bmatrix}', display: true}, {left: '$', right: '$', display: false}, {left: '\\\\(', right: '\\\\)', display: false}]});"></script>
   <style>
     :root {
       --bg: #f8fafc;
