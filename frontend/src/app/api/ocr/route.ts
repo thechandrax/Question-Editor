@@ -67,6 +67,9 @@ export async function POST(req: NextRequest) {
     // Also convert any \[ \] block math to \( \) inline math just in case Gemini uses them
     responseText = responseText.replace(/\\\[([\s\S]*?)\\\]/g, '\\($1\\)');
 
+    // Finally, convert inline $...$ math to \(...\) inline math as requested
+    responseText = responseText.replace(/\$([\s\S]*?)\$/g, '\\($1\\)');
+
     return NextResponse.json({ result: responseText });
 
   } catch (error: unknown) {
