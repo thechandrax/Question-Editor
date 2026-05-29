@@ -277,8 +277,8 @@ export default function BulkEditor() {
   };
 
   const processOcr = async () => {
-    if (!ocrState.crop.width || !ocrState.crop.height || !ocrState.imageUrl) {
-      showAlert("Please draw a box to crop the image.", "Error");
+    if (!ocrState.imageUrl) {
+      showAlert("Please paste or upload an image first.", "Error");
       return;
     }
 
@@ -302,7 +302,16 @@ export default function BulkEditor() {
       if (!ctx) throw new Error("No 2d context");
 
       let pixelCrop = ocrState.crop;
-      if (ocrState.crop.unit === '%') {
+      if (!pixelCrop.width || !pixelCrop.height) {
+        // Use full image if no crop is drawn
+        pixelCrop = {
+          unit: 'px',
+          x: 0,
+          y: 0,
+          width: img.width,
+          height: img.height
+        };
+      } else if (ocrState.crop.unit === '%') {
         pixelCrop = {
           unit: 'px',
           x: (ocrState.crop.x / 100) * img.width,
@@ -1093,6 +1102,17 @@ export default function BulkEditor() {
               {isImportingPdf ? 'Extracting...' : <><Upload size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Upload PDF</>}
             </button>
           </div>
+
+          <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white ml-2">
+            <button 
+              type="button"
+              onClick={() => setOcrState(prev => ({...prev, isOpen: true, imageUrl: '', resultLatex: '', questionIndex: null, isProcessing: false, crop: { unit: '%', x: 25, y: 25, width: 0, height: 0 }}))}
+              className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold h-full w-full relative z-0 hover:from-pink-400 hover:to-rose-400"
+              title="Open standalone Math Snipping Tool"
+            >
+              <ScanText size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Math OCR
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1412,17 +1432,55 @@ export default function BulkEditor() {
               <button onClick={() => setOcrState(prev => ({...prev, isOpen: false}))} className="text-slate-400 hover:text-white font-bold px-2 py-1">✕</button>
             </div>
             
-            <div className="p-4 bg-slate-100 flex-1 overflow-auto flex flex-col items-center">
-              <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
-              
-              <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
-                <ReactCrop 
-                  crop={ocrState.crop} 
-                  onChange={c => setOcrState(prev => ({...prev, crop: c}))}
-                >
-                  <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
-                </ReactCrop>
-              </div>
+            <div 
+              className="p-4 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
+              tabIndex={0}
+              onPaste={(e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                  if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setOcrState(prev => ({...prev, imageUrl: ev.target?.result as string}));
+                      reader.readAsDataURL(file);
+                    }
+                    break;
+                  }
+                }
+              }}
+            >
+              {!ocrState.imageUrl ? (
+                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-300 rounded-xl bg-white w-full max-w-2xl text-center shadow-sm">
+                  <ScanText size={48} className="text-emerald-200 mb-4" />
+                  <p className="text-slate-600 mb-2 font-bold text-lg">Paste an image (Ctrl+V)</p>
+                  <p className="text-slate-400 text-sm mb-6">Or upload an image file directly</p>
+                  <label className="px-6 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-colors cursor-pointer shadow-sm border border-emerald-200">
+                    Choose Image
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setOcrState(prev => ({...prev, imageUrl: ev.target?.result as string}));
+                        reader.readAsDataURL(file);
+                      }
+                    }}/>
+                  </label>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
+                  <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
+                    <ReactCrop 
+                      crop={ocrState.crop} 
+                      onChange={c => setOcrState(prev => ({...prev, crop: c}))}
+                    >
+                      <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
+                    </ReactCrop>
+                  </div>
+                </>
+              )}
 
               <div className="mt-6 flex gap-3">
                 <button 
