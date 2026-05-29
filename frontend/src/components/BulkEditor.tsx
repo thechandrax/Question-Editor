@@ -31,19 +31,11 @@ const renderLatex = (text: string) => {
     } else if (part.startsWith('\\[') && part.endsWith('\\]')) {
       return <BlockMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
-      const innerMath = part.slice(2, -2);
-      if (innerMath.includes('\\begin{')) {
-        return <BlockMath key={index} math={innerMath} />;
-      }
-      return <InlineMath key={index} math={innerMath} />;
+      return <InlineMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\begin{')) {
       return <BlockMath key={index} math={part} />;
     } else if (part.startsWith('$') && part.endsWith('$')) {
-      const innerMath = part.slice(1, -1);
-      if (innerMath.includes('\\begin{')) {
-        return <BlockMath key={index} math={innerMath} />;
-      }
-      return <InlineMath key={index} math={innerMath} />;
+      return <InlineMath key={index} math={part.slice(1, -1)} />;
     }
     return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/<br>\n/g, '\n').replace(/\n/g, '<br/>') }} />;
   });
@@ -453,6 +445,37 @@ export default function BulkEditor() {
     setBulkQuestions(nextState);
     setRedoStack(prev => prev.slice(0, -1));
   };
+
+  const undoRef = useRef(handleUndo);
+  const redoRef = useRef(handleRedo);
+
+  useEffect(() => {
+    undoRef.current = handleUndo;
+    redoRef.current = handleRedo;
+  }, [handleUndo, handleRedo]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in a textarea or input
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
+        return;
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoRef.current();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redoRef.current();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        redoRef.current();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(`bulkQuestions`);
