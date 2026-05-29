@@ -612,6 +612,39 @@ export default function BulkEditor() {
     a.click();
   };
 
+  const handleSaveDraft = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bulkQuestions, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `question_draft_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  };
+
+  const handleDraftUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const content = ev.target?.result as string;
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed) && parsed[0]?.bodyHtml !== undefined) {
+          setBulkQuestions(parsed);
+          setCurrentQuestionIndex(0);
+          setUndoStack([]);
+          setRedoStack([]);
+          showAlert("Draft loaded successfully!", "Success");
+        } else {
+          showAlert("Invalid draft file format.", "Error");
+        }
+      } catch (err) {
+        showAlert("Failed to parse the draft file.", "Error");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // reset
+  };
+
   const addBulkQuestion = () => {
     const newQ: BulkEditorQuestion = {
       id: Math.random().toString(),
@@ -1243,7 +1276,7 @@ export default function BulkEditor() {
             </button>
           </div>
 
-          <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white ml-2">
+          <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white">
             <button 
               type="button"
               onClick={captureScreenForOcr}
@@ -1251,6 +1284,37 @@ export default function BulkEditor() {
               title="Open standalone Math Snipping Tool"
             >
               <ScanText size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Math OCR
+            </button>
+          </div>
+          
+          {/* Divider */}
+          <div className="w-px h-8 bg-slate-200 hidden sm:block mx-1"></div>
+
+          {/* Draft System */}
+          <div className="flex rounded-lg border border-sky-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(14,165,233,0.25)] hover:scale-105 hover:border-sky-300 overflow-hidden bg-white">
+            <input 
+              type="file" 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              accept=".json" 
+              onChange={handleDraftUpload}
+              title="Resume from Draft JSON"
+            />
+            <button 
+              type="button"
+              className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-bold h-full w-full relative z-0 hover:from-sky-400 hover:to-cyan-400"
+            >
+              <Upload size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Load Draft
+            </button>
+          </div>
+
+          <div className="flex rounded-lg border border-orange-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(249,115,22,0.25)] hover:scale-105 hover:border-orange-300 overflow-hidden bg-white">
+            <button 
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold h-full w-full relative z-0 hover:from-orange-400 hover:to-amber-400"
+              title="Save working JSON to PC"
+            >
+              <Save size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Save Draft
             </button>
           </div>
         </div>
