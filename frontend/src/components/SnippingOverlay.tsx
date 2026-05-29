@@ -80,18 +80,23 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
 
-    // Create a new canvas for the cropped area
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Create a new canvas for the cropped area at high resolution
     const cropCanvas = document.createElement('canvas');
-    cropCanvas.width = width;
-    cropCanvas.height = height;
+    cropCanvas.width = width * dpr;
+    cropCanvas.height = height * dpr;
     const ctx = cropCanvas.getContext('2d');
     
     if (ctx) {
-      // Draw the selected portion from the full screen canvas
+      // Draw the selected portion from the full screen canvas, accounting for page scroll and DPI scaling
       ctx.drawImage(
         fullScreenCanvas,
-        x, y, width, height,
-        0, 0, width, height
+        (x + window.scrollX) * dpr, 
+        (y + window.scrollY) * dpr, 
+        width * dpr, 
+        height * dpr,
+        0, 0, width * dpr, height * dpr
       );
       
       const base64Image = cropCanvas.toDataURL('image/jpeg', 1.0);
