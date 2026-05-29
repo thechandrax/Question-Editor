@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload, Undo, Redo, Divide, X, Delete } from 'lucide-react';
 
 interface ToolbarProps {
@@ -13,27 +13,41 @@ interface ToolbarProps {
   uploadId?: string;
 }
 
-const ActionButton = ({ onClick, children, title, className = "" }: { onClick: () => void, children: React.ReactNode, title: string, className?: string }) => {
-  const [active, setActive] = useState(false);
-  const handleClick = () => {
-    onClick();
-    setActive(true);
-    setTimeout(() => setActive(false), 250);
-  };
-  
-  return (
-    <button 
-      type="button" 
-      onClick={handleClick} 
-      className={`p-1.5 rounded transition-all duration-200 font-bold text-xs flex items-center gap-1 ${className} ${active ? 'bg-indigo-500 !text-white scale-110 shadow-sm' : 'hover:scale-105'}`} 
-      title={title}
-    >
-      {children}
-    </button>
-  );
-};
-
 export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload = false, imageFile, setImageFile, imagePosition, setImagePosition, uploadId = 'file-upload' }: ToolbarProps) => {
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    const checkState = () => {
+      try {
+        setCanUndo(document.queryCommandEnabled('undo'));
+        setCanRedo(document.queryCommandEnabled('redo'));
+      } catch (_) {}
+    };
+
+    if (el) {
+      el.addEventListener('input', checkState);
+      el.addEventListener('keyup', checkState);
+      el.addEventListener('click', checkState);
+      el.addEventListener('focus', checkState);
+    }
+    document.addEventListener('selectionchange', checkState);
+    
+    // Initial check
+    setTimeout(checkState, 100);
+
+    return () => {
+      if (el) {
+        el.removeEventListener('input', checkState);
+        el.removeEventListener('keyup', checkState);
+        el.removeEventListener('click', checkState);
+        el.removeEventListener('focus', checkState);
+      }
+      document.removeEventListener('selectionchange', checkState);
+    };
+  }, [textareaRef]);
+
   const insertTag = (startTag: string, endTag: string) => {
     if (!textareaRef.current) return;
     const textarea = textareaRef.current;
@@ -50,57 +64,80 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
     }, 0);
   };
 
+  const handleUndo = () => {
+    textareaRef.current?.focus();
+    document.execCommand('undo');
+    setTimeout(() => {
+      try {
+        setCanUndo(document.queryCommandEnabled('undo'));
+        setCanRedo(document.queryCommandEnabled('redo'));
+      } catch (_) {}
+    }, 50);
+  };
+
+  const handleRedo = () => {
+    textareaRef.current?.focus();
+    document.execCommand('redo');
+    setTimeout(() => {
+      try {
+        setCanUndo(document.queryCommandEnabled('undo'));
+        setCanRedo(document.queryCommandEnabled('redo'));
+      } catch (_) {}
+    }, 50);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-100/50 border-b border-slate-200">
-      <ActionButton onClick={() => { textareaRef.current?.focus(); document.execCommand('undo'); }} title="Undo" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Undo size={16}/></ActionButton>
-      <ActionButton onClick={() => { textareaRef.current?.focus(); document.execCommand('redo'); }} title="Redo" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Redo size={16}/></ActionButton>
+      <button type="button" onClick={handleUndo} className={`p-1.5 rounded transition-colors ${canUndo ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Undo"><Undo size={16}/></button>
+      <button type="button" onClick={handleRedo} className={`p-1.5 rounded transition-colors ${canRedo ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`} title="Redo"><Redo size={16}/></button>
+
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('<b>', '</b>')} title="Bold" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Bold size={16}/></ActionButton>
-      <ActionButton onClick={() => insertTag('<i>', '</i>')} title="Italic" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Italic size={16}/></ActionButton>
-      <ActionButton onClick={() => insertTag('<u>', '</u>')} title="Underline" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Underline size={16}/></ActionButton>
+      <button type="button" onClick={() => insertTag('<b>', '</b>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Bold"><Bold size={16}/></button>
+      <button type="button" onClick={() => insertTag('<i>', '</i>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Italic"><Italic size={16}/></button>
+      <button type="button" onClick={() => insertTag('<u>', '</u>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Underline"><Underline size={16}/></button>
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('<h3>', '</h3>')} title="Heading" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Type size={16}/></ActionButton>
-      <ActionButton onClick={() => insertTag('<ul>\n  <li>', '</li>\n</ul>')} title="Bullet List" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><List size={16}/></ActionButton>
-      <ActionButton onClick={() => insertTag('<ol>\n  <li>', '</li>\n</ol>')} title="Numbered List" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><ListOrdered size={16}/></ActionButton>
+      <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Heading"><Type size={16}/></button>
+      <button type="button" onClick={() => insertTag('<ul>\n  <li>', '</li>\n</ul>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Bullet List"><List size={16}/></button>
+      <button type="button" onClick={() => insertTag('<ol>\n  <li>', '</li>\n</ol>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Numbered List"><ListOrdered size={16}/></button>
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('<sup>', '</sup>')} title="Superscript" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Superscript size={16}/></ActionButton>
-      <ActionButton onClick={() => insertTag('<sub>', '</sub>')} title="Subscript" className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"><Subscript size={16}/></ActionButton>
+      <button type="button" onClick={() => insertTag('<sup>', '</sup>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Superscript"><Superscript size={16}/></button>
+      <button type="button" onClick={() => insertTag('<sub>', '</sub>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Subscript"><Subscript size={16}/></button>
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('\\(', '\\)')} title="Inline Math \\( ... \\)" className="text-emerald-600 hover:bg-emerald-50"><Sigma size={14}/> Inline</ActionButton>
-      <ActionButton onClick={() => insertTag('$', '$')} title="Block Math" className="text-emerald-600 hover:bg-emerald-50"><Sigma size={14}/> Block</ActionButton>
-      <ActionButton onClick={() => insertTag('$', '')} title="Single Dollar" className="text-emerald-600 hover:bg-emerald-50">$</ActionButton>
-      <ActionButton onClick={() => insertTag('\\(', '')} title="Open Parenthesis" className="text-emerald-600 hover:bg-emerald-50">\(</ActionButton>
-      <ActionButton onClick={() => insertTag('\\)', '')} title="Close Parenthesis" className="text-emerald-600 hover:bg-emerald-50">\)</ActionButton>
+      <button type="button" onClick={() => insertTag('\\(', '\\)')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Inline Math \\( ... \\)"><Sigma size={14}/> Inline</button>
+      <button type="button" onClick={() => insertTag('$', '$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Block Math"><Sigma size={14}/> Block</button>
+      <button type="button" onClick={() => insertTag('$', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Single Dollar">$</button>
+      <button type="button" onClick={() => insertTag('\\(', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Open Parenthesis">\(</button>
+      <button type="button" onClick={() => insertTag('\\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Close Parenthesis">\)</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('\\frac{', '}{}')} title="Fraction" className="text-emerald-600 hover:bg-emerald-50">a/b</ActionButton>
-      <ActionButton onClick={() => insertTag('^{2}', '')} title="Squared" className="text-emerald-600 hover:bg-emerald-50">x²</ActionButton>
-      <ActionButton onClick={() => insertTag('^{\\text{th}}', '')} title="th (superscript)" className="text-emerald-600 hover:bg-emerald-50">th</ActionButton>
-      <ActionButton onClick={() => insertTag('\\sqrt{', '}')} title="Square Root" className="text-emerald-600 hover:bg-emerald-50">√x</ActionButton>
+      <button type="button" onClick={() => insertTag('\\frac{', '}{}')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Fraction">a/b</button>
+      <button type="button" onClick={() => insertTag('^{2}', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Squared">x²</button>
+      <button type="button" onClick={() => insertTag('^{\\text{th}}', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="th (superscript)">th</button>
+      <button type="button" onClick={() => insertTag('\\sqrt{', '}')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Square Root">√x</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('\\div ', '')} title="Divide" className="text-emerald-600 hover:bg-emerald-50"><Divide size={14}/></ActionButton>
-      <ActionButton onClick={() => insertTag('\\times ', '')} title="Multiply" className="text-emerald-600 hover:bg-emerald-50"><X size={14}/></ActionButton>
-      <ActionButton onClick={() => insertTag('\\pm ', '')} title="Plus Minus" className="text-emerald-600 hover:bg-emerald-50">±</ActionButton>
-      <ActionButton onClick={() => insertTag('\\infty ', '')} title="Infinity" className="text-emerald-600 hover:bg-emerald-50">∞</ActionButton>
-      <ActionButton onClick={() => insertTag('\\approx ', '')} title="Approximately" className="text-emerald-600 hover:bg-emerald-50">≈</ActionButton>
-      <ActionButton onClick={() => insertTag('\\pi ', '')} title="Pi" className="text-emerald-600 hover:bg-emerald-50">π</ActionButton>
-      <ActionButton onClick={() => insertTag('\\theta ', '')} title="Theta" className="text-emerald-600 hover:bg-emerald-50">θ</ActionButton>
+      <button type="button" onClick={() => insertTag('\\div ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Divide"><Divide size={14}/></button>
+      <button type="button" onClick={() => insertTag('\\times ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Multiply"><X size={14}/></button>
+      <button type="button" onClick={() => insertTag('\\pm ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Plus Minus">±</button>
+      <button type="button" onClick={() => insertTag('\\infty ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Infinity">∞</button>
+      <button type="button" onClick={() => insertTag('\\approx ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Approximately">≈</button>
+      <button type="button" onClick={() => insertTag('\\pi ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Pi">π</button>
+      <button type="button" onClick={() => insertTag('\\theta ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Theta">θ</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('\\%', '')} title="Percent" className="text-emerald-600 hover:bg-emerald-50">\%</ActionButton>
-      <ActionButton onClick={() => insertTag('₹', '')} title="Rupee" className="text-emerald-600 hover:bg-emerald-50">₹</ActionButton>
-      <ActionButton onClick={() => insertTag('©', '')} title="Copyright" className="text-emerald-600 hover:bg-emerald-50">©</ActionButton>
-      <ActionButton onClick={() => insertTag('@', '')} title="At Symbol" className="text-emerald-600 hover:bg-emerald-50">@</ActionButton>
+      <button type="button" onClick={() => insertTag('\\%', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Percent">\%</button>
+      <button type="button" onClick={() => insertTag('₹', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Rupee">₹</button>
+      <button type="button" onClick={() => insertTag('©', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Copyright">©</button>
+      <button type="button" onClick={() => insertTag('@', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="At Symbol">@</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('\\( \\mathrm{C}_{2} \\)', '')} title="C2 Formula" className="text-emerald-600 hover:bg-emerald-50">C₂</ActionButton>
-      <ActionButton onClick={() => insertTag('\\( \\mathrm{C}_{2} \\mathrm{H}_{4} \\)', '')} title="C2H4 Formula" className="text-emerald-600 hover:bg-emerald-50">C₂H₄</ActionButton>
-      <ActionButton onClick={() => insertTag('\\( \\mathrm{C}_{2} \\mathrm{H}_{4} \\mathrm{O}_{6} \\)', '')} title="C2H4O6 Formula" className="text-emerald-600 hover:bg-emerald-50">C₂H₄O₆</ActionButton>
+      <button type="button" onClick={() => insertTag('\\( \\mathrm{C}_{2} \\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="C2 Formula">C₂</button>
+      <button type="button" onClick={() => insertTag('\\( \\mathrm{C}_{2} \\mathrm{H}_{4} \\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="C2H4 Formula">C₂H₄</button>
+      <button type="button" onClick={() => insertTag('\\( \\mathrm{C}_{2} \\mathrm{H}_{4} \\mathrm{O}_{6} \\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="C2H4O6 Formula">C₂H₄O₆</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
-      <ActionButton onClick={() => insertTag('<br/>\n', '')} title="Line Break" className="text-slate-600 hover:bg-slate-200">↵ Br</ActionButton>
-      <ActionButton onClick={() => { textareaRef.current?.focus(); document.execCommand('delete'); }} title="Backspace/Delete" className="text-red-500 hover:bg-red-50 hover:text-red-700"><Delete size={14}/> Bksp</ActionButton>
+      <button type="button" onClick={() => insertTag('<br/>\n', '')} className="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors font-bold text-xs" title="Line Break">↵ Br</button>
+      <button type="button" onClick={() => { textareaRef.current?.focus(); document.execCommand('delete'); }} className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Backspace/Delete"><Delete size={14}/> Bksp</button>
       
       {showImageUpload && setImageFile && setImagePosition && (
         <div className="flex items-center gap-2 ml-auto">
