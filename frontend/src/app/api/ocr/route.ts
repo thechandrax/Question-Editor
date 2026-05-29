@@ -59,7 +59,13 @@ export async function POST(req: NextRequest) {
       }
     ]);
 
-    const responseText = result.response.text();
+    let responseText = result.response.text();
+    
+    // Automatically convert any $$ block math to \( inline math
+    responseText = responseText.replace(/\$\$(.*?)\$\$/gs, '\\($1\\)');
+    
+    // Also convert any \[ \] block math to \( \) inline math just in case Gemini uses them
+    responseText = responseText.replace(/\\\[(.*?)\\\]/gs, '\\($1\\)');
 
     return NextResponse.json({ result: responseText });
 
