@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2, ScanText, Copy, Save } from 'lucide-react';
-import ReactCrop, { type Crop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
+import { SnippingOverlay } from './SnippingOverlay';
+
 export interface BulkEditorQuestion {
   id: string;
   bodyHtml: string;
@@ -308,71 +307,23 @@ export default function BulkEditor() {
 
   const [isListView, setIsListView] = useState(false);
   const [autoSaveEnabled] = useState(true);
+  const [isSnipping, setIsSnipping] = useState(false);
   const [ocrState, setOcrState] = useState<{
     isOpen: boolean;
     imageUrl: string;
     questionIndex: number | null;
-    crop: Crop;
     isProcessing: boolean;
     resultLatex: string;
   }>({
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
-    crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
     resultLatex: ''
   });
 
-  const captureScreenForOcr = async () => {
-
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "monitor" },
-        audio: false
-      });
-      
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      await video.play();
-
-      await new Promise(r => setTimeout(r, 200));
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imgUrl = canvas.toDataURL('image/jpeg', 0.9);
-        
-        setOcrState(prev => ({
-          ...prev, 
-          isOpen: true, 
-          imageUrl: imgUrl, 
-          resultLatex: '', 
-          questionIndex: null, 
-          isProcessing: false, 
-          crop: { unit: '%', x: 10, y: 10, width: 80, height: 80 } 
-        }));
-      }
-
-      stream.getTracks().forEach(track => track.stop());
-      video.remove();
-      
-    } catch (err) {
-      console.error("Screen capture failed:", err);
-      // Fallback: Open empty for manual paste
-      setOcrState(prev => ({
-          ...prev, 
-          isOpen: true, 
-          imageUrl: '', 
-          resultLatex: '', 
-          questionIndex: null, 
-          isProcessing: false, 
-          crop: { unit: '%', x: 25, y: 25, width: 0, height: 0 } 
-      }));
-    }
+  const startSnipping = () => {
+    setIsSnipping(true);
   };
 
   const openOcr = (imageUrl: string, index: number) => {
@@ -1290,7 +1241,7 @@ export default function BulkEditor() {
           <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white">
             <button 
               type="button"
-              onClick={captureScreenForOcr}
+              onClick={startSnipping}
               className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold h-full w-full relative z-0 hover:from-pink-400 hover:to-rose-400"
               title="Open standalone Math Snipping Tool"
             >
@@ -1729,6 +1680,23 @@ export default function BulkEditor() {
             </div>
           </div>
         </div>
+      )}
+
+      {isSnipping && (
+        <SnippingOverlay 
+          onCancel={() => setIsSnipping(false)}
+          onCapture={(base64Image) => {
+            setIsSnipping(false);
+            setOcrState(prev => ({
+              ...prev,
+              isOpen: true,
+              imageUrl: base64Image,
+              questionIndex: null,
+              resultLatex: '',
+              isProcessing: false // The user can click Extract Math in the modal, or we can auto-trigger it. Let's let them click Extract Math so they see what got cropped.
+            }));
+          }}
+        />
       )}
 
     </div>
