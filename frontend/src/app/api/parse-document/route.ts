@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
         
         const parsedQuestions: Question[] = [];
         let currentQ: Question | null = null;
+        let lastQNum: number | null = null;
+        let hasCorrectAns = false;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -52,24 +54,50 @@ export async function POST(req: NextRequest) {
 
             const qMatch = line.match(/^(?:\$|\\\()\s*(\d+)\s*(?:\.\s*\$|\$\s*\.|\.\s*\\\)|\\\)\s*\.)\s*(.*)/);
             if (qMatch) {
-                if (currentQ) {
-                    parsedQuestions.push(currentQ);
+                let isBulletPoint = false;
+                const newNum = parseInt(qMatch[1], 10);
+
+                if (currentQ && lastQNum !== null) {
+                    const hasOpts = currentQ.options.some((opt: Option) => opt.body_html !== '');
+                    const prevLine = i > 0 ? lines[i-1].trim() : '';
+                    const isConsecutive = prevLine !== '' && !prevLine.match(/^Correct:\s*Option/i);
+                    
+                    if (newNum !== lastQNum + 1) {
+                        if (!hasOpts || isConsecutive || newNum <= lastQNum) {
+                            isBulletPoint = true;
+                        }
+                    } else {
+                        if (isConsecutive) {
+                            if (!hasOpts || hasCorrectAns) {
+                                isBulletPoint = true;
+                            }
+                        }
+                    }
                 }
-                currentQ = {
-                    id: String(Math.floor(Math.random() * 90000) + 10000),
-                    bodyHtml: qMatch[2].trim(),
-                    options: [
-                        { label: 'A', body_html: '' },
-                        { label: 'B', body_html: '' },
-                        { label: 'C', body_html: '' },
-                        { label: 'D', body_html: '' },
-                    ],
-                    correctOptionLabel: 'A',
-                    solutionText: '',
-                    year: '',
-                    source: `Native TS Parser (${sourceType})`
-                };
-                continue;
+
+                if (!isBulletPoint) {
+                    if (currentQ) {
+                        parsedQuestions.push(currentQ);
+                    }
+                    currentQ = {
+                        id: String(Math.floor(Math.random() * 90000) + 10000),
+                        bodyHtml: qMatch[2].trim(),
+                        options: [
+                            { label: 'A', body_html: '' },
+                            { label: 'B', body_html: '' },
+                            { label: 'C', body_html: '' },
+                            { label: 'D', body_html: '' },
+                        ],
+                        correctOptionLabel: 'A',
+                        solutionText: '',
+                        year: '',
+                        source: `Native TS Parser (${sourceType})`
+                    };
+                    lastQNum = newNum;
+                    hasCorrectAns = false;
+                    continue;
+                }
+                // If it IS a bullet point, let it fall through to be added to bodyHtml/solutionText
             }
 
             if (currentQ) {
@@ -86,6 +114,7 @@ export async function POST(req: NextRequest) {
                 const ansMatch = line.match(/^Correct:\s*Option\s*(?:\$|\\\()?\s*\(([a-d])\)\s*(?:\$|\\\))?/i);
                 if (ansMatch) {
                     currentQ.correctOptionLabel = ansMatch[1].toUpperCase();
+                    hasCorrectAns = true;
                     continue;
                 }
 
