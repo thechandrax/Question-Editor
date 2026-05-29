@@ -26,6 +26,15 @@ const renderLatex = (text: string) => {
   if (!text) return null;
   const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
   
+  const isBlockMath = (s: string) => {
+    if (!s) return false;
+    if (s.startsWith('$$') && s.endsWith('$$')) return true;
+    if (s.startsWith('\\[') && s.endsWith('\\]')) return true;
+    if (s.startsWith('\\begin{')) return true;
+    if (s.startsWith('\\(') && s.endsWith('\\)') && s.includes('\\begin{')) return true;
+    return false;
+  };
+
   return parts.map((part, index) => {
     if (part.startsWith('$$') && part.endsWith('$$')) {
       return <BlockMath key={index} math={part.slice(2, -2)} />;
@@ -41,7 +50,18 @@ const renderLatex = (text: string) => {
     } else if (part.startsWith('$') && part.endsWith('$')) {
       return <InlineMath key={index} math={part.slice(1, -1)} />;
     }
-    return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/<br>\n/g, '\n').replace(/\n/g, '<br/>') }} />;
+
+    let textHtml = part;
+    if (index > 0 && isBlockMath(parts[index - 1])) {
+       if (textHtml.startsWith('\r\n')) textHtml = textHtml.substring(2);
+       else if (textHtml.startsWith('\n')) textHtml = textHtml.substring(1);
+    }
+    if (index < parts.length - 1 && isBlockMath(parts[index + 1])) {
+       if (textHtml.endsWith('\r\n')) textHtml = textHtml.substring(0, textHtml.length - 2);
+       else if (textHtml.endsWith('\n')) textHtml = textHtml.substring(0, textHtml.length - 1);
+    }
+
+    return <span key={index} dangerouslySetInnerHTML={{ __html: textHtml.replace(/<br>\n/g, '\n').replace(/\n/g, '<br/>') }} />;
   });
 };
 
