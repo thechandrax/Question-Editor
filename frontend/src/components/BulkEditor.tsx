@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2 } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2, Settings, ScanText, Copy } from 'lucide-react';
+import ReactCrop, { type Crop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
@@ -44,9 +47,10 @@ interface QuestionEditorBlockProps {
   updateBulkQuestionOption: (optionIndex: number, value: string, idx?: number) => void;
   handleEnterKey: (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => void;
   isListView?: boolean;
+  openOcr?: (imageUrl: string, index: number) => void;
 }
 
-function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView }: QuestionEditorBlockProps) {
+function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr }: QuestionEditorBlockProps) {
   const [showPreviews, setShowPreviews] = React.useState(true);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -68,9 +72,16 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                <div className="relative border-2 border-slate-200 rounded-xl overflow-hidden bg-slate-50 shadow-sm">
                  <div className="flex justify-between items-center px-4 py-2 bg-white border-b border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Eye size={14}/> Original PDF Snippet</span>
-                    <button onClick={() => updateBulkQuestion('originalImageUrl', '', idx)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="Remove snippet">
-                       <Trash2 size={16} />
-                    </button>
+                    <div className="flex gap-2">
+                      {openOcr && (
+                        <button onClick={() => openOcr(currentQ.originalImageUrl!, idx)} className="text-emerald-500 hover:text-emerald-700 transition-colors px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="OCR Math Snipping Tool">
+                          <Plus size={14} /> OCR
+                        </button>
+                      )}
+                      <button onClick={() => updateBulkQuestion('originalImageUrl', '', idx)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="Remove snippet">
+                         <Trash2 size={16} />
+                      </button>
+                    </div>
                  </div>
                  <div className="p-4 flex justify-center bg-slate-100">
                     <img src={currentQ.originalImageUrl} alt="Original Snippet" className="max-w-full max-h-[300px] object-contain shadow-sm rounded border border-slate-200" />
@@ -233,6 +244,125 @@ export default function BulkEditor() {
 
   const [isListView, setIsListView] = useState(false);
   const [autoSaveEnabled] = useState(true);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  
+  useEffect(() => {
+    const key = localStorage.getItem('geminiApiKey');
+    if (key) setGeminiApiKey(key);
+  }, []);
+
+  const [ocrState, setOcrState] = useState<{
+    isOpen: boolean;
+    imageUrl: string;
+    questionIndex: number | null;
+    crop: Crop;
+    isProcessing: boolean;
+    resultLatex: string;
+  }>({
+    isOpen: false,
+    imageUrl: '',
+    questionIndex: null,
+    crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
+    isProcessing: false,
+    resultLatex: ''
+  });
+
+  const openOcr = (imageUrl: string, index: number) => {
+    if (!geminiApiKey) {
+      showAlert("Please add your Google Gemini API Key in the Settings menu first.", "API Key Required");
+      setIsSettingsOpen(true);
+      return;
+    }
+    setOcrState(prev => ({
+      ...prev,
+      isOpen: true,
+      imageUrl,
+      questionIndex: index,
+      crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
+      resultLatex: '',
+      isProcessing: false
+    }));
+  };
+
+  const processOcr = async () => {
+    if (!ocrState.crop.width || !ocrState.crop.height || !ocrState.imageUrl) {
+      showAlert("Please draw a box to crop the image.", "Error");
+      return;
+    }
+
+    try {
+      setOcrState(prev => ({ ...prev, isProcessing: true }));
+
+      // Load image to draw to canvas
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = ocrState.imageUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) throw new Error("No 2d context");
+
+      let pixelCrop = ocrState.crop;
+      if (ocrState.crop.unit === '%') {
+        pixelCrop = {
+          unit: 'px',
+          x: (ocrState.crop.x / 100) * img.width,
+          y: (ocrState.crop.y / 100) * img.height,
+          width: (ocrState.crop.width / 100) * img.width,
+          height: (ocrState.crop.height / 100) * img.height
+        };
+      }
+
+      canvas.width = pixelCrop.width * scaleX;
+      canvas.height = pixelCrop.height * scaleY;
+
+      ctx.drawImage(
+        img,
+        pixelCrop.x * scaleX,
+        pixelCrop.y * scaleY,
+        pixelCrop.width * scaleX,
+        pixelCrop.height * scaleY,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const base64Image = canvas.toDataURL('image/jpeg', 1.0).split(',')[1];
+
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `Convert the math equation or text shown in this image to LaTeX. Return ONLY the inline LaTeX code. For example, if it's an equation, return it surrounded by \\( and \\), like \\(x^2 + y^2 = z^2\\). Do not include any other markdown or text.`;
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: "image/jpeg",
+          },
+        },
+      ]);
+      const responseText = result.response.text().trim();
+      
+      setOcrState(prev => ({ ...prev, resultLatex: responseText }));
+    } catch (error: any) {
+      console.error("OCR Error:", error);
+      showAlert(error.message || "Failed to process image.", "OCR Failed");
+    } finally {
+      setOcrState(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
 
   const [isGotoOpen, setIsGotoOpen] = useState(false);
   const [gotoValue, setGotoValue] = useState("");
@@ -1094,6 +1224,17 @@ export default function BulkEditor() {
               </div>
             )}
           </div>
+            
+          {/* Right Group: Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 lg:gap-3 ml-auto justify-end flex-1 sm:flex-initial">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="whitespace-nowrap px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 font-bold text-sm bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              <Settings size={18} /> Settings
+            </button>
+          </div>
 
           <div className="flex flex-1 items-center justify-center flex-wrap gap-2">
             <button 
@@ -1262,6 +1403,7 @@ export default function BulkEditor() {
                   updateBulkQuestionOption={updateBulkQuestionOption} 
                   handleEnterKey={handleEnterKey} 
                   isListView={isListView}
+                  openOcr={openOcr}
                 />
               ))}
             </div>
@@ -1272,10 +1414,104 @@ export default function BulkEditor() {
               updateBulkQuestion={updateBulkQuestion} 
               updateBulkQuestionOption={updateBulkQuestionOption} 
               handleEnterKey={handleEnterKey} 
+              openOcr={openOcr}
             />
           )}
         </>
       </div>
+      
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><Settings className="text-emerald-500"/> Settings</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-slate-700 mb-1">Google Gemini API Key</label>
+              <input
+                type="password"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                value={geminiApiKey}
+                onChange={e => {
+                  setGeminiApiKey(e.target.value);
+                  localStorage.setItem('geminiApiKey', e.target.value);
+                }}
+                placeholder="AIzaSy..."
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-600 font-bold hover:underline">Google AI Studio</a> to enable the Math OCR feature.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OCR Crop Modal */}
+      {ocrState.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
+              <h2 className="text-lg font-black flex items-center gap-2"><ScanText className="text-emerald-400"/> Math Snipping Tool</h2>
+              <button onClick={() => setOcrState(prev => ({...prev, isOpen: false}))} className="text-slate-400 hover:text-white font-bold px-2 py-1">✕</button>
+            </div>
+            
+            <div className="p-4 bg-slate-100 flex-1 overflow-auto flex flex-col items-center">
+              <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
+              
+              <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
+                <ReactCrop 
+                  crop={ocrState.crop} 
+                  onChange={c => setOcrState(prev => ({...prev, crop: c}))}
+                >
+                  <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
+                </ReactCrop>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button 
+                  onClick={processOcr}
+                  disabled={ocrState.isProcessing}
+                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-black rounded-xl transition-all shadow-md flex items-center gap-2"
+                >
+                  {ocrState.isProcessing ? 'Scanning...' : <><ScanText size={18}/> Extract Math</>}
+                </button>
+              </div>
+
+              {ocrState.resultLatex && (
+                <div className="mt-6 w-full max-w-2xl bg-white border-2 border-emerald-500/30 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex justify-between items-center mb-2">
+                     <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted LaTeX</span>
+                     <button 
+                       onClick={() => {
+                         navigator.clipboard.writeText(ocrState.resultLatex);
+                         setOcrState(prev => ({...prev, isOpen: false}));
+                       }}
+                       className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded shadow-sm flex items-center gap-1 transition-colors"
+                     >
+                       <Copy size={14}/> Copy & Close
+                     </button>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded font-mono text-sm border border-slate-200 text-slate-800 break-words whitespace-pre-wrap">
+                    {ocrState.resultLatex}
+                  </div>
+                  <div className="mt-4 border-t border-slate-100 pt-3 text-slate-600">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Preview</div>
+                    {renderLatex(ocrState.resultLatex)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
