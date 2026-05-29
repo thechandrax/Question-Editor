@@ -70,11 +70,11 @@ interface QuestionEditorBlockProps {
   updateBulkQuestionOption: (optionIndex: number, value: string, idx?: number) => void;
   handleEnterKey: (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => void;
   isListView?: boolean;
-  openOcr?: (imageUrl: string, index: number) => void;
+  openOcr?: (imageUrl: string, index: number | null) => void;
   startSnipping?: (index: number) => void;
 }
 
-function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr, startSnipping }: QuestionEditorBlockProps) {
+function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, startSnipping }: QuestionEditorBlockProps) {
   const [showPreviews, setShowPreviews] = React.useState(true);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -336,7 +336,7 @@ export default function BulkEditor() {
     setIsSnipping(true);
   };
 
-  const openOcr = (imageUrl: string, index: number) => {
+  const openOcr = (imageUrl: string, index: number | null) => {
     setOcrState(prev => ({
       ...prev,
       isOpen: true,
@@ -1584,7 +1584,6 @@ export default function BulkEditor() {
                   updateBulkQuestionOption={updateBulkQuestionOption} 
                   handleEnterKey={handleEnterKey} 
                   isListView={isListView}
-                  openOcr={openOcr}
                   startSnipping={startSnipping}
                 />
               ))}
@@ -1596,7 +1595,6 @@ export default function BulkEditor() {
               updateBulkQuestion={updateBulkQuestion} 
               updateBulkQuestionOption={updateBulkQuestionOption} 
               handleEnterKey={handleEnterKey} 
-              openOcr={openOcr}
               startSnipping={startSnipping}
             />
           )}
@@ -1735,18 +1733,7 @@ export default function BulkEditor() {
               setBulkQuestions(prev => prev.map((q, i) => i === snippingIndex ? { ...q, originalImageUrl: base64Image } : q));
             }
             
-            const fullCrop: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
-            setOcrState(prev => ({
-              ...prev,
-              isOpen: true,
-              imageUrl: base64Image,
-              questionIndex: snippingIndex,
-              crop: fullCrop,
-              resultLatex: '',
-              isProcessing: true,
-              isAutoProcessing: true
-            }));
-            processOcr(base64Image, fullCrop);
+            openOcr(base64Image, snippingIndex);
           }}
         />
       )}
