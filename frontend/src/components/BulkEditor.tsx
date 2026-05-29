@@ -1675,24 +1675,24 @@ export default function BulkEditor() {
               )}
 
               {ocrState.resultLatex && (
-                <div className="mt-6 w-full max-w-2xl bg-white border-2 border-emerald-500/30 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-4">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="mt-6 w-fit min-w-[320px] max-w-3xl bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 mx-auto text-left">
+                  <div className="flex justify-between items-center mb-3 gap-8">
                      <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted LaTeX</span>
                      <button 
                        onClick={() => {
                          navigator.clipboard.writeText(ocrState.resultLatex);
                          setOcrState(prev => ({...prev, isOpen: false}));
                        }}
-                       className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded shadow-sm flex items-center gap-1 transition-colors"
+                       className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded shadow-sm flex items-center gap-1 transition-colors"
                      >
                        <Copy size={14}/> Copy & Close
                      </button>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded font-mono text-sm border border-slate-200 text-slate-800 break-words whitespace-pre-wrap">
+                  <div className="bg-slate-50 p-4 rounded-lg font-mono text-sm border border-slate-200 text-slate-800 break-words whitespace-pre-wrap">
                     {ocrState.resultLatex}
                   </div>
-                  <div className="mt-4 border-t border-slate-100 pt-3 text-slate-600">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Preview</div>
+                  <div className="mt-5 border-t border-slate-100 pt-4 text-slate-600">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Preview</div>
                     {renderLatex(ocrState.resultLatex)}
                   </div>
                 </div>
