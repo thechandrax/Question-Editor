@@ -45,6 +45,7 @@ interface QuestionEditorBlockProps {
 }
 
 function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView }: QuestionEditorBlockProps) {
+  const [showPreviews, setShowPreviews] = React.useState(true);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const currentQ = question;
@@ -55,6 +56,14 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-xl px-4 sm:px-6 pt-5 pb-6">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
           <span className="text-sm font-black text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-lg">Question {index + 1}</span>
+          <button 
+            onClick={() => setShowPreviews(!showPreviews)}
+            className="px-3 py-1 text-xs font-bold rounded-lg transition-colors border border-slate-200 shadow-sm flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
+            title={showPreviews ? "Hide Previews (Preview Up)" : "Show Previews (Preview Down)"}
+          >
+            <Eye size={14} className={showPreviews ? "text-emerald-500" : "text-slate-400"} /> 
+            {showPreviews ? 'Preview Up' : 'Preview Down'}
+          </button>
         </div>
         
         {/* Question Area */}
@@ -92,7 +101,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
               onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value, idx)}
               onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val, idx), currentQ.bodyHtml)}
             />
-            {currentQ.bodyHtml && (
+            {showPreviews && currentQ.bodyHtml && (
               <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium">
                 {renderLatex(currentQ.bodyHtml)}
               </div>
@@ -140,7 +149,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
                   onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
                 />
-                {opt.body_html && (
+                {showPreviews && opt.body_html && (
                   <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
                     {renderLatex(opt.body_html)}
                   </div>
