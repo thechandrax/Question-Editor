@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2, ScanText, Copy, Save } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
