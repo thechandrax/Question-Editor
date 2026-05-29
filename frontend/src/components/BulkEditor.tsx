@@ -245,9 +245,13 @@ export default function BulkEditor() {
   const [isListView, setIsListView] = useState(false);
   const [autoSaveEnabled] = useState(true);
 
-  // Hardcoded Gemini API Key
-  const hardcodedGeminiApiKey = "AQ.Ab8RN6Kt0fhRAgbOlTWozHpGdQcbFJhJnISVxe0rqVPutfNcUg";
-
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  
+  useEffect(() => {
+    const key = localStorage.getItem('geminiApiKey');
+    if (key) setGeminiApiKey(key);
+  }, []);
   const [ocrState, setOcrState] = useState<{
     isOpen: boolean;
     imageUrl: string;
@@ -264,7 +268,68 @@ export default function BulkEditor() {
     resultLatex: ''
   });
 
+  const captureScreenForOcr = async () => {
+    if (!geminiApiKey) {
+      showAlert("Please add your Google Gemini API Key in the Settings menu first.", "API Key Required");
+      setIsSettingsOpen(true);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: "monitor" },
+        audio: false
+      });
+      
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        setOcrState(prev => ({
+          ...prev, 
+          isOpen: true, 
+          imageUrl: imgUrl, 
+          resultLatex: '', 
+          questionIndex: null, 
+          isProcessing: false, 
+          crop: { unit: '%', x: 10, y: 10, width: 80, height: 80 } 
+        }));
+      }
+
+      stream.getTracks().forEach(track => track.stop());
+      video.remove();
+      
+    } catch (err) {
+      console.error("Screen capture failed:", err);
+      // Fallback: Open empty for manual paste
+      setOcrState(prev => ({
+          ...prev, 
+          isOpen: true, 
+          imageUrl: '', 
+          resultLatex: '', 
+          questionIndex: null, 
+          isProcessing: false, 
+          crop: { unit: '%', x: 25, y: 25, width: 0, height: 0 } 
+      }));
+    }
+  };
+
   const openOcr = (imageUrl: string, index: number) => {
+    if (!geminiApiKey) {
+      showAlert("Please add your Google Gemini API Key in the Settings menu first.", "API Key Required");
+      setIsSettingsOpen(true);
+      return;
+    }
     setOcrState(prev => ({
       ...prev,
       isOpen: true,
@@ -338,7 +403,7 @@ export default function BulkEditor() {
 
       const base64Image = canvas.toDataURL('image/jpeg', 1.0).split(',')[1];
 
-      const genAI = new GoogleGenerativeAI(hardcodedGeminiApiKey);
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `Convert the math equation or text shown in this image to LaTeX. Return ONLY the inline LaTeX code. For example, if it's an equation, return it surrounded by \\( and \\), like \\(x^2 + y^2 = z^2\\). Do not include any other markdown or text.`;
@@ -355,9 +420,9 @@ export default function BulkEditor() {
       const responseText = result.response.text().trim();
       
       setOcrState(prev => ({ ...prev, resultLatex: responseText }));
-    } catch (error: any) {
-      console.error("OCR Error:", error);
-      showAlert(error.message || "Failed to process image.", "OCR Failed");
+    } catch (err) {
+      console.error("OCR Error:", err);
+      showAlert(err instanceof Error ? err.message : "Failed to extract math. Please try again or check your API key.", "OCR Failed");
     } finally {
       setOcrState(prev => ({ ...prev, isProcessing: false }));
     }
@@ -1106,7 +1171,7 @@ export default function BulkEditor() {
           <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white ml-2">
             <button 
               type="button"
-              onClick={() => setOcrState(prev => ({...prev, isOpen: true, imageUrl: '', resultLatex: '', questionIndex: null, isProcessing: false, crop: { unit: '%', x: 25, y: 25, width: 0, height: 0 }}))}
+              onClick={captureScreenForOcr}
               className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold h-full w-full relative z-0 hover:from-pink-400 hover:to-rose-400"
               title="Open standalone Math Snipping Tool"
             >
@@ -1237,6 +1302,13 @@ export default function BulkEditor() {
             
           {/* Right Group: Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 lg:gap-3 ml-auto justify-end flex-1 sm:flex-initial">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="whitespace-nowrap px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 font-bold text-sm bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              <Settings size={18} /> Settings
+            </button>
           </div>
 
           <div className="flex flex-1 items-center justify-center flex-wrap gap-2">
@@ -1422,6 +1494,39 @@ export default function BulkEditor() {
           )}
         </>
       </div>
+      
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><Settings className="text-emerald-500"/> Settings</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-slate-700 mb-1">Google Gemini API Key</label>
+              <input
+                type="password"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                value={geminiApiKey}
+                onChange={e => {
+                  setGeminiApiKey(e.target.value);
+                  localStorage.setItem('geminiApiKey', e.target.value);
+                }}
+                placeholder="AIzaSy..."
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-600 font-bold hover:underline">Google AI Studio</a> to enable the Math OCR feature.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* OCR Crop Modal */}
       {ocrState.isOpen && (
