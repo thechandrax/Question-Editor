@@ -1729,6 +1729,12 @@ export default function BulkEditor() {
           onCancel={() => setIsSnipping(false)}
           onCapture={(base64Image) => {
             setIsSnipping(false);
+            
+            // If it was triggered from a specific question card, save the image there too
+            if (snippingIndex !== null) {
+              setBulkQuestions(prev => prev.map((q, i) => i === snippingIndex ? { ...q, originalImageUrl: base64Image } : q));
+            }
+            
             const fullCrop: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
             setOcrState(prev => ({
               ...prev,
