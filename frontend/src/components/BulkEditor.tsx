@@ -1245,6 +1245,9 @@ export default function BulkEditor() {
             </button>
           </div>
 
+          {/* Divider */}
+          <div className="w-px h-8 bg-slate-200 hidden sm:block mx-1"></div>
+
           <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white">
             <button 
               type="button"
