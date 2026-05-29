@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
@@ -236,6 +236,7 @@ export default function BulkEditor() {
   const [imgGotoValue, setImgGotoValue] = useState("");
   const [isImportingMd, setIsImportingMd] = useState(false);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const gotoInputRef = useRef<HTMLInputElement>(null);
   const imgGotoInputRef = useRef<HTMLInputElement>(null);
@@ -339,16 +340,65 @@ export default function BulkEditor() {
   };
 
   const deleteBulkQuestion = async () => {
+    setIsDeleteDialogOpen(false);
     if (bulkQuestions.length === 1) {
       showAlert("You cannot delete the only question. Just clear its content instead.");
       return;
     }
-    if (await showConfirm("Are you sure you want to delete this question?")) {
+    if (await showConfirm("Are you sure you want to delete this question? Note: Images will NOT be deleted and will shift to stay aligned.")) {
+      const imagesBefore = bulkQuestions.map(q => q.originalImageUrl);
       const newQuestions = bulkQuestions.filter((_, i) => i !== currentQuestionIndex);
-      setBulkQuestions(newQuestions);
-      if (currentQuestionIndex >= newQuestions.length) {
-        setCurrentQuestionIndex(newQuestions.length - 1);
+      
+      let finalQuestions = [...newQuestions];
+      let lastImageIndex = -1;
+      for (let i = imagesBefore.length - 1; i >= 0; i--) {
+        if (imagesBefore[i]) {
+          lastImageIndex = i;
+          break;
+        }
       }
+      
+      while (finalQuestions.length <= lastImageIndex) {
+        finalQuestions.push({
+          id: Math.random().toString(),
+          bodyHtml: '',
+          options: [{label:'A',body_html:''},{label:'B',body_html:''},{label:'C',body_html:''},{label:'D',body_html:''}],
+          correctOptionLabel: 'A',
+          solutionText: '',
+          year: '',
+          source: ''
+        });
+      }
+
+      finalQuestions = finalQuestions.map((q, i) => ({
+        ...q,
+        originalImageUrl: imagesBefore[i] || ''
+      }));
+
+      setBulkQuestions(finalQuestions);
+      if (currentQuestionIndex >= finalQuestions.length) {
+        setCurrentQuestionIndex(finalQuestions.length - 1);
+      }
+    }
+  };
+
+  const deleteCurrentImage = async () => {
+    setIsDeleteDialogOpen(false);
+    if (!bulkQuestions[currentQuestionIndex]?.originalImageUrl) {
+      showAlert("There is no image on this question to delete.");
+      return;
+    }
+    if (await showConfirm("Are you sure you want to delete this image? Note: Subsequent images will shift up to take its place.")) {
+      const imagesBefore = bulkQuestions.map(q => q.originalImageUrl);
+      imagesBefore.splice(currentQuestionIndex, 1);
+      imagesBefore.push('');
+      
+      const finalQuestions = bulkQuestions.map((q, i) => ({
+        ...q,
+        originalImageUrl: imagesBefore[i] || ''
+      }));
+
+      setBulkQuestions(finalQuestions);
     }
   };
 
@@ -1020,14 +1070,39 @@ export default function BulkEditor() {
               <Plus size={15} /> Add New
             </button>
             
-            <button 
-              type="button" 
-              onClick={deleteBulkQuestion}
-              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
-              title="Delete Current Question"
-            >
-              <Trash2 size={15} /> Delete
-            </button>
+            <div className="relative flex items-center">
+              <button 
+                type="button" 
+                onClick={() => setIsDeleteDialogOpen(!isDeleteDialogOpen)}
+                className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+                title="Delete Options"
+              >
+                <Trash2 size={15} /> Delete
+              </button>
+              
+              {isDeleteDialogOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsDeleteDialogOpen(false)}></div>
+                  <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 p-1 flex flex-col z-50 min-w-[160px]">
+                    <button 
+                      type="button"
+                      onClick={() => { deleteBulkQuestion(); }}
+                      className="text-left px-3 py-2 text-sm text-red-600 font-bold hover:bg-red-50 rounded flex items-center gap-2"
+                    >
+                      <Trash2 size={14}/> Delete Question
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { deleteCurrentImage(); }}
+                      disabled={!bulkQuestions[currentQuestionIndex]?.originalImageUrl}
+                      className="text-left px-3 py-2 text-sm text-orange-600 font-bold hover:bg-orange-50 disabled:opacity-50 disabled:hover:bg-transparent rounded flex items-center gap-2"
+                    >
+                      <ImageIcon size={14}/> Delete Image
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             <button
               type="button"
