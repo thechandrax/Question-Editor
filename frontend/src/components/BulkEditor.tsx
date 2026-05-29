@@ -330,7 +330,7 @@ export default function BulkEditor() {
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
-    crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 },
+    crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 } as Crop,
     isProcessing: false,
     isAutoProcessing: false,
     resultLatex: ''
@@ -347,7 +347,7 @@ export default function BulkEditor() {
       isOpen: true,
       imageUrl,
       questionIndex: index,
-      crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 },
+      crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 } as Crop,
       resultLatex: '',
       isProcessing: false
     }));
@@ -616,7 +616,7 @@ export default function BulkEditor() {
         } else {
           showAlert("Invalid draft file format.", "Error");
         }
-      } catch (_) {
+      } catch {
         // console.error("Failed to parse JSON draft:", err);
         showAlert("Failed to load draft file. Please make sure it's a valid JSON.", "Error");
       }
@@ -1262,7 +1262,7 @@ export default function BulkEditor() {
           <div className="flex rounded-lg border border-pink-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(236,72,153,0.25)] hover:scale-105 hover:border-pink-300 overflow-hidden bg-white">
             <button 
               type="button"
-              onClick={startSnipping}
+              onClick={() => startSnipping(null)}
               className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold h-full w-full relative z-0 hover:from-pink-400 hover:to-rose-400"
               title="Open standalone Math Snipping Tool"
             >
@@ -1734,7 +1734,7 @@ export default function BulkEditor() {
           onCancel={() => setIsSnipping(false)}
           onCapture={(base64Image) => {
             setIsSnipping(false);
-            const fullCrop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
+            const fullCrop: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
             setOcrState(prev => ({
               ...prev,
               isOpen: true,
