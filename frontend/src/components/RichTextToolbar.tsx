@@ -48,6 +48,7 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('\\(', '\\)')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Inline Math \\( ... \\)"><Sigma size={14}/> Inline</button>
       <button type="button" onClick={() => insertTag('$', '$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Block Math"><Sigma size={14}/> Block</button>
+      <button type="button" onClick={() => insertTag('$', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Single Dollar">$</button>
       <button type="button" onClick={() => insertTag('\\(', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Open Parenthesis">\(</button>
       <button type="button" onClick={() => insertTag('\\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Close Parenthesis">\)</button>
       
