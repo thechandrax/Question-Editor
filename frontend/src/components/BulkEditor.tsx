@@ -1070,7 +1070,11 @@ export default function BulkEditor() {
               <Plus size={15} /> Add New
             </button>
             
-            <div className="relative flex items-center">
+            <div 
+              className="relative flex items-center"
+              onMouseEnter={() => setIsDeleteDialogOpen(true)}
+              onMouseLeave={() => setIsDeleteDialogOpen(false)}
+            >
               <button 
                 type="button" 
                 onClick={() => setIsDeleteDialogOpen(!isDeleteDialogOpen)}
@@ -1081,26 +1085,23 @@ export default function BulkEditor() {
               </button>
               
               {isDeleteDialogOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsDeleteDialogOpen(false)}></div>
-                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 p-1.5 flex flex-col z-50 min-w-[120px] animate-in fade-in slide-in-from-top-2 duration-200">
-                    <button 
-                      type="button"
-                      onClick={() => { deleteBulkQuestion(); }}
-                      className="text-left px-3 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2.5 transition-colors"
-                    >
-                      <Trash2 size={15}/> Question
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => { deleteCurrentImage(); }}
-                      disabled={!bulkQuestions[currentQuestionIndex]?.originalImageUrl}
-                      className="text-left px-3 py-2.5 text-sm text-orange-600 font-bold hover:bg-orange-50 hover:text-orange-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg flex items-center gap-2.5 transition-colors mt-0.5"
-                    >
-                      <ImageIcon size={15}/> Image
-                    </button>
-                  </div>
-                </>
+                <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 p-1.5 flex flex-col z-[60] min-w-[120px] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button 
+                    type="button"
+                    onClick={() => { deleteBulkQuestion(); }}
+                    className="text-left px-3 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2.5 transition-colors"
+                  >
+                    <Trash2 size={15}/> Question
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { deleteCurrentImage(); }}
+                    disabled={!bulkQuestions[currentQuestionIndex]?.originalImageUrl}
+                    className="text-left px-3 py-2.5 text-sm text-orange-600 font-bold hover:bg-orange-50 hover:text-orange-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg flex items-center gap-2.5 transition-colors mt-0.5"
+                  >
+                    <ImageIcon size={15}/> Image
+                  </button>
+                </div>
               )}
             </div>
 
