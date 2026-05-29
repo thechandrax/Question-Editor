@@ -1596,9 +1596,11 @@ export default function BulkEditor() {
       {ocrState.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
-              <h2 className="text-lg font-black flex items-center gap-2"><ScanText className="text-emerald-400"/> Math Snipping Tool</h2>
-              <button onClick={() => setOcrState(prev => ({...prev, isOpen: false}))} className="text-slate-400 hover:text-white font-bold px-2 py-1">✕</button>
+            <div className="p-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center shadow-md relative z-10">
+              <h2 className="text-lg font-black flex items-center gap-2 drop-shadow-sm">
+                 <ScanText className="text-emerald-100"/> Math Snipping Tool
+              </h2>
+              <button onClick={() => setOcrState(prev => ({...prev, isOpen: false}))} className="text-emerald-100 hover:text-white hover:bg-white/10 rounded-full font-bold w-8 h-8 flex items-center justify-center transition-colors">✕</button>
             </div>
             
             <div 
