@@ -316,6 +316,7 @@ export default function BulkEditor() {
   const [isListView, setIsListView] = useState(false);
   const [autoSaveEnabled] = useState(true);
   const [isSnipping, setIsSnipping] = useState(false);
+  const [cropMousePos, setCropMousePos] = useState({ x: -1000, y: -1000 });
   const [snippingIndex, setSnippingIndex] = useState<number | null>(null);
   const [ocrState, setOcrState] = useState<{
     isOpen: boolean;
@@ -1657,8 +1658,18 @@ export default function BulkEditor() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
-                      <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
+                      <div 
+                        className="relative border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full cursor-crosshair overflow-hidden"
+                        onMouseMove={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setCropMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                        }}
+                        onMouseLeave={() => setCropMousePos({ x: -1000, y: -1000 })}
+                      >
+                        <div className="absolute inset-0 pointer-events-none z-50">
+                          <div className="absolute top-0 bottom-0 w-px bg-slate-400/50 pointer-events-none" style={{ left: `${cropMousePos.x}px` }} />
+                          <div className="absolute left-0 right-0 h-px bg-slate-400/50 pointer-events-none" style={{ top: `${cropMousePos.y}px` }} />
+                        </div>
                         <ReactCrop 
                           crop={ocrState.crop} 
                           onChange={c => setOcrState(prev => ({...prev, crop: c}))}
