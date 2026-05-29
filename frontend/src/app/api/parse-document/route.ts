@@ -40,7 +40,12 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        const text = await file.text();
+        let text = await file.text();
+        
+        // Clean up messy OCR wrappers around array environments (e.g. ($$ \begin{array} ... \end{array} $$))
+        // and replace them with standard inline \( ... \) wrappers. (The frontend will render them as centered BlockMath).
+        text = text.replace(/(?:\(\$\$|\$\$|\$|\\\()\s*(\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\})\s*(?:\$\$\)|\$\$|\$|\\\))/g, '\\($1\\)');
+        
         const lines = text.split('\n');
         
         const parsedQuestions: Question[] = [];

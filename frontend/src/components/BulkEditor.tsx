@@ -31,11 +31,19 @@ const renderLatex = (text: string) => {
     } else if (part.startsWith('\\[') && part.endsWith('\\]')) {
       return <BlockMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
-      return <InlineMath key={index} math={part.slice(2, -2)} />;
+      const innerMath = part.slice(2, -2);
+      if (innerMath.includes('\\begin{')) {
+        return <BlockMath key={index} math={innerMath} />;
+      }
+      return <InlineMath key={index} math={innerMath} />;
     } else if (part.startsWith('\\begin{')) {
       return <BlockMath key={index} math={part} />;
     } else if (part.startsWith('$') && part.endsWith('$')) {
-      return <InlineMath key={index} math={part.slice(1, -1)} />;
+      const innerMath = part.slice(1, -1);
+      if (innerMath.includes('\\begin{')) {
+        return <BlockMath key={index} math={innerMath} />;
+      }
+      return <InlineMath key={index} math={innerMath} />;
     }
     return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/<br>\n/g, '\n').replace(/\n/g, '<br/>') }} />;
   });
