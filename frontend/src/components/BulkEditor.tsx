@@ -223,7 +223,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 )}
                 {showPreviews && (
                   <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center">
-                    {opt.body_html ? renderLatex(opt.body_html) : <span className="text-slate-400 italic">Empty Option</span>}
+                    {opt.body_html ? <div className="w-full break-words">{renderLatex(opt.body_html)}</div> : <span className="text-slate-400 italic">Empty Option</span>}
                   </div>
                 )}
               </div>
