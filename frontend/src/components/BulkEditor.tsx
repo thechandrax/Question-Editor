@@ -87,23 +87,27 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
 
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Question Text</h3>
           <div className="border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 bg-slate-50/50">
-            <RichTextToolbar 
-              textareaRef={questionTextareaRef} 
-              value={currentQ.bodyHtml} 
-              onChange={(val: string) => updateBulkQuestion('bodyHtml', val, idx)}
-            />
-            <textarea 
-              ref={questionTextareaRef}
-              spellCheck="true"
-              className="w-full min-h-[40px] px-4 py-3 text-base outline-none resize-y bg-transparent"
-              placeholder="Question goes here..."
-              value={currentQ.bodyHtml}
-              onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value, idx)}
-              onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val, idx), currentQ.bodyHtml)}
-            />
-            {showPreviews && currentQ.bodyHtml && (
-              <div className="px-4 py-3 bg-slate-100 border-t border-slate-200 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium">
-                {renderLatex(currentQ.bodyHtml)}
+            {!showPreviews && (
+              <>
+                <RichTextToolbar 
+                  textareaRef={questionTextareaRef} 
+                  value={currentQ.bodyHtml} 
+                  onChange={(val: string) => updateBulkQuestion('bodyHtml', val, idx)}
+                />
+                <textarea 
+                  ref={questionTextareaRef}
+                  spellCheck="true"
+                  className="w-full min-h-[40px] px-4 py-3 text-base outline-none resize-y bg-transparent"
+                  placeholder="Question goes here..."
+                  value={currentQ.bodyHtml}
+                  onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value, idx)}
+                  onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val, idx), currentQ.bodyHtml)}
+                />
+              </>
+            )}
+            {showPreviews && (
+              <div className="px-4 py-3 bg-slate-50 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium min-h-[60px]">
+                {currentQ.bodyHtml ? renderLatex(currentQ.bodyHtml) : <span className="text-slate-400 italic">Empty Question</span>}
               </div>
             )}
           </div>
@@ -141,17 +145,19 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   {isCorrect ? '✔' : '✗'}
                 </button>
 
-                <textarea
-                  spellCheck="true"
-                  className="w-full min-h-[40px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-t-xl text-sm"
-                  placeholder={`Option ${opt.label}...`}
-                  value={opt.body_html}
-                  onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
-                  onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
-                />
-                {showPreviews && opt.body_html && (
-                  <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-100 border-t-2 border-slate-200/60 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-b-xl border-dashed">
-                    {renderLatex(opt.body_html)}
+                {!showPreviews && (
+                  <textarea
+                    spellCheck="true"
+                    className="w-full min-h-[40px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
+                    placeholder={`Option ${opt.label}...`}
+                    value={opt.body_html}
+                    onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
+                    onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
+                  />
+                )}
+                {showPreviews && (
+                  <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center">
+                    {opt.body_html ? renderLatex(opt.body_html) : <span className="text-slate-400 italic">Empty Option</span>}
                   </div>
                 )}
               </div>
