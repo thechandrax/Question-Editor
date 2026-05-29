@@ -8,7 +8,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
-import Tesseract from 'tesseract.js';
+
 import { Client } from "@gradio/client";
 
 export interface BulkEditorQuestion {
