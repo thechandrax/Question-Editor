@@ -46,11 +46,7 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
 
   if (isCapturing) {
     return (
-      <div className="fixed inset-0 z-[9999] cursor-wait bg-black/10 flex items-center justify-center pointer-events-none">
-        <div className="bg-slate-800 text-white px-4 py-2 rounded shadow-lg font-bold">
-          Freezing screen...
-        </div>
-      </div>
+      <div className="fixed inset-0 z-[9999] cursor-crosshair pointer-events-none" />
     );
   }
 
@@ -63,7 +59,6 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawing) return;
     setCurrentX(e.clientX);
     setCurrentY(e.clientY);
   };
@@ -111,37 +106,39 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] cursor-crosshair select-none"
+      className="fixed inset-0 z-[9999] select-none"
+      style={{ cursor: 'crosshair' }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onContextMenu={(e) => { e.preventDefault(); onCancel(); }}
     >
-      {/* Dimmed Background */}
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-      
-      {/* The visible cropped rectangle that acts as a window to the original screen */}
+      {/* Horizontal Crosshair Line */}
+      <div 
+        className="absolute left-0 right-0 border-t border-emerald-500 pointer-events-none"
+        style={{ top: currentY }}
+      />
+      {/* Vertical Crosshair Line */}
+      <div 
+        className="absolute top-0 bottom-0 border-l border-emerald-500 pointer-events-none"
+        style={{ left: currentX }}
+      />
+
+      {/* The drawn rectangle */}
       {isDrawing && (
         <div 
-          className="absolute border-2 border-emerald-500 bg-transparent pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]"
+          className="absolute border border-emerald-500 bg-emerald-500/10 pointer-events-none"
           style={{
             left: rectLeft,
             top: rectTop,
             width: rectWidth,
             height: rectHeight,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)' // Creates the dimming effect around the box
           }}
         >
             <div className="absolute top-1 left-1 bg-emerald-500 text-white text-[10px] px-1 font-mono rounded">
                 {Math.round(rectWidth)} x {Math.round(rectHeight)}
             </div>
         </div>
-      )}
-      
-      {!isDrawing && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-xl font-bold text-sm opacity-80 pointer-events-none">
-              Click and drag to select math (Right-click to cancel)
-          </div>
       )}
     </div>
   );

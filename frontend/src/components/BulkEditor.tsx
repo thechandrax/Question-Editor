@@ -312,12 +312,14 @@ export default function BulkEditor() {
     isOpen: boolean;
     imageUrl: string;
     questionIndex: number | null;
+    crop: any;
     isProcessing: boolean;
     resultLatex: string;
   }>({
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
+    crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
     resultLatex: ''
   });
@@ -1692,8 +1694,9 @@ export default function BulkEditor() {
               isOpen: true,
               imageUrl: base64Image,
               questionIndex: null,
+              crop: { unit: '%', x: 0, y: 0, width: 100, height: 100 },
               resultLatex: '',
-              isProcessing: false // The user can click Extract Math in the modal, or we can auto-trigger it. Let's let them click Extract Math so they see what got cropped.
+              isProcessing: false
             }));
           }}
         />
