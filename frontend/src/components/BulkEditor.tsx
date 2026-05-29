@@ -1261,7 +1261,7 @@ export default function BulkEditor() {
               className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold h-full w-full relative z-0 hover:from-pink-400 hover:to-rose-400"
               title="Open standalone Math Snipping Tool"
             >
-              <ScanText size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Math OCR
+              <ScanText size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Math Snip
             </button>
           </div>
           
