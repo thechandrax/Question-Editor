@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import html2canvas from 'html2canvas';
 
 interface SnippingOverlayProps {
   onCapture: (base64Image: string) => void;
@@ -17,23 +16,40 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
   const [currentY, setCurrentY] = useState(0);
 
   useEffect(() => {
-    // Hide the overlay itself from the capture by not rendering the overlay contents until capture is done
+    // Use native screen capture for 100% perfect accuracy
     const captureScreen = async () => {
       try {
-        const canvas = await html2canvas(document.documentElement, {
-          x: window.scrollX,
-          y: window.scrollY,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          windowWidth: document.documentElement.scrollWidth,
-          windowHeight: document.documentElement.scrollHeight,
-          backgroundColor: null,
-          useCORS: true,
-          logging: false
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: "browser" },
+          audio: false
         });
-        setFullScreenCanvas(canvas);
+        
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve(null);
+          };
+        });
+        
+        // Give a tiny moment for the frame to fully paint
+        await new Promise(r => setTimeout(r, 150));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          setFullScreenCanvas(canvas);
+        }
+        
+        // Stop all tracks to end the screen sharing session immediately
+        stream.getTracks().forEach(track => track.stop());
       } catch (err) {
         console.error("Snipping Tool Error:", err);
+        alert("Screen capture was cancelled or failed. Please try again and select 'Current Tab'.");
         onCancel();
       } finally {
         setIsCapturing(false);
@@ -86,24 +102,30 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
 
-    const dpr = window.devicePixelRatio || 1;
+    // Calculate the scale factor between the viewport and the captured video frame
+    const scaleX = fullScreenCanvas.width / window.innerWidth;
+    const scaleY = fullScreenCanvas.height / window.innerHeight;
+
+    const mappedX = x * scaleX;
+    const mappedY = y * scaleY;
+    const mappedWidth = width * scaleX;
+    const mappedHeight = height * scaleY;
     
-    // Create a new canvas for the cropped area at high resolution
+    // Create a new canvas for the cropped area
     const cropCanvas = document.createElement('canvas');
-    cropCanvas.width = width * dpr;
-    cropCanvas.height = height * dpr;
+    cropCanvas.width = mappedWidth;
+    cropCanvas.height = mappedHeight;
     const ctx = cropCanvas.getContext('2d');
     
     if (ctx) {
-      // Draw the selected portion from the viewport-sized canvas
-      // Since fullScreenCanvas only contains the viewport, x and y (which are clientX/Y) map directly!
+      // Draw the exact mapped area from the screenshot
       ctx.drawImage(
         fullScreenCanvas,
-        x * dpr, 
-        y * dpr, 
-        width * dpr, 
-        height * dpr,
-        0, 0, width * dpr, height * dpr
+        mappedX, 
+        mappedY, 
+        mappedWidth, 
+        mappedHeight,
+        0, 0, mappedWidth, mappedHeight
       );
       
       const base64Image = cropCanvas.toDataURL('image/jpeg', 1.0);

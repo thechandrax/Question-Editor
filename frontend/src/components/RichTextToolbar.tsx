@@ -23,7 +23,7 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       try {
         setCanUndo(document.queryCommandEnabled('undo'));
         setCanRedo(document.queryCommandEnabled('redo'));
-      } catch (_) {}
+      } catch {}
     };
 
     if (el) {
@@ -71,7 +71,7 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       try {
         setCanUndo(document.queryCommandEnabled('undo'));
         setCanRedo(document.queryCommandEnabled('redo'));
-      } catch (_) {}
+      } catch {}
     }, 50);
   };
 
@@ -82,7 +82,7 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       try {
         setCanUndo(document.queryCommandEnabled('undo'));
         setCanRedo(document.queryCommandEnabled('redo'));
-      } catch (_) {}
+      } catch {}
     }, 50);
   };
 
