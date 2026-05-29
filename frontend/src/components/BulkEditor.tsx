@@ -71,9 +71,10 @@ interface QuestionEditorBlockProps {
   handleEnterKey: (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => void;
   isListView?: boolean;
   openOcr?: (imageUrl: string, index: number) => void;
+  startSnipping?: (index: number) => void;
 }
 
-function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr }: QuestionEditorBlockProps) {
+function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr, startSnipping }: QuestionEditorBlockProps) {
   const [showPreviews, setShowPreviews] = React.useState(true);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -137,8 +138,8 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                  <div className="flex justify-between items-center px-4 py-2 bg-white border-b border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Eye size={14}/> Original PDF Snippet</span>
                     <div className="flex gap-2">
-                      {openOcr && (
-                        <button onClick={() => openOcr(currentQ.originalImageUrl!, idx)} className="text-emerald-500 hover:text-emerald-700 transition-colors px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="OCR Math Snipping Tool">
+                      {startSnipping && (
+                        <button onClick={() => startSnipping(idx)} className="text-emerald-500 hover:text-emerald-700 transition-colors px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="OCR Math Snipping Tool (Draw on screen)">
                           <Plus size={14} /> OCR
                         </button>
                       )}
@@ -310,6 +311,7 @@ export default function BulkEditor() {
   const [isListView, setIsListView] = useState(false);
   const [autoSaveEnabled] = useState(true);
   const [isSnipping, setIsSnipping] = useState(false);
+  const [snippingIndex, setSnippingIndex] = useState<number | null>(null);
   const [ocrState, setOcrState] = useState<{
     isOpen: boolean;
     imageUrl: string;
@@ -328,7 +330,8 @@ export default function BulkEditor() {
     resultLatex: ''
   });
 
-  const startSnipping = () => {
+  const startSnipping = (index: number | null = null) => {
+    setSnippingIndex(index);
     setIsSnipping(true);
   };
 
@@ -1580,6 +1583,7 @@ export default function BulkEditor() {
                   handleEnterKey={handleEnterKey} 
                   isListView={isListView}
                   openOcr={openOcr}
+                  startSnipping={startSnipping}
                 />
               ))}
             </div>
@@ -1591,6 +1595,7 @@ export default function BulkEditor() {
               updateBulkQuestionOption={updateBulkQuestionOption} 
               handleEnterKey={handleEnterKey} 
               openOcr={openOcr}
+              startSnipping={startSnipping}
             />
           )}
         </>
@@ -1716,7 +1721,7 @@ export default function BulkEditor() {
               ...prev,
               isOpen: true,
               imageUrl: base64Image,
-              questionIndex: null,
+              questionIndex: snippingIndex,
               crop: fullCrop,
               resultLatex: '',
               isProcessing: true,
