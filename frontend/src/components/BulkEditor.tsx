@@ -1604,7 +1604,7 @@ export default function BulkEditor() {
             </div>
             
             <div 
-              className="p-10 md:p-12 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
+              className="p-8 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
               tabIndex={0}
               onPaste={(e) => {
                 const items = e.clipboardData?.items;
@@ -1677,7 +1677,7 @@ export default function BulkEditor() {
               {ocrState.resultLatex && (
                 <div className="w-full bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 text-left">
                   <div className="flex justify-between items-center mb-3 gap-8">
-                     <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted LaTeX</span>
+                     <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted Text</span>
                      <button 
                        onClick={() => {
                          navigator.clipboard.writeText(ocrState.resultLatex);
