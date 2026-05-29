@@ -1595,7 +1595,7 @@ export default function BulkEditor() {
       {/* OCR Crop Modal */}
       {ocrState.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col">
+          <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden ${ocrState.isAutoProcessing ? 'w-fit min-w-[400px]' : 'w-full max-w-4xl'} max-h-[90vh] flex flex-col`}>
             <div className="py-2 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center shadow-md relative z-10">
               <h2 className="text-base font-black flex items-center gap-2 drop-shadow-sm">
                  <ScanText className="text-emerald-100" size={18} /> Math Snipping Tool
@@ -1675,7 +1675,7 @@ export default function BulkEditor() {
               )}
 
               {ocrState.resultLatex && (
-                <div className="mt-6 w-fit min-w-[320px] max-w-3xl bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 mx-auto text-left">
+                <div className={`${ocrState.isAutoProcessing ? 'mt-0' : 'mt-6'} w-fit min-w-[320px] max-w-3xl bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 mx-auto text-left`}>
                   <div className="flex justify-between items-center mb-3 gap-8">
                      <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted LaTeX</span>
                      <button 
