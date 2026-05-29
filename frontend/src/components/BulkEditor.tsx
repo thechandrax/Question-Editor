@@ -1595,7 +1595,7 @@ export default function BulkEditor() {
       {/* OCR Crop Modal */}
       {ocrState.isOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-          <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden ${ocrState.isAutoProcessing ? 'w-fit min-w-[600px]' : 'w-full max-w-4xl'} max-h-[90vh] flex flex-col`}>
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div className="py-2 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center shadow-md relative z-10">
               <h2 className="text-base font-black flex items-center gap-2 drop-shadow-sm">
                  <ScanText className="text-emerald-100" size={18} /> Math Snipping Tool
@@ -1604,7 +1604,7 @@ export default function BulkEditor() {
             </div>
             
             <div 
-              className="p-4 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
+              className="p-6 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
               tabIndex={0}
               onPaste={(e) => {
                 const items = e.clipboardData?.items;
@@ -1625,7 +1625,7 @@ export default function BulkEditor() {
                {!ocrState.isAutoProcessing && (
                 <>
                   {!ocrState.imageUrl ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-300 rounded-xl bg-white w-full max-w-2xl text-center shadow-sm">
+                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-300 rounded-xl bg-white w-full text-center shadow-sm">
                       <ScanText size={48} className="text-emerald-200 mb-4" />
                       <p className="text-slate-600 mb-2 font-bold text-lg">Paste an image (Ctrl+V)</p>
                       <p className="text-slate-400 text-sm mb-6">Or upload an image file directly</p>
@@ -1668,14 +1668,14 @@ export default function BulkEditor() {
               )}
 
               {ocrState.isAutoProcessing && ocrState.isProcessing && (
-                 <div className="flex flex-col items-center justify-center p-12 w-full max-w-2xl text-center">
+                 <div className="flex flex-col items-center justify-center p-12 w-full text-center">
                     <div className="animate-spin mb-4"><ScanText size={48} className="text-emerald-500" /></div>
                     <p className="text-slate-600 font-bold text-lg animate-pulse">Extracting Math...</p>
                  </div>
               )}
 
               {ocrState.resultLatex && (
-                <div className={`${ocrState.isAutoProcessing ? 'mt-0' : 'mt-6'} w-full min-w-[500px] max-w-3xl bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 mx-auto text-left`}>
+                <div className="w-full bg-white border-2 border-emerald-500/30 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 text-left">
                   <div className="flex justify-between items-center mb-3 gap-8">
                      <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Extracted LaTeX</span>
                      <button 
