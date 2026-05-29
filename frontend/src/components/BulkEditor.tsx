@@ -54,16 +54,8 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
   return (
     <div className="mb-12" id={`qeb-${index}`}>
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-xl px-4 sm:px-6 pt-5 pb-6">
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <div className="mb-4 pb-2 border-b border-slate-100">
           <span className="text-sm font-black text-slate-500 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-lg">Question {index + 1}</span>
-          <button 
-            onClick={() => setShowPreviews(!showPreviews)}
-            className="px-3 py-1 text-xs font-bold rounded-lg transition-colors border border-slate-200 shadow-sm flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
-            title={showPreviews ? "Hide Previews (Preview Up)" : "Show Previews (Preview Down)"}
-          >
-            <Eye size={14} className={showPreviews ? "text-emerald-500" : "text-slate-400"} /> 
-            {showPreviews ? 'Preview Up' : 'Preview Down'}
-          </button>
         </div>
         
         {/* Question Area */}
@@ -85,7 +77,17 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
             </div>
           )}
 
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Question Text</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider m-0">Question Text</h3>
+            <button 
+              onClick={() => setShowPreviews(!showPreviews)}
+              className="px-3 py-1 text-xs font-bold rounded-lg transition-colors border border-slate-200 shadow-sm flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
+              title={showPreviews ? "Hide Previews (Preview Up)" : "Show Previews (Preview Down)"}
+            >
+              <Eye size={14} className={showPreviews ? "text-emerald-500" : "text-slate-400"} /> 
+              {showPreviews ? 'Preview Up' : 'Preview Down'}
+            </button>
+          </div>
           <div className="border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 bg-slate-50/50">
             {!showPreviews && (
               <>
