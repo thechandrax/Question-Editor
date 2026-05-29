@@ -330,7 +330,7 @@ export default function BulkEditor() {
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
-    crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
+    crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 },
     isProcessing: false,
     isAutoProcessing: false,
     resultLatex: ''
@@ -347,7 +347,7 @@ export default function BulkEditor() {
       isOpen: true,
       imageUrl,
       questionIndex: index,
-      crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
+      crop: { unit: '%', x: 0, y: 0, width: 0, height: 0 },
       resultLatex: '',
       isProcessing: false
     }));
@@ -1658,6 +1658,7 @@ export default function BulkEditor() {
                     </div>
                   ) : (
                     <>
+                      <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Click and Drag to Select Area</p>
                       <div 
                         className="relative border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full cursor-crosshair overflow-hidden"
                         onMouseMove={(e) => {
