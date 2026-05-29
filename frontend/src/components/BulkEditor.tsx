@@ -1604,7 +1604,7 @@ export default function BulkEditor() {
             </div>
             
             <div 
-              className="p-6 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
+              className="p-10 md:p-12 bg-slate-100 flex-1 overflow-auto flex flex-col items-center focus:outline-none"
               tabIndex={0}
               onPaste={(e) => {
                 const items = e.clipboardData?.items;
