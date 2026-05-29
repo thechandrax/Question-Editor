@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(key);
     
-    // We use gemini-1.5-flash as it is extremely fast and free, and phenomenal at OCR
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // We use gemini-1.5-flash-latest as it is extremely fast and free, and phenomenal at OCR
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
     // Remove the data:image/jpeg;base64, prefix
     const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
