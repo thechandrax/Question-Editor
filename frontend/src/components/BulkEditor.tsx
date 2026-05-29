@@ -884,9 +884,9 @@ export default function BulkEditor() {
 
       {/* Editor Card */}
       <div className="shadow-2xl rounded-2xl bg-white border border-slate-200/60 overflow-hidden print:shadow-none print:border-none">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-2 flex items-center gap-2 flex-wrap print:hidden">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-3 md:py-2 flex flex-col md:flex-row items-stretch md:items-center gap-3 print:hidden">
           
-          <div className="flex flex-col gap-1.5 shrink-0">
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0 justify-between">
             
             <div className="bg-black/20 px-3 py-1 rounded-lg shadow-inner flex items-center justify-between gap-3 overflow-hidden transition-all duration-300">
               <div className="flex items-center gap-1.5">
@@ -977,12 +977,12 @@ export default function BulkEditor() {
             )}
           </div>
 
-          <div className="flex flex-1 items-center justify-evenly">
+          <div className="flex flex-1 items-center justify-center flex-wrap gap-2">
             <button 
               type="button"
               onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
               disabled={currentQuestionIndex === 0}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
             >
               <ArrowLeftIcon size={15} /> Previous
             </button>
@@ -991,7 +991,7 @@ export default function BulkEditor() {
               type="button"
               onClick={() => setCurrentQuestionIndex(Math.min(bulkQuestions.length - 1, currentQuestionIndex + 1))}
               disabled={currentQuestionIndex === bulkQuestions.length - 1}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
             >
               Next <ArrowRight size={15} />
             </button>
@@ -999,7 +999,7 @@ export default function BulkEditor() {
             <button 
               type="button" 
               onClick={addBulkQuestion}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
               title="Add New Question"
             >
               <Plus size={15} /> Add New
@@ -1008,7 +1008,7 @@ export default function BulkEditor() {
             <button 
               type="button" 
               onClick={deleteBulkQuestion}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
               title="Delete Current Question"
             >
               <Trash2 size={15} /> Delete
@@ -1027,7 +1027,7 @@ export default function BulkEditor() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={`px-3 py-1 rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm ${isListView ? 'bg-emerald-500/40 text-emerald-900' : 'bg-black/20 hover:bg-black/30 text-white'}`}
+              className={`whitespace-nowrap shrink-0 px-3 py-1 rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm ${isListView ? 'bg-emerald-500/40 text-emerald-900' : 'bg-black/20 hover:bg-black/30 text-white'}`}
               title="Toggle List View"
             >
               <List size={15} /> {isListView ? 'View as Editor' : 'View as List'}
@@ -1036,7 +1036,7 @@ export default function BulkEditor() {
             <button 
               type="button"
               onClick={handlePreview}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm text-white"
               title="Preview all questions in a new tab"
             >
               <Eye size={15} /> Preview
@@ -1045,7 +1045,7 @@ export default function BulkEditor() {
             <button 
               type="button"
               onClick={downloadHTML}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
             >
               <Download size={15} /> HTML
             </button>
@@ -1053,13 +1053,13 @@ export default function BulkEditor() {
             <button 
               type="button"
               onClick={handleDownloadJson}
-              className="px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
             >
               <Download size={15} /> JSON
             </button>
           </div>
 
-          <div className="flex flex-col gap-1.5 shrink-0 ml-auto">
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0 md:ml-auto justify-center">
             <button 
               type="button"
               onClick={async () => {
@@ -1081,7 +1081,7 @@ export default function BulkEditor() {
                   setCurrentQuestionIndex(0);
                 }
               }}
-              className="px-3 py-1 bg-black/20 hover:bg-red-500/40 text-white rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-red-500/40 text-white rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm"
               title="Reset entire editor"
             >
               <Trash2 size={15} /> Clear Questions
@@ -1097,7 +1097,7 @@ export default function BulkEditor() {
                   })));
                 }
               }}
-              className="px-3 py-1 bg-black/20 hover:bg-orange-500/40 text-white rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm"
+              className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-orange-500/40 text-white rounded-lg shadow-inner transition-all flex items-center justify-center gap-1.5 font-bold text-sm"
               title="Remove all cropped images"
             >
               <Trash2 size={15} /> Clear Images
