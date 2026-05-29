@@ -391,7 +391,7 @@ export default function BulkEditor() {
       if (!blob) throw new Error("Failed to create image blob");
 
       const client = await Client.connect("GREEEN4/MATH-OCR");
-      const result = await client.predict("/predict", [
+      const result = await client.predict("/process_image", [
         blob,
         ocrState.ocrMethod
       ]);
