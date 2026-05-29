@@ -9,6 +9,7 @@ import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
 import Tesseract from 'tesseract.js';
+import { Client } from "@gradio/client";
 
 export interface BulkEditorQuestion {
   id: string;
@@ -252,13 +253,15 @@ export default function BulkEditor() {
     crop: Crop;
     isProcessing: boolean;
     resultLatex: string;
+    ocrMethod: string;
   }>({
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
     crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
-    resultLatex: ''
+    resultLatex: '',
+    ocrMethod: 'Pix2Tex (Pure Math Equations)'
   });
 
   const captureScreenForOcr = async () => {
@@ -384,10 +387,16 @@ export default function BulkEditor() {
         canvas.height
       );
 
-      const base64Image = canvas.toDataURL('image/jpeg', 1.0);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+      if (!blob) throw new Error("Failed to create image blob");
 
-      const result = await Tesseract.recognize(base64Image, 'eng');
-      const responseText = result.data.text.trim();
+      const client = await Client.connect("GREEEN4/MATH-OCR");
+      const result = await client.predict("/predict", [
+        blob,
+        ocrState.ocrMethod
+      ]);
+
+      const responseText = Array.isArray(result.data) ? String(result.data[0]).trim() : String(result.data).trim();
       
       setOcrState(prev => ({ ...prev, resultLatex: responseText }));
     } catch (err) {
@@ -1540,6 +1549,30 @@ export default function BulkEditor() {
                     >
                       <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
                     </ReactCrop>
+                  </div>
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-4 border border-slate-200 bg-slate-50 p-3 rounded-lg w-full max-w-sm mx-auto shadow-sm">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
+                      <input 
+                        type="radio" 
+                        name="ocrMethod" 
+                        value="Pix2Tex (Pure Math Equations)"
+                        checked={ocrState.ocrMethod === 'Pix2Tex (Pure Math Equations)'}
+                        onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
+                        className="text-emerald-600 focus:ring-emerald-500"
+                      />
+                      Pix2Tex (Math Only)
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
+                      <input 
+                        type="radio" 
+                        name="ocrMethod" 
+                        value="Nougat (Text + Math)"
+                        checked={ocrState.ocrMethod === 'Nougat (Text + Math)'}
+                        onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
+                        className="text-emerald-600 focus:ring-emerald-500"
+                      />
+                      Nougat (Text+Math)
+                    </label>
                   </div>
                 </>
               )}

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@gradio/client": "^2.2.1",
     "@tailwindcss/typography": "^0.5.19",
     "katex": "^0.17.0",
     "lucide-react": "^1.16.0",
