@@ -140,6 +140,12 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
             </div>
         </div>
       )}
+
+      {!isDrawing && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-xl font-bold text-sm opacity-80 pointer-events-none">
+              Click and drag to select math (Right-click to cancel)
+          </div>
+      )}
     </div>
   );
 }

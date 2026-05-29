@@ -314,6 +314,7 @@ export default function BulkEditor() {
     questionIndex: number | null;
     crop: any;
     isProcessing: boolean;
+    isAutoProcessing: boolean;
     resultLatex: string;
   }>({
     isOpen: false,
@@ -321,6 +322,7 @@ export default function BulkEditor() {
     questionIndex: null,
     crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
+    isAutoProcessing: false,
     resultLatex: ''
   });
 
@@ -340,8 +342,11 @@ export default function BulkEditor() {
     }));
   };
 
-  const processOcr = async () => {
-    if (!ocrState.imageUrl) {
+  const processOcr = async (overrideImageUrl?: string, overrideCrop?: any) => {
+    const targetImageUrl = overrideImageUrl || ocrState.imageUrl;
+    const targetCrop = overrideCrop || ocrState.crop;
+
+    if (!targetImageUrl) {
       showAlert("Please paste or upload an image first.", "Error");
       return;
     }
@@ -355,7 +360,7 @@ export default function BulkEditor() {
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
-        img.src = ocrState.imageUrl;
+        img.src = targetImageUrl;
       });
 
       const canvas = document.createElement('canvas');
@@ -365,7 +370,7 @@ export default function BulkEditor() {
 
       if (!ctx) throw new Error("No 2d context");
 
-      let pixelCrop = ocrState.crop;
+      let pixelCrop = targetCrop;
       if (!pixelCrop.width || !pixelCrop.height) {
         // Use full image if no crop is drawn
         pixelCrop = {
@@ -375,13 +380,13 @@ export default function BulkEditor() {
           width: img.width,
           height: img.height
         };
-      } else if (ocrState.crop.unit === '%') {
+      } else if (targetCrop.unit === '%') {
         pixelCrop = {
           unit: 'px',
-          x: (ocrState.crop.x / 100) * img.width,
-          y: (ocrState.crop.y / 100) * img.height,
-          width: (ocrState.crop.width / 100) * img.width,
-          height: (ocrState.crop.height / 100) * img.height
+          x: (targetCrop.x / 100) * img.width,
+          y: (targetCrop.y / 100) * img.height,
+          width: (targetCrop.width / 100) * img.width,
+          height: (targetCrop.height / 100) * img.height
         };
       }
 
@@ -1615,46 +1620,57 @@ export default function BulkEditor() {
                 }
               }}
             >
-              {!ocrState.imageUrl ? (
-                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-300 rounded-xl bg-white w-full max-w-2xl text-center shadow-sm">
-                  <ScanText size={48} className="text-emerald-200 mb-4" />
-                  <p className="text-slate-600 mb-2 font-bold text-lg">Paste an image (Ctrl+V)</p>
-                  <p className="text-slate-400 text-sm mb-6">Or upload an image file directly</p>
-                  <label className="px-6 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-colors cursor-pointer shadow-sm border border-emerald-200">
-                    Choose Image
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => setOcrState(prev => ({...prev, imageUrl: ev.target?.result as string}));
-                        reader.readAsDataURL(file);
-                      }
-                    }}/>
-                  </label>
-                </div>
-              ) : (
+               {!ocrState.isAutoProcessing && (
                 <>
-                  <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
-                  <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
-                    <ReactCrop 
-                      crop={ocrState.crop} 
-                      onChange={c => setOcrState(prev => ({...prev, crop: c}))}
+                  {!ocrState.imageUrl ? (
+                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-300 rounded-xl bg-white w-full max-w-2xl text-center shadow-sm">
+                      <ScanText size={48} className="text-emerald-200 mb-4" />
+                      <p className="text-slate-600 mb-2 font-bold text-lg">Paste an image (Ctrl+V)</p>
+                      <p className="text-slate-400 text-sm mb-6">Or upload an image file directly</p>
+                      <label className="px-6 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-colors cursor-pointer shadow-sm border border-emerald-200">
+                        Choose Image
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setOcrState(prev => ({...prev, imageUrl: ev.target?.result as string}));
+                            reader.readAsDataURL(file);
+                          }
+                        }}/>
+                      </label>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider">Draw a box around the math you want to scan</p>
+                      <div className="border border-slate-300 shadow-md bg-white p-2 rounded inline-block max-w-full">
+                        <ReactCrop 
+                          crop={ocrState.crop} 
+                          onChange={c => setOcrState(prev => ({...prev, crop: c}))}
+                        >
+                          <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
+                        </ReactCrop>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="mt-6 flex gap-3">
+                    <button 
+                      onClick={() => processOcr()}
+                      disabled={ocrState.isProcessing}
+                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-black rounded-xl transition-all shadow-md flex items-center gap-2"
                     >
-                      <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
-                    </ReactCrop>
+                      {ocrState.isProcessing ? 'Scanning...' : <><ScanText size={18}/> Extract Math</>}
+                    </button>
                   </div>
                 </>
               )}
 
-              <div className="mt-6 flex gap-3">
-                <button 
-                  onClick={processOcr}
-                  disabled={ocrState.isProcessing}
-                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-black rounded-xl transition-all shadow-md flex items-center gap-2"
-                >
-                  {ocrState.isProcessing ? 'Scanning...' : <><ScanText size={18}/> Extract Math</>}
-                </button>
-              </div>
+              {ocrState.isAutoProcessing && ocrState.isProcessing && (
+                 <div className="flex flex-col items-center justify-center p-12 w-full max-w-2xl text-center">
+                    <div className="animate-spin mb-4"><ScanText size={48} className="text-emerald-500" /></div>
+                    <p className="text-slate-600 font-bold text-lg animate-pulse">Extracting Math...</p>
+                 </div>
+              )}
 
               {ocrState.resultLatex && (
                 <div className="mt-6 w-full max-w-2xl bg-white border-2 border-emerald-500/30 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-4">
@@ -1689,15 +1705,18 @@ export default function BulkEditor() {
           onCancel={() => setIsSnipping(false)}
           onCapture={(base64Image) => {
             setIsSnipping(false);
+            const fullCrop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
             setOcrState(prev => ({
               ...prev,
               isOpen: true,
               imageUrl: base64Image,
               questionIndex: null,
-              crop: { unit: '%', x: 0, y: 0, width: 100, height: 100 },
+              crop: fullCrop,
               resultLatex: '',
-              isProcessing: false
+              isProcessing: true,
+              isAutoProcessing: true
             }));
+            processOcr(base64Image, fullCrop);
           }}
         />
       )}
