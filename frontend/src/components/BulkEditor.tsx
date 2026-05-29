@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2 } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
@@ -261,6 +261,25 @@ export default function BulkEditor() {
   ]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
+  const [undoStack, setUndoStack] = useState<BulkEditorQuestion[][]>([]);
+  const [redoStack, setRedoStack] = useState<BulkEditorQuestion[][]>([]);
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previousState = undoStack[undoStack.length - 1];
+    setRedoStack(prev => [...prev, bulkQuestions]);
+    setBulkQuestions(previousState);
+    setUndoStack(prev => prev.slice(0, -1));
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const nextState = redoStack[redoStack.length - 1];
+    setUndoStack(prev => [...prev, bulkQuestions]);
+    setBulkQuestions(nextState);
+    setRedoStack(prev => prev.slice(0, -1));
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem(`bulkQuestions`);
     if (saved) {
@@ -348,6 +367,9 @@ export default function BulkEditor() {
       return;
     }
     if (await showConfirm("Are you sure you want to delete this question? Note: Images will NOT be deleted and will shift to stay aligned.")) {
+      setUndoStack(prev => [...prev, bulkQuestions]);
+      setRedoStack([]);
+      
       const imagesBefore = bulkQuestions.map(q => q.originalImageUrl);
       const newQuestions = bulkQuestions.filter((_, i) => i !== currentQuestionIndex);
       
@@ -391,6 +413,9 @@ export default function BulkEditor() {
       return;
     }
     if (await showConfirm("Are you sure you want to delete this image? Note: Subsequent images will shift up to take its place.")) {
+      setUndoStack(prev => [...prev, bulkQuestions]);
+      setRedoStack([]);
+
       const imagesBefore = bulkQuestions.map(q => q.originalImageUrl);
       imagesBefore.splice(currentQuestionIndex, 1);
       imagesBefore.push('');
@@ -982,13 +1007,25 @@ export default function BulkEditor() {
               </div>
               
               {!isGotoOpen && (
-                <button 
-                  type="button"
-                  onClick={() => setIsGotoOpen(true)}
-                  className="px-2 py-0.5 bg-white text-teal-700 rounded text-xs font-black shadow-sm hover:bg-teal-50 transition-colors uppercase tracking-wider shrink-0"
-                >
-                  Goto
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => setIsGotoOpen(true)}
+                    className="px-2 py-0.5 bg-white text-teal-700 rounded text-xs font-black shadow-sm hover:bg-teal-50 transition-colors uppercase tracking-wider"
+                  >
+                    Goto
+                  </button>
+                  {undoStack.length > 0 && (
+                    <button type="button" onClick={handleUndo} title="Undo Deletion" className="px-1.5 py-0.5 bg-white text-teal-700 rounded shadow-sm hover:bg-teal-50 transition-colors">
+                      <Undo2 size={14} />
+                    </button>
+                  )}
+                  {redoStack.length > 0 && (
+                    <button type="button" onClick={handleRedo} title="Redo Deletion" className="px-1.5 py-0.5 bg-white text-teal-700 rounded shadow-sm hover:bg-teal-50 transition-colors">
+                      <Redo2 size={14} />
+                    </button>
+                  )}
+                </div>
               )}
               {isGotoOpen && (
                 <button onClick={() => setIsGotoOpen(false)} className="text-teal-100 hover:text-white shrink-0 font-bold ml-1" type="button">✕</button>
@@ -1029,13 +1066,25 @@ export default function BulkEditor() {
                 </div>
                 
                 {!isImgGotoOpen && (
-                  <button 
-                    type="button"
-                    onClick={() => setIsImgGotoOpen(true)}
-                    className="px-2 py-0.5 bg-white text-teal-700 rounded text-xs font-black shadow-sm hover:bg-teal-50 transition-colors uppercase tracking-wider shrink-0"
-                  >
-                    Goto
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button 
+                      type="button"
+                      onClick={() => setIsImgGotoOpen(true)}
+                      className="px-2 py-0.5 bg-white text-teal-700 rounded text-xs font-black shadow-sm hover:bg-teal-50 transition-colors uppercase tracking-wider"
+                    >
+                      Goto
+                    </button>
+                    {undoStack.length > 0 && (
+                      <button type="button" onClick={handleUndo} title="Undo Deletion" className="px-1.5 py-0.5 bg-white text-teal-700 rounded shadow-sm hover:bg-teal-50 transition-colors">
+                        <Undo2 size={14} />
+                      </button>
+                    )}
+                    {redoStack.length > 0 && (
+                      <button type="button" onClick={handleRedo} title="Redo Deletion" className="px-1.5 py-0.5 bg-white text-teal-700 rounded shadow-sm hover:bg-teal-50 transition-colors">
+                        <Redo2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 )}
                 {isImgGotoOpen && (
                   <button onClick={() => setIsImgGotoOpen(false)} className="text-teal-100 hover:text-white shrink-0 font-bold ml-1" type="button">✕</button>
