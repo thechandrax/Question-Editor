@@ -138,14 +138,9 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                  <div className="flex justify-between items-center px-4 py-2 bg-white border-b border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Eye size={14}/> Original PDF Snippet</span>
                     <div className="flex gap-2">
-                      {openOcr && (
-                        <button onClick={() => openOcr(currentQ.originalImageUrl!, idx)} className="text-emerald-500 hover:text-emerald-700 transition-colors px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="Crop existing image in modal">
-                          <Plus size={14} /> OCR
-                        </button>
-                      )}
                       {startSnipping && (
-                        <button onClick={() => startSnipping(idx)} className="text-purple-500 hover:text-purple-700 transition-colors px-2 py-0.5 rounded border border-purple-200 hover:bg-purple-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="Snip from screen (Crosshair)">
-                          <ScanText size={14} /> Snip Screen
+                        <button onClick={() => startSnipping(idx)} className="text-emerald-500 hover:text-emerald-700 transition-colors px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1 shadow-sm" title="Snip from screen to extract Math (Crosshair)">
+                          <Plus size={14} /> OCR
                         </button>
                       )}
                       <button onClick={() => updateBulkQuestion('originalImageUrl', '', idx)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="Remove snippet">
