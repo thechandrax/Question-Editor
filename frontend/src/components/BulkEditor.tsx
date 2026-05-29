@@ -356,7 +356,6 @@ export default function BulkEditor() {
 
       // Load image to draw to canvas
       const img = new Image();
-      img.crossOrigin = "anonymous";
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
@@ -1652,7 +1651,7 @@ export default function BulkEditor() {
                           crop={ocrState.crop} 
                           onChange={c => setOcrState(prev => ({...prev, crop: c}))}
                         >
-                          <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
+                          <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" />
                         </ReactCrop>
                       </div>
                     </>
