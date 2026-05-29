@@ -8,6 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
+import Tesseract from 'tesseract.js';
 
 export interface BulkEditorQuestion {
   id: string;
@@ -269,11 +270,6 @@ export default function BulkEditor() {
   });
 
   const captureScreenForOcr = async () => {
-    if (!geminiApiKey) {
-      showAlert("Please add your Google Gemini API Key in the Settings menu first.", "API Key Required");
-      setIsSettingsOpen(true);
-      return;
-    }
 
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -325,11 +321,6 @@ export default function BulkEditor() {
   };
 
   const openOcr = (imageUrl: string, index: number) => {
-    if (!geminiApiKey) {
-      showAlert("Please add your Google Gemini API Key in the Settings menu first.", "API Key Required");
-      setIsSettingsOpen(true);
-      return;
-    }
     setOcrState(prev => ({
       ...prev,
       isOpen: true,
@@ -401,35 +392,10 @@ export default function BulkEditor() {
         canvas.height
       );
 
-      const base64Image = canvas.toDataURL('image/jpeg', 1.0).split(',')[1];
+      const base64Image = canvas.toDataURL('image/jpeg', 1.0);
 
-      const prompt = `Convert the math equation or text shown in this image to LaTeX. Return ONLY the inline LaTeX code. For example, if it's an equation, return it surrounded by \\( and \\), like \\(x^2 + y^2 = z^2\\). Do not include any other markdown or text.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: base64Image
-                }
-              }
-            ]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
-      }
-
-      const result = await response.json();
-      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      const result = await Tesseract.recognize(base64Image, 'eng');
+      const responseText = result.data.text.trim();
       
       setOcrState(prev => ({ ...prev, resultLatex: responseText }));
     } catch (err) {
