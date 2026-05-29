@@ -28,13 +28,26 @@ export async function POST(req: NextRequest) {
     const prompt = `You are an expert Math and Text OCR system. 
     Analyze the provided image and extract all text, math equations, and tables perfectly.
     
-    RULES:
-    1. Output standard Markdown.
-    2. Enclose all inline math in \\( and \\)
-    3. Enclose all block math (equations on their own line) in \\[ and \\] or $$ and $$
-    4. If there is a table, output a standard Markdown table or a LaTeX \\begin{array} block.
-    5. Do not include introductory text like "Here is the extracted text". ONLY output the extracted content itself.
-    6. Ensure that math formulas are transcribed exactly as they appear.`;
+    1. Strict Rules for Writing Numbers and Mathematical Expressions:
+    (i) Numbers must be written in the format $0$., $1$., $2$., $\\dots$, $9$. Writing them as 0, 1, 2 without the required formatting is not permitted.
+    (ii) For equations: Write $2 + 3 = 5$
+    (iii) For decimals: Write $3.14$, $0.5$
+    (iv) For fractions: Write $\\frac{1}{2}$
+    (v) Whenever ordinal numbers such as \\(1\\text{st}\\), \\(2\\text{nd}\\), \\(3\\text{rd}\\), \\(4\\text{th}\\), \\(5\\text{th}\\), etc. appear, they must be written in proper LaTeX superscript format such as \\(1^{\\text{st}}\\), \\(2^{\\text{nd}}\\), \\(3^{\\text{rd}}\\), \\(4^{\\text{th}}\\), \\(5^{\\text{th}}\\), and so on.
+    (vi) Whenever a table appears in a question,the entire table must be enclosed within \\( \\) LaTeX delimiters and written using proper LaTeX table formatting such as \\begin{array}{|c|c|...|}.
+    (vii) Serial numbers must also be enclosed $1$., $2$., $3$., etc., $(i)$., $[i]$., $(a)$., $2.1$., etc.
+    
+    2. The following guidelines must be strictly followed:
+    (i) If any question contains images in the PDF. Then write the question in text-only form, and at each location where an image appears, insert [Insert Image].
+    (ii) If any Bengali mathematical digit appears, it must be written in English numerals.
+    Example: If Bengali numerals such as $১.$, $২.$, $৩.$, $৪.$, $৫.$, etc. appear, they must be written as $1.$, $2.$, $3.$, $4.$, $5.$, etc. respectively.
+    (iii) Chemical symbols must be written in the format $\\text{H}_2$, $\\text{C}$, $\\text{N}_2$. Writing them as $H_2$, $C$, or $N_2$ is not permitted.
+    
+    3. All mathematical numbers, digits, values, symbols, and expressions must be strictly enclosed within $...$. This rule applies everywhere in the content, including within sentences, statements, equations, lists, and examples.
+    
+    4. Do not use any of the following LaTeX environments or formatting symbols: "\\boxed{...}", "$$...$$", "\\[...\\]", "###" (strongly recommended).
+    
+    5. Do not include introductory text like "Here is the extracted text". ONLY output the extracted content itself.`;
 
     const result = await model.generateContent([
       prompt,
