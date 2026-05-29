@@ -326,7 +326,7 @@ export default function BulkEditor() {
     crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
     resultLatex: '',
-    ocrMethod: 'Google Gemini 1.5 (Math, Text & Tables)'
+    ocrMethod: 'Google Gemini 2.5 (Math, Text & Tables)'
   });
 
   const captureScreenForOcr = async () => {
@@ -452,7 +452,7 @@ export default function BulkEditor() {
         canvas.height
       );
 
-      if (ocrState.ocrMethod === 'Google Gemini 1.5 (Math, Text & Tables)') {
+      if (ocrState.ocrMethod === 'Google Gemini 2.5 (Math, Text & Tables)') {
         const base64Image = canvas.toDataURL('image/jpeg', 0.95);
         
         let apiKey = localStorage.getItem('gemini_api_key');
@@ -1724,12 +1724,12 @@ export default function BulkEditor() {
                       <input 
                         type="radio" 
                         name="ocrMethod" 
-                        value="Google Gemini 1.5 (Math, Text & Tables)"
-                        checked={ocrState.ocrMethod === 'Google Gemini 1.5 (Math, Text & Tables)'}
+                        value="Google Gemini 2.5 (Math, Text & Tables)"
+                        checked={ocrState.ocrMethod === 'Google Gemini 2.5 (Math, Text & Tables)'}
                         onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
-                      Gemini 1.5 (Fastest)
+                      Gemini 2.5 (Fastest)
                     </label>
                   </div>
                 </>
