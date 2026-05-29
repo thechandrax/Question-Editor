@@ -32,6 +32,9 @@ const renderLatex = (text: string) => {
     } else if (part.startsWith('\\[') && part.endsWith('\\]')) {
       return <BlockMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
+      if (part.includes('\\begin{')) {
+        return <div key={index} className="text-left overflow-x-auto [&_.katex-display]:text-left [&_.katex-display]:m-0"><BlockMath math={part.slice(2, -2)} /></div>;
+      }
       return <InlineMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\begin{')) {
       return <BlockMath key={index} math={part} />;
@@ -56,8 +59,32 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
   const [showPreviews, setShowPreviews] = React.useState(true);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const optionRefs = [
+    React.useRef<HTMLTextAreaElement>(null),
+    React.useRef<HTMLTextAreaElement>(null),
+    React.useRef<HTMLTextAreaElement>(null),
+    React.useRef<HTMLTextAreaElement>(null)
+  ];
   const currentQ = question;
   const idx = index;
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => {
+    if (e.key === 'Enter') {
+      handleEnterKey(e, updateFn, currentValue);
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      document.execCommand('undo');
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      document.execCommand('redo');
+    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      document.execCommand('redo');
+    }
+  };
 
   return (
     <div className="mb-12" id={`qeb-${index}`}>
@@ -118,7 +145,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   placeholder="Question goes here..."
                   value={currentQ.bodyHtml}
                   onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value, idx)}
-                  onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('bodyHtml', val, idx), currentQ.bodyHtml)}
+                  onKeyDown={(e) => handleTextareaKeyDown(e, (val) => updateBulkQuestion('bodyHtml', val, idx), currentQ.bodyHtml)}
                 />
               </>
             )}
@@ -163,14 +190,24 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 </button>
 
                 {!showPreviews && (
-                  <textarea
-                    spellCheck="true"
-                    className="w-full min-h-[40px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
-                    placeholder={`Option ${opt.label}...`}
-                    value={opt.body_html}
-                    onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
-                    onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
-                  />
+                  <div className="flex flex-col bg-white">
+                    <div className="border-b border-slate-200">
+                      <RichTextToolbar 
+                        textareaRef={optionRefs[optIdx]} 
+                        value={opt.body_html} 
+                        onChange={(val: string) => updateBulkQuestionOption(optIdx, val, idx)}
+                      />
+                    </div>
+                    <textarea
+                      ref={optionRefs[optIdx]}
+                      spellCheck="true"
+                      className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
+                      placeholder={`Option ${opt.label}...`}
+                      value={opt.body_html}
+                      onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
+                      onKeyDown={(e) => handleTextareaKeyDown(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
+                    />
+                  </div>
                 )}
                 {showPreviews && (
                   <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center">
@@ -201,7 +238,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 placeholder="Provide a detailed explanation here if needed..."
                 value={currentQ.solutionText}
                 onChange={(e) => updateBulkQuestion('solutionText', e.target.value, idx)}
-                onKeyDown={(e) => handleEnterKey(e, (val) => updateBulkQuestion('solutionText', val, idx), currentQ.solutionText)}
+                onKeyDown={(e) => handleTextareaKeyDown(e, (val) => updateBulkQuestion('solutionText', val, idx), currentQ.solutionText)}
               />
               {currentQ.solutionText && (
                 <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">

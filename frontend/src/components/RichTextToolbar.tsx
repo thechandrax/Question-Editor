@@ -71,6 +71,8 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       <button type="button" onClick={() => insertTag('\\%', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Percent">\%</button>
       <button type="button" onClick={() => insertTag('₹', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Rupee">₹</button>
       <button type="button" onClick={() => insertTag('©', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Copyright">©</button>
+      <button type="button" onClick={() => insertTag('@', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="At Symbol">@</button>
+      <button type="button" onClick={() => insertTag('\\( \\mathrm{C}_{2} \\mathrm{H}_{4} \\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="C2H4 Formula">C₂H₄</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('<br/>\n', '')} className="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors font-bold text-xs" title="Line Break">↵ Br</button>
