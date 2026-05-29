@@ -24,7 +24,7 @@ export interface BulkEditorQuestion {
 
 const renderLatex = (text: string) => {
   if (!text) return null;
-  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
+  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
   
   return parts.map((part, index) => {
     if (part.startsWith('$$') && part.endsWith('$$')) {
