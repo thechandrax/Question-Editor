@@ -142,9 +142,9 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
       )}
 
       {!isDrawing && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-800 px-5 py-2 rounded-full shadow-xl font-bold text-sm pointer-events-none flex items-center gap-2">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-2 rounded-full shadow-xl font-bold text-sm pointer-events-none flex items-center gap-2 border border-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Click and drag to select AREA (Right-click to cancel)
+              Click and drag to select area Right-click to cancel
           </div>
       )}
     </div>
