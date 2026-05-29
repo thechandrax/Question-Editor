@@ -20,7 +20,13 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
     // Hide the overlay itself from the capture by not rendering the overlay contents until capture is done
     const captureScreen = async () => {
       try {
-        const canvas = await html2canvas(document.body, {
+        const canvas = await html2canvas(document.documentElement, {
+          x: window.scrollX,
+          y: window.scrollY,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          windowWidth: document.documentElement.scrollWidth,
+          windowHeight: document.documentElement.scrollHeight,
           backgroundColor: null,
           useCORS: true,
           logging: false
@@ -46,7 +52,7 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
 
   if (isCapturing) {
     return (
-      <div className="fixed inset-0 z-[9999] cursor-crosshair pointer-events-none" />
+      <div className="fixed inset-0 z-[9999] cursor-crosshair pointer-events-none bg-transparent" />
     );
   }
 
@@ -89,11 +95,12 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
     const ctx = cropCanvas.getContext('2d');
     
     if (ctx) {
-      // Draw the selected portion from the full screen canvas, accounting for page scroll and DPI scaling
+      // Draw the selected portion from the viewport-sized canvas
+      // Since fullScreenCanvas only contains the viewport, x and y (which are clientX/Y) map directly!
       ctx.drawImage(
         fullScreenCanvas,
-        (x + window.scrollX) * dpr, 
-        (y + window.scrollY) * dpr, 
+        x * dpr, 
+        y * dpr, 
         width * dpr, 
         height * dpr,
         0, 0, width * dpr, height * dpr
