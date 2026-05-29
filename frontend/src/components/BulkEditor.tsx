@@ -68,6 +68,9 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
   const currentQ = question;
   const idx = index;
 
+  type ActiveField = 'bodyHtml' | 'solutionText' | 0 | 1 | 2 | 3;
+  const [activeField, setActiveField] = React.useState<ActiveField>('bodyHtml');
+
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => {
     if (e.key === 'Enter') {
       handleEnterKey(e, updateFn, currentValue);
@@ -85,6 +88,20 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
       document.execCommand('redo');
     }
   };
+
+  let toolbarRef = questionTextareaRef;
+  let toolbarValue = currentQ.bodyHtml;
+  let toolbarOnChange = (val: string) => updateBulkQuestion('bodyHtml', val, idx);
+  
+  if (activeField === 'solutionText') {
+    toolbarRef = solutionTextareaRef;
+    toolbarValue = currentQ.solutionText;
+    toolbarOnChange = (val: string) => updateBulkQuestion('solutionText', val, idx);
+  } else if (typeof activeField === 'number') {
+    toolbarRef = optionRefs[activeField];
+    toolbarValue = currentQ.options[activeField].body_html;
+    toolbarOnChange = (val: string) => updateBulkQuestionOption(activeField, val, idx);
+  }
 
   return (
     <div className="mb-12" id={`qeb-${index}`}>
@@ -134,12 +151,13 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
             {!showPreviews && (
               <>
                 <RichTextToolbar 
-                  textareaRef={questionTextareaRef} 
-                  value={currentQ.bodyHtml} 
-                  onChange={(val: string) => updateBulkQuestion('bodyHtml', val, idx)}
+                  textareaRef={toolbarRef} 
+                  value={toolbarValue} 
+                  onChange={toolbarOnChange}
                 />
                 <textarea 
                   ref={questionTextareaRef}
+                  onFocus={() => setActiveField('bodyHtml')}
                   spellCheck="true"
                   className="w-full min-h-[40px] px-4 py-3 text-base outline-none resize-y bg-transparent"
                   placeholder="Question goes here..."
@@ -191,15 +209,9 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
 
                 {!showPreviews && (
                   <div className="flex flex-col bg-white">
-                    <div className="border-b border-slate-200">
-                      <RichTextToolbar 
-                        textareaRef={optionRefs[optIdx]} 
-                        value={opt.body_html} 
-                        onChange={(val: string) => updateBulkQuestionOption(optIdx, val, idx)}
-                      />
-                    </div>
                     <textarea
                       ref={optionRefs[optIdx]}
+                      onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
                       className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
                       placeholder={`Option ${opt.label}...`}
@@ -226,13 +238,9 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
               Explanation (Optional)
             </h3>
             <div className="border-2 border-amber-100 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/20 bg-white shadow-sm">
-              <RichTextToolbar 
-                textareaRef={solutionTextareaRef} 
-                value={currentQ.solutionText} 
-                onChange={(val: string) => updateBulkQuestion('solutionText', val, idx)}
-              />
               <textarea 
                 ref={solutionTextareaRef}
+                onFocus={() => setActiveField('solutionText')}
                 spellCheck="true"
                 className="w-full min-h-[40px] px-4 py-3 text-sm outline-none resize-y bg-transparent"
                 placeholder="Provide a detailed explanation here if needed..."
