@@ -326,7 +326,7 @@ export default function BulkEditor() {
     crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
     resultLatex: '',
-    ocrMethod: 'Pix2Tex (Pure Math Equations)'
+    ocrMethod: 'Google Gemini 1.5 (Math, Text & Tables)'
   });
 
   const captureScreenForOcr = async () => {
@@ -452,18 +452,47 @@ export default function BulkEditor() {
         canvas.height
       );
 
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 1.0));
-      if (!blob) throw new Error("Failed to create image blob");
+      if (ocrState.ocrMethod === 'Google Gemini 1.5 (Math, Text & Tables)') {
+        const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+        
+        let apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            apiKey = window.prompt("Please enter your Google Gemini API Key to use this feature:\n(It will be securely saved in your browser's local storage)");
+            if (apiKey) {
+                localStorage.setItem('gemini_api_key', apiKey.trim());
+            } else {
+                throw new Error("API Key is required to use Gemini OCR.");
+            }
+        }
 
-      const client = await Client.connect("GREEEN4/MATH-OCR");
-      const result = await client.predict("/process_image", [
-        blob,
-        ocrState.ocrMethod
-      ]);
+        const res = await fetch('/api/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image, apiKey: apiKey.trim() })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          // If auth failed, clear the invalid key
+          if (res.status === 401 || err.error?.includes('API key not valid')) {
+            localStorage.removeItem('gemini_api_key');
+          }
+          throw new Error(err.error || 'Gemini API failed');
+        }
+        const data = await res.json();
+        setOcrState(prev => ({ ...prev, resultLatex: data.result }));
+      } else {
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+        if (!blob) throw new Error("Failed to create image blob");
 
-      const responseText = Array.isArray(result.data) ? String(result.data[0]).trim() : String(result.data).trim();
-      
-      setOcrState(prev => ({ ...prev, resultLatex: responseText }));
+        const client = await Client.connect("GREEEN4/MATH-OCR");
+        const result = await client.predict("/process_image", [
+          blob,
+          "Pix2Tex (Pure Math Equations)"
+        ]);
+        const responseText = Array.isArray(result.data) ? String(result.data[0]).trim() : String(result.data).trim();
+        setOcrState(prev => ({ ...prev, resultLatex: responseText }));
+      }
     } catch (err) {
       console.error("OCR Error:", err);
       showAlert(err instanceof Error ? err.message : "Failed to extract math. Please try again or check your API key.", "OCR Failed");
@@ -1695,12 +1724,12 @@ export default function BulkEditor() {
                       <input 
                         type="radio" 
                         name="ocrMethod" 
-                        value="Nougat (Text + Math)"
-                        checked={ocrState.ocrMethod === 'Nougat (Text + Math)'}
+                        value="Google Gemini 1.5 (Math, Text & Tables)"
+                        checked={ocrState.ocrMethod === 'Google Gemini 1.5 (Math, Text & Tables)'}
                         onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
-                      Nougat (Text+Math)
+                      Gemini 1.5 (Fastest)
                     </label>
                   </div>
                 </>
