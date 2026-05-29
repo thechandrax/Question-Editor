@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 
 interface SnippingOverlayProps {
   onCapture: (base64Image: string) => void;
@@ -16,40 +17,17 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
   const [currentY, setCurrentY] = useState(0);
 
   useEffect(() => {
-    // Use native screen capture for 100% perfect accuracy
+    // Hide the overlay itself from the capture by not rendering the overlay contents until capture is done
     const captureScreen = async () => {
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { displaySurface: "browser" },
-          audio: false
+        const canvas = await html2canvas(document.documentElement, {
+          backgroundColor: null,
+          useCORS: true,
+          logging: false
         });
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        await new Promise((resolve) => {
-          video.onloadedmetadata = () => {
-            video.play();
-            resolve(null);
-          };
-        });
-        
-        // Give a tiny moment for the frame to fully paint
-        await new Promise(r => setTimeout(r, 150));
-
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          setFullScreenCanvas(canvas);
-        }
-        
-        // Stop all tracks to end the screen sharing session immediately
-        stream.getTracks().forEach(track => track.stop());
+        setFullScreenCanvas(canvas);
       } catch (err) {
         console.error("Snipping Tool Error:", err);
-        alert("Screen capture was cancelled or failed. Please try again and select 'Current Tab'.");
         onCancel();
       } finally {
         setIsCapturing(false);
@@ -102,12 +80,17 @@ export function SnippingOverlay({ onCapture, onCancel }: SnippingOverlayProps) {
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
 
-    // Calculate the scale factor between the viewport and the captured video frame
-    const scaleX = fullScreenCanvas.width / window.innerWidth;
-    const scaleY = fullScreenCanvas.height / window.innerHeight;
+    // Mismatches happen because html2canvas scales the canvas internally differently than window.devicePixelRatio
+    // The most robust way is to calculate the EXACT ratio between the CSS dimensions of the document and the resulting canvas pixels
+    const scaleX = fullScreenCanvas.width / document.documentElement.scrollWidth;
+    const scaleY = fullScreenCanvas.height / document.documentElement.scrollHeight;
 
-    const mappedX = x * scaleX;
-    const mappedY = y * scaleY;
+    // x and y are viewport coordinates. To get absolute document coordinates, we add scroll position
+    const absoluteX = x + window.scrollX;
+    const absoluteY = y + window.scrollY;
+
+    const mappedX = absoluteX * scaleX;
+    const mappedY = absoluteY * scaleY;
     const mappedWidth = width * scaleX;
     const mappedHeight = height * scaleY;
     
