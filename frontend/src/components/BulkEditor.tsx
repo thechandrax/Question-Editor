@@ -403,21 +403,33 @@ export default function BulkEditor() {
 
       const base64Image = canvas.toDataURL('image/jpeg', 1.0).split(',')[1];
 
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const prompt = `Convert the math equation or text shown in this image to LaTeX. Return ONLY the inline LaTeX code. For example, if it's an equation, return it surrounded by \\( and \\), like \\(x^2 + y^2 = z^2\\). Do not include any other markdown or text.`;
 
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: "image/jpeg",
-          },
-        },
-      ]);
-      const responseText = result.response.text().trim();
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: base64Image
+                }
+              }
+            ]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
       
       setOcrState(prev => ({ ...prev, resultLatex: responseText }));
     } catch (err) {
