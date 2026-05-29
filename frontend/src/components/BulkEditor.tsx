@@ -8,9 +8,6 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { RichTextToolbar } from './RichTextToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
-
-import { Client } from "@gradio/client";
-
 export interface BulkEditorQuestion {
   id: string;
   bodyHtml: string;
@@ -318,15 +315,13 @@ export default function BulkEditor() {
     crop: Crop;
     isProcessing: boolean;
     resultLatex: string;
-    ocrMethod: string;
   }>({
     isOpen: false,
     imageUrl: '',
     questionIndex: null,
     crop: { unit: '%', x: 25, y: 25, width: 50, height: 50 },
     isProcessing: false,
-    resultLatex: '',
-    ocrMethod: 'Google Gemini 2.5 (Math, Text & Tables)'
+    resultLatex: ''
   });
 
   const captureScreenForOcr = async () => {
@@ -452,47 +447,34 @@ export default function BulkEditor() {
         canvas.height
       );
 
-      if (ocrState.ocrMethod === 'Google Gemini 2.5 (Math, Text & Tables)') {
-        const base64Image = canvas.toDataURL('image/jpeg', 0.95);
-        
-        let apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            apiKey = window.prompt("Please enter your Google Gemini API Key to use this feature:\n(It will be securely saved in your browser's local storage)");
-            if (apiKey) {
-                localStorage.setItem('gemini_api_key', apiKey.trim());
-            } else {
-                throw new Error("API Key is required to use Gemini OCR.");
-            }
-        }
-
-        const res = await fetch('/api/ocr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image, apiKey: apiKey.trim() })
-        });
-        
-        if (!res.ok) {
-          const err = await res.json();
-          // If auth failed, clear the invalid key
-          if (res.status === 401 || err.error?.includes('API key not valid')) {
-            localStorage.removeItem('gemini_api_key');
+      const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+      
+      let apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+          apiKey = window.prompt("Please enter your Google Gemini API Key to use this feature:\n(It will be securely saved in your browser's local storage)");
+          if (apiKey) {
+              localStorage.setItem('gemini_api_key', apiKey.trim());
+          } else {
+              throw new Error("API Key is required to use Gemini OCR.");
           }
-          throw new Error(err.error || 'Gemini API failed');
-        }
-        const data = await res.json();
-        setOcrState(prev => ({ ...prev, resultLatex: data.result }));
-      } else {
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 1.0));
-        if (!blob) throw new Error("Failed to create image blob");
-
-        const client = await Client.connect("GREEEN4/MATH-OCR");
-        const result = await client.predict("/process_image", [
-          blob,
-          "Pix2Tex (Pure Math Equations)"
-        ]);
-        const responseText = Array.isArray(result.data) ? String(result.data[0]).trim() : String(result.data).trim();
-        setOcrState(prev => ({ ...prev, resultLatex: responseText }));
       }
+
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Image, apiKey: apiKey.trim() })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        // If auth failed, clear the invalid key
+        if (res.status === 401 || err.error?.includes('API key not valid')) {
+          localStorage.removeItem('gemini_api_key');
+        }
+        throw new Error(err.error || 'Gemini API failed');
+      }
+      const data = await res.json();
+      setOcrState(prev => ({ ...prev, resultLatex: data.result }));
     } catch (err) {
       console.error("OCR Error:", err);
       showAlert(err instanceof Error ? err.message : "Failed to extract math. Please try again or check your API key.", "OCR Failed");
@@ -1707,30 +1689,6 @@ export default function BulkEditor() {
                     >
                       <img src={ocrState.imageUrl} alt="Crop Source" className="max-w-full max-h-[40vh] object-contain block" crossOrigin="anonymous" />
                     </ReactCrop>
-                  </div>
-                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-4 border border-slate-200 bg-slate-50 p-3 rounded-lg w-full max-w-sm mx-auto shadow-sm">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
-                      <input 
-                        type="radio" 
-                        name="ocrMethod" 
-                        value="Pix2Tex (Pure Math Equations)"
-                        checked={ocrState.ocrMethod === 'Pix2Tex (Pure Math Equations)'}
-                        onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
-                        className="text-emerald-600 focus:ring-emerald-500"
-                      />
-                      Pix2Tex (Math Only)
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
-                      <input 
-                        type="radio" 
-                        name="ocrMethod" 
-                        value="Google Gemini 2.5 (Math, Text & Tables)"
-                        checked={ocrState.ocrMethod === 'Google Gemini 2.5 (Math, Text & Tables)'}
-                        onChange={(e) => setOcrState(prev => ({...prev, ocrMethod: e.target.value}))}
-                        className="text-emerald-600 focus:ring-emerald-500"
-                      />
-                      Gemini 2.5 (Fastest)
-                    </label>
                   </div>
                 </>
               )}
