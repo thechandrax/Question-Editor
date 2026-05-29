@@ -1083,21 +1083,21 @@ export default function BulkEditor() {
               {isDeleteDialogOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsDeleteDialogOpen(false)}></div>
-                  <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 p-1 flex flex-col z-50 min-w-[160px]">
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 p-1.5 flex flex-col z-50 min-w-[120px] animate-in fade-in slide-in-from-top-2 duration-200">
                     <button 
                       type="button"
                       onClick={() => { deleteBulkQuestion(); }}
-                      className="text-left px-3 py-2 text-sm text-red-600 font-bold hover:bg-red-50 rounded flex items-center gap-2"
+                      className="text-left px-3 py-2.5 text-sm text-red-600 font-bold hover:bg-red-50 hover:text-red-700 rounded-lg flex items-center gap-2.5 transition-colors"
                     >
-                      <Trash2 size={14}/> Delete Question
+                      <Trash2 size={15}/> Question
                     </button>
                     <button 
                       type="button"
                       onClick={() => { deleteCurrentImage(); }}
                       disabled={!bulkQuestions[currentQuestionIndex]?.originalImageUrl}
-                      className="text-left px-3 py-2 text-sm text-orange-600 font-bold hover:bg-orange-50 disabled:opacity-50 disabled:hover:bg-transparent rounded flex items-center gap-2"
+                      className="text-left px-3 py-2.5 text-sm text-orange-600 font-bold hover:bg-orange-50 hover:text-orange-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg flex items-center gap-2.5 transition-colors mt-0.5"
                     >
-                      <ImageIcon size={14}/> Delete Image
+                      <ImageIcon size={15}/> Image
                     </button>
                   </div>
                 </>
