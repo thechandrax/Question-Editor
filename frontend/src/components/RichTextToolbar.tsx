@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Type, Superscript, Subscript, Sigma, Upload, Undo, Redo, Divide, X } from 'lucide-react';
 
 interface ToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -32,6 +32,9 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
 
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-100/50 border-b border-slate-200">
+      <button type="button" onClick={() => { textareaRef.current?.focus(); document.execCommand('undo'); }} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Undo"><Undo size={16}/></button>
+      <button type="button" onClick={() => { textareaRef.current?.focus(); document.execCommand('redo'); }} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Redo"><Redo size={16}/></button>
+      <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('<b>', '</b>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Bold"><Bold size={16}/></button>
       <button type="button" onClick={() => insertTag('<i>', '</i>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Italic"><Italic size={16}/></button>
       <button type="button" onClick={() => insertTag('<u>', '</u>')} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Underline"><Underline size={16}/></button>
@@ -45,6 +48,12 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('\\(', '\\)')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Inline Math"><Sigma size={14}/> Inline</button>
       <button type="button" onClick={() => insertTag('$$', '$$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center gap-1" title="Block Math"><Sigma size={14}/> Block</button>
+      <button type="button" onClick={() => insertTag('$', '$')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Single Dollar Math">$</button>
+      <button type="button" onClick={() => insertTag('\\(', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Open Math Parenthesis">\(</button>
+      <button type="button" onClick={() => insertTag('\\)', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-sm" title="Close Math Parenthesis">\)</button>
+      <button type="button" onClick={() => insertTag('\\frac{', '}{}')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Fraction">a/b</button>
+      <button type="button" onClick={() => insertTag('\\div ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Divide"><Divide size={14}/></button>
+      <button type="button" onClick={() => insertTag('\\times ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs flex items-center" title="Multiply"><X size={14}/></button>
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('<br/>\n', '')} className="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors font-bold text-xs" title="Line Break">↵ Br</button>
       
