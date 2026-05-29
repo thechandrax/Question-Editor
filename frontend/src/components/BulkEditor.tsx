@@ -1735,12 +1735,25 @@ export default function BulkEditor() {
           onCapture={(base64Image) => {
             setIsSnipping(false);
             
-            // If it was triggered from a specific question card, save the image there too
             if (snippingIndex !== null) {
+              // Triggered from a specific question card: save image and use manual OCR flow
               setBulkQuestions(prev => prev.map((q, i) => i === snippingIndex ? { ...q, originalImageUrl: base64Image } : q));
+              openOcr(base64Image, snippingIndex);
+            } else {
+              // Triggered from top bar Math Snip button: use auto-processing flow
+              const fullCrop: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
+              setOcrState(prev => ({
+                ...prev,
+                isOpen: true,
+                imageUrl: base64Image,
+                questionIndex: null,
+                crop: fullCrop,
+                resultLatex: '',
+                isProcessing: true,
+                isAutoProcessing: true
+              }));
+              processOcr(base64Image, fullCrop);
             }
-            
-            openOcr(base64Image, snippingIndex);
           }}
         />
       )}
