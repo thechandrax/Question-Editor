@@ -60,8 +60,8 @@ export default function ShortlinkBypassPage() {
           <h1 className="text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 via-blue-600 to-cyan-600">
             Deep Link Bypasser
           </h1>
-          <p className="text-lg text-slate-500 max-w-lg mx-auto leading-relaxed group-hover:text-slate-800 transition-colors duration-500">
-            Instantly bypass ad-networks, tracking scripts, and countdown timers to reveal the true destination link.
+          <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed font-medium transition-colors duration-500">
+            Instantly bypass <span className="font-bold text-rose-500 drop-shadow-sm">ad-networks</span>, <span className="font-bold text-purple-600 drop-shadow-sm">tracking scripts</span>, and <span className="font-bold text-orange-500 drop-shadow-sm">countdown timers</span> to reveal the true destination link.
           </p>
         </div>
 
