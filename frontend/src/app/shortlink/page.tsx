@@ -18,6 +18,13 @@ export default function ShortlinkBypassPage() {
     setResult(null);
     setError(null);
     setCopied(false);
+    
+    // Special check for Cloudflare protected domains like olamovies
+    if (url.toLowerCase().includes('links.olamovies.mov')) {
+      setError("Cloudflare Turnstile Detected! 🛡️ We cannot automatically bypass this first security layer. Please click the link to open it in your browser, wait a few seconds to pass the check, and then paste the new resulting link (like tpi.li or oii.la) here instead!");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/shortlink', {
