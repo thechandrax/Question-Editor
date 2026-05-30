@@ -52,14 +52,15 @@ export default function ShortlinkBypassPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans text-slate-800">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 mb-6 shadow-sm">
-            <ShieldCheck size={32} />
+        <div className="text-center mb-12 group cursor-default">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-400 text-white mb-6 shadow-xl shadow-blue-500/40 group-hover:-translate-y-2 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ease-out relative">
+            <div className="absolute inset-0 bg-white/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <ShieldCheck size={40} className="drop-shadow-md relative z-10" />
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+          <h1 className="text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 via-blue-600 to-cyan-600">
             Deep Link Bypasser
           </h1>
-          <p className="text-lg text-slate-500 max-w-lg mx-auto">
+          <p className="text-lg text-slate-500 max-w-lg mx-auto leading-relaxed group-hover:text-slate-800 transition-colors duration-500">
             Instantly bypass ad-networks, tracking scripts, and countdown timers to reveal the true destination link.
           </p>
         </div>
