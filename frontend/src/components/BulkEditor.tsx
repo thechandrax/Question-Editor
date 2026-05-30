@@ -71,10 +71,13 @@ interface QuestionEditorBlockProps {
   handleEnterKey: (e: React.KeyboardEvent<HTMLTextAreaElement>, updateFn: (val: string) => void, currentValue: string) => void;
   isListView?: boolean;
   openOcr?: (imageUrl: string, index: number | null) => void;
+  globalShowPreviews: boolean;
+  setGlobalShowPreviews: (show: boolean) => void;
 }
 
-function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr }: QuestionEditorBlockProps) {
-  const [showPreviews, setShowPreviews] = React.useState(false);
+function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr, globalShowPreviews, setGlobalShowPreviews }: QuestionEditorBlockProps) {
+  const showPreviews = globalShowPreviews;
+  const setShowPreviews = setGlobalShowPreviews;
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const optionRefs = [
@@ -320,6 +323,7 @@ export default function BulkEditor() {
   };
 
   const [isListView, setIsListView] = useState(false);
+  const [globalShowPreviews, setGlobalShowPreviews] = useState(true);
   const [autoSaveEnabled] = useState(true);
   const [isSnipping, setIsSnipping] = useState(false);
   const [cropMousePos, setCropMousePos] = useState({ x: -1000, y: -1000 });
@@ -1598,6 +1602,8 @@ export default function BulkEditor() {
                   handleEnterKey={handleEnterKey} 
                   isListView={isListView}
                   openOcr={openOcr}
+                  globalShowPreviews={globalShowPreviews}
+                  setGlobalShowPreviews={setGlobalShowPreviews}
                 />
               ))}
             </div>
@@ -1609,6 +1615,8 @@ export default function BulkEditor() {
               updateBulkQuestionOption={updateBulkQuestionOption} 
               handleEnterKey={handleEnterKey} 
               openOcr={openOcr}
+              globalShowPreviews={globalShowPreviews}
+              setGlobalShowPreviews={setGlobalShowPreviews}
             />
           )}
         </>
