@@ -178,6 +178,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   onFocus={() => setActiveField('bodyHtml')}
                   spellCheck="true"
                   className="w-full min-h-[40px] px-4 py-3 text-base outline-none resize-y bg-transparent"
+                  style={{ fontFamily: "'Cambria', serif" }}
                   placeholder="Question goes here..."
                   value={currentQ.bodyHtml}
                   onChange={(e) => updateBulkQuestion('bodyHtml', e.target.value, idx)}
@@ -186,7 +187,10 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
               </>
             )}
             {showPreviews && (
-              <div className="px-4 py-3 bg-slate-50 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium min-h-[60px]">
+              <div 
+                className="px-4 py-3 bg-slate-50 text-slate-800 prose prose-slate prose-p:m-0 max-w-none text-base font-medium min-h-[60px]"
+                style={{ fontFamily: "'Cambria', serif" }}
+              >
                 {currentQ.bodyHtml ? renderLatex(currentQ.bodyHtml) : <span className="text-slate-400 italic">Empty Question</span>}
               </div>
             )}
@@ -232,7 +236,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                       onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
                       className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
-                      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                      style={{ fontFamily: "'Cambria', serif" }}
                       placeholder={`Option ${opt.label}...`}
                       value={opt.body_html}
                       onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
@@ -243,7 +247,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 {showPreviews && (
                   <div 
                     className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center"
-                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                    style={{ fontFamily: "'Cambria', serif" }}
                   >
                     {opt.body_html ? <div className="w-full break-words">{renderLatex(opt.body_html)}</div> : <span className="text-slate-400 italic">Empty Option</span>}
                   </div>
@@ -265,13 +269,17 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 onFocus={() => setActiveField('solutionText')}
                 spellCheck="true"
                 className="w-full min-h-[40px] px-4 py-3 text-sm outline-none resize-y bg-transparent"
+                style={{ fontFamily: "'Cambria', serif" }}
                 placeholder="Provide a detailed explanation here if needed..."
                 value={currentQ.solutionText}
                 onChange={(e) => updateBulkQuestion('solutionText', e.target.value, idx)}
                 onKeyDown={(e) => handleTextareaKeyDown(e, (val) => updateBulkQuestion('solutionText', val, idx), currentQ.solutionText)}
               />
               {currentQ.solutionText && (
-                <div className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl">
+                <div 
+                  className="px-4 py-3 bg-slate-100 border-t-2 border-amber-200/50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none border-dashed rounded-b-xl"
+                  style={{ fontFamily: "'Cambria', serif" }}
+                >
                   {renderLatex(currentQ.solutionText)}
                 </div>
               )}
@@ -989,7 +997,8 @@ export default function BulkEditor() {
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Cambria', serif;
+      font-size: 14pt;
       background: var(--bg); 
       color: var(--text);
       line-height: 1.6;
@@ -1067,7 +1076,7 @@ export default function BulkEditor() {
       padding: 12px 16px 12px 48px;
       border-radius: 12px;
       font-size: 1.1rem;
-      font-family: 'Times New Roman', Times, serif;
+      font-family: 'Cambria', serif;
     }
     .option.correct { 
       background: var(--success-bg); 
