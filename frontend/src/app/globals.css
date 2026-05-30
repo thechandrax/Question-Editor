@@ -92,3 +92,9 @@ body.theme-light .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 
 /* Fix KaTeX font size to match surrounding text */
 .katex { font-size: 1.05em !important; }
 
+
+/* Force full borders on prose tables to match standard exam formatting */
+.prose table { border-collapse: collapse !important; border: 1px solid #94a3b8 !important; }
+.prose th, .prose td { border: 1px solid #94a3b8 !important; padding: 8px !important; }
+.prose thead { background-color: #f8fafc !important; }
+

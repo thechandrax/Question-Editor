@@ -1122,6 +1122,9 @@ export default function BulkEditor() {
       color: var(--text-light); 
       font-style: italic;
     .katex { font-size: 1.05em !important; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th, td { border: 1px solid #94a3b8; padding: 8px; text-align: center; }
+    thead { background-color: #f8fafc; font-weight: bold; }
   </style>
 </head>
 <body>
