@@ -1603,6 +1603,7 @@ export default function BulkEditor() {
             </div>
           ) : (
             <QuestionEditorBlock 
+              key={currentQ.id}
               question={currentQ} 
               index={currentQuestionIndex} 
               updateBulkQuestion={updateBulkQuestion} 
