@@ -147,7 +147,17 @@ def bypass_url(url, scraper, depth=0, visited=None):
         logging.error(f"Error at depth {depth}: {e}")
         return url
 
+import PyBypass
+
 def full_bypass(shortlink):
+    # Try the new PyBypass Github package first!
+    try:
+        bypassed_url = PyBypass.bypass(shortlink)
+        if bypassed_url and bypassed_url != shortlink and 'http' in bypassed_url:
+            return bypassed_url
+    except Exception as e:
+        pass # PyBypass couldn't handle it or threw an error, fallback to our custom scraper
+        
     scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
     return unquote(bypass_url(shortlink, scraper))
 

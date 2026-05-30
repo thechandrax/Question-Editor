@@ -6,3 +6,4 @@ python-dotenv
 PyMuPDF
 cloudscraper
 beautifulsoup4
+PyBypass
