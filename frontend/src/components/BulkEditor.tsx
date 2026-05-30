@@ -177,7 +177,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   ref={questionTextareaRef}
                   onFocus={() => setActiveField('bodyHtml')}
                   spellCheck="true"
-                  className="w-full min-h-[40px] px-4 py-3 text-lg outline-none resize-y bg-transparent"
+                  className="w-full min-h-[200px] px-4 py-3 text-lg outline-none resize-y bg-transparent"
                   style={{ fontFamily: "'Cambria', serif" }}
                   placeholder="Question goes here..."
                   value={currentQ.bodyHtml}
@@ -235,7 +235,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                       ref={optionRefs[optIdx]}
                       onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
-                      className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-base"
+                      className="w-full min-h-[100px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-base"
                       style={{ fontFamily: "'Cambria', serif" }}
                       placeholder={`Option ${opt.label}...`}
                       value={opt.body_html}
@@ -268,7 +268,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 ref={solutionTextareaRef}
                 onFocus={() => setActiveField('solutionText')}
                 spellCheck="true"
-                className="w-full min-h-[40px] px-4 py-3 text-base outline-none resize-y bg-transparent"
+                className="w-full min-h-[120px] px-4 py-3 text-base outline-none resize-y bg-transparent"
                 style={{ fontFamily: "'Cambria', serif" }}
                 placeholder="Provide a detailed explanation here if needed..."
                 value={currentQ.solutionText}
