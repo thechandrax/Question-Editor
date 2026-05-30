@@ -136,14 +136,17 @@ export default function ShortlinkBypassPage() {
               </button>
             </div>
             
-            <div className="mt-6 flex justify-center">
+            <div className="mt-8 flex justify-center w-full">
                <a 
                 href={result} 
                 target="_blank" 
                 rel="noreferrer"
-                className="text-green-700 font-semibold hover:text-green-800 underline underline-offset-4 decoration-green-300 hover:decoration-green-500 transition-all"
+                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg rounded-2xl shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:-translate-y-1 transition-all w-full sm:w-auto"
                >
-                 Open Link in New Tab &rarr;
+                 <span className="flex items-center gap-2">
+                   Open Destination Link
+                   <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                 </span>
                </a>
             </div>
           </div>
