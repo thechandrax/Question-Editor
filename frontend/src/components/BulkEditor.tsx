@@ -74,7 +74,7 @@ interface QuestionEditorBlockProps {
 }
 
 function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQuestionOption, handleEnterKey, isListView, openOcr }: QuestionEditorBlockProps) {
-  const [showPreviews, setShowPreviews] = React.useState(true);
+  const [showPreviews, setShowPreviews] = React.useState(false);
   const questionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const solutionTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const optionRefs = [
