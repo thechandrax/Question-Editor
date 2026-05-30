@@ -35,16 +35,16 @@ const renderLatex = (text: string) => {
 
   return parts.map((part, index) => {
     if (part.startsWith('$$') && part.endsWith('$$')) {
-      return <div key={index} className="py-2"><BlockMath math={part.slice(2, -2)} /></div>;
+      return <div key={index} className="!my-0 py-[2px]"><BlockMath math={part.slice(2, -2)} /></div>;
     } else if (part.startsWith('\\[') && part.endsWith('\\]')) {
-      return <div key={index} className="py-2"><BlockMath math={part.slice(2, -2)} /></div>;
+      return <div key={index} className="!my-0 py-[2px]"><BlockMath math={part.slice(2, -2)} /></div>;
     } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
       if (part.includes('\\begin{')) {
-        return <div key={index} className="text-left overflow-x-auto !my-2 py-2 [&_.katex-display]:!text-left [&_.katex-display]:!my-2 [&_.katex-display]:!py-2 [&_.katex-display_.katex]:!text-left [&_.katex-display_.katex]:!m-0"><BlockMath math={part.slice(2, -2)} /></div>;
+        return <div key={index} className="text-left overflow-x-auto !my-0 py-[2px] [&_.katex-display]:!text-left [&_.katex-display]:!m-0 [&_.katex-display]:!p-0 [&_.katex-display_.katex]:!text-left [&_.katex-display_.katex]:!m-0"><BlockMath math={part.slice(2, -2)} /></div>;
       }
       return <InlineMath key={index} math={part.slice(2, -2)} />;
     } else if (part.startsWith('\\begin{')) {
-      return <div key={index} className="py-2"><BlockMath math={part} /></div>;
+      return <div key={index} className="!my-0 py-[2px]"><BlockMath math={part} /></div>;
     } else if (part.startsWith('$') && part.endsWith('$')) {
       return <InlineMath key={index} math={part.slice(1, -1)} />;
     }
