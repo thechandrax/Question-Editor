@@ -41,8 +41,8 @@ export default function ShortlinkBypassPage() {
       }
 
       setResult(data.bypassed);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while bypassing the link.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred while bypassing the link.');
     } finally {
       setIsLoading(false);
     }
