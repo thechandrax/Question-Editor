@@ -88,3 +88,7 @@ body.theme-light .text-blue-400 { color: #3b82f6 !important; }
 body.theme-light .text-blue-500 { color: #2563eb !important; }
 body.theme-light .border-blue-500 { border-color: #2563eb !important; }
 body.theme-light .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025) !important; }
+
+/* Fix KaTeX font size to match surrounding text */
+.katex { font-size: 1.05em !important; }
+

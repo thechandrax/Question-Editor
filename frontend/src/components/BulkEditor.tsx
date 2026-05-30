@@ -1121,7 +1121,7 @@ export default function BulkEditor() {
       font-size: 0.9rem; 
       color: var(--text-light); 
       font-style: italic;
-    }
+    .katex { font-size: 1.05em !important; }
   </style>
 </head>
 <body>
