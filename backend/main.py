@@ -65,8 +65,10 @@ def extract_js_urls(html, current_url):
 
 # Ad-view lock domains - require real browser + human to view an ad before unlocking
 AD_VIEW_LOCK_INDICATORS = [
-    'freehelpdesk.in',  # vplink.in routes here with an ad-view cookie lock
-    'studyeducations.com',
+    'freehelpdesk.in',         # vplink.in routes here with an ad-view cookie lock
+    'studyeducations.com',     # another ad-network intermediary
+    'sanadegreecollege.in',    # gplinks.co routes here with an ad-view lock
+    'gplinks.co/subscription', # gplinks.co subscription wall (requires ad-view)
 ]
 
 def bypass_url(url, scraper, depth=0, visited=None):
@@ -138,6 +140,13 @@ def bypass_url(url, scraper, depth=0, visited=None):
                 if post_b64:
                     return bypass_url(post_b64, scraper, depth + 1, visited)
 
+        # --- gplinks / gplinks.co specific: follow the "skip_sub=1" bypass link ---
+        skip_sub_link = soup.find('a', href=lambda h: h and 'skip_sub=1' in h)
+        if skip_sub_link:
+            skip_url = urljoin(current_url, skip_sub_link['href'])
+            logging.info(f"[gplinks] Following skip_sub link: {skip_url}")
+            return bypass_url(skip_url, scraper, depth + 1, visited)
+
         meta = soup.find('meta', attrs={'http-equiv': 'refresh'})
         if meta:
             match = re.search(r'url=([^;]+)', meta.get('content', ''), re.I)
@@ -149,11 +158,13 @@ def bypass_url(url, scraper, depth=0, visited=None):
             full_url = urljoin(current_url, a['href'])
             if 'javascript:' in full_url or '#' in full_url or 't.me' in full_url:
                 continue 
-            if re.search(r'\b(click here|go|continue|get link|download|open link|verify|generate key)\b', a.text.lower()):
+            if re.search(r'\b(click here|go|continue|get link|download|open link|verify|generate key|continue with ads)\b', a.text.lower()):
                 return bypass_url(full_url, scraper, depth + 1, visited)
 
         return current_url
         
+    except ValueError:
+        raise  # Re-raise ad-view lock errors so they propagate up
     except Exception as e:
         logging.error(f"Error at depth {depth}: {e}")
         return url
@@ -165,6 +176,9 @@ def full_bypass(shortlink):
     try:
         bypassed_url = PyBypass.bypass(shortlink)
         if bypassed_url and bypassed_url != shortlink and 'http' in bypassed_url:
+            # Check if PyBypass returned an ad-view lock URL
+            if any(indicator in bypassed_url for indicator in AD_VIEW_LOCK_INDICATORS):
+                raise ValueError(f"AD_VIEW_LOCK:{bypassed_url}")
             return bypassed_url
     except ValueError:
         raise  # Re-raise ad-view lock errors
