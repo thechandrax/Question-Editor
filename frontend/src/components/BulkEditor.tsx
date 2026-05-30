@@ -177,7 +177,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   ref={questionTextareaRef}
                   onFocus={() => setActiveField('bodyHtml')}
                   spellCheck="true"
-                  className="w-full min-h-[200px] px-4 py-3 text-lg outline-none resize-y bg-transparent"
+                  className="w-full min-h-[150px] px-4 py-3 text-lg outline-none resize-y bg-transparent"
                   style={{ fontFamily: "'Cambria', serif" }}
                   placeholder="Question goes here..."
                   value={currentQ.bodyHtml}
