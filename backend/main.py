@@ -63,6 +63,12 @@ def extract_js_urls(html, current_url):
                     return clean_url
     return None
 
+# Ad-view lock domains - require real browser + human to view an ad before unlocking
+AD_VIEW_LOCK_INDICATORS = [
+    'freehelpdesk.in',  # vplink.in routes here with an ad-view cookie lock
+    'studyeducations.com',
+]
+
 def bypass_url(url, scraper, depth=0, visited=None):
     if visited is None:
         visited = set()
@@ -72,6 +78,11 @@ def bypass_url(url, scraper, depth=0, visited=None):
         return url
     if clean_url in visited:
         return url
+
+    # Detect ad-view lock - these require a human to watch an ad in a real browser
+    if any(indicator in clean_url for indicator in AD_VIEW_LOCK_INDICATORS):
+        logging.info(f"Ad-view lock detected at: {clean_url}")
+        raise ValueError(f"AD_VIEW_LOCK:{clean_url}")
         
     visited.add(clean_url)
     
@@ -155,8 +166,10 @@ def full_bypass(shortlink):
         bypassed_url = PyBypass.bypass(shortlink)
         if bypassed_url and bypassed_url != shortlink and 'http' in bypassed_url:
             return bypassed_url
-    except Exception as e:
-        pass # PyBypass couldn't handle it or threw an error, fallback to our custom scraper
+    except ValueError:
+        raise  # Re-raise ad-view lock errors
+    except Exception:
+        pass  # PyBypass couldn't handle it, fallback to our custom scraper
         
     scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
     return unquote(bypass_url(shortlink, scraper))
@@ -166,6 +179,19 @@ async def api_bypass_shortlink(request: ShortlinkRequest):
     try:
         final_url = full_bypass(request.url)
         return {"original": request.url, "bypassed": final_url, "success": True}
+    except ValueError as e:
+        err_str = str(e)
+        if err_str.startswith('AD_VIEW_LOCK:'):
+            locked_url = err_str.replace('AD_VIEW_LOCK:', '')
+            return {
+                "original": request.url,
+                "bypassed": None,
+                "success": False,
+                "error": "ad_view_lock",
+                "message": f"This link uses an Ad-View Lock that requires you to watch a real ad in your browser. It then generates a one-time cookie to unlock the next step. Our engine cannot simulate this. Please open the link manually, wait through the ad/timer, click CONTINUE, and paste the resulting link here.",
+                "intermediate_url": locked_url
+            }
+        raise HTTPException(status_code=500, detail=err_str)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 # --- END SHORTLINK BYPASS LOGIC ---

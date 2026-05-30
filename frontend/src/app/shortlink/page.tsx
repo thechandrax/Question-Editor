@@ -8,6 +8,7 @@ export default function ShortlinkBypassPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adViewLock, setAdViewLock] = useState<{message: string, url: string} | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleBypass = async (e: React.FormEvent) => {
@@ -17,12 +18,13 @@ export default function ShortlinkBypassPage() {
     setIsLoading(true);
     setResult(null);
     setError(null);
+    setAdViewLock(null);
     setCopied(false);
     
     // Special check for Cloudflare or JS protected domains like olamovies and fc-lc
     const lowerUrl = url.toLowerCase();
     if (lowerUrl.includes('links.olamovies.mov') || lowerUrl.includes('fc-lc.xyz') || lowerUrl.includes('fc.lc')) {
-      setError("Security Check Detected! 🛡️ We cannot automatically bypass this first security layer (it requires a manual CAPTCHA or browser check). Please click the link to open it in your browser, pass the check, and then paste the new resulting link here instead!");
+      setError("Security Lock Detected! 🛡️ This link uses Cloudflare Turnstile or a manual CAPTCHA that requires you to solve it in your browser first. Please open the link, solve the check, then paste the resulting link here!");
       setIsLoading(false);
       return;
     }
@@ -35,6 +37,12 @@ export default function ShortlinkBypassPage() {
       });
 
       const data = await response.json();
+
+      // Handle special ad_view_lock error from backend
+      if (data.error === 'ad_view_lock') {
+        setAdViewLock({ message: data.message, url: data.intermediate_url || url });
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to bypass link');
@@ -115,7 +123,32 @@ export default function ShortlinkBypassPage() {
           </form>
         </div>
 
-        {/* Results Section */}
+        {/* Ad-View Lock Warning */}
+        {adViewLock && (
+          <div className="p-6 bg-amber-50 text-amber-900 rounded-2xl border border-amber-200 animate-in fade-in slide-in-from-bottom-4">
+            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+              <span className="text-2xl">🔒</span> Ad-View Lock Detected!
+            </h3>
+            <p className="text-amber-800 mb-4 text-sm leading-relaxed">
+              This link (<strong>vplink.in</strong>) uses a special <strong>Ad-View Lock</strong> — it forces you to watch a real ad in your browser before giving you the next link. Our engine cannot simulate watching an ad!
+            </p>
+            <div className="bg-white rounded-xl border border-amber-200 p-4 mb-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-3">👉 How to solve this manually (3 steps):</p>
+              <ol className="space-y-2 text-sm">
+                <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">1.</span> <span>Click the link below to open it in your browser</span></li>
+                <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">2.</span> <span>Wait for the countdown timer, then click <strong>CONTINUE</strong></span></li>
+                <li className="flex gap-2"><span className="font-bold text-amber-700 shrink-0">3.</span> <span>Copy the new link you get (e.g. tpi.li/...) and paste it back here!</span></li>
+              </ol>
+            </div>
+            <a href={url} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors text-sm"
+            >
+              Open Link Manually <ArrowRight size={16} />
+            </a>
+          </div>
+        )}
+
+        {/* Error section */}
         {error && (
           <div className="p-6 bg-red-50 text-red-700 rounded-2xl border border-red-100 flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4">
             <ShieldCheck size={24} className="text-red-500 shrink-0 mt-0.5" />

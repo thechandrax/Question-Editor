@@ -1,0 +1,64 @@
+startV34Scanner()" style="width: 100%; padding: 18px; background: #4c1d95; color: #ffffff; border: none; border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(76, 29, 149, 0.3); transition: all 0.3s;" onmouseover="this.style.background='#5b21b6'; this.style.boxShadow='0 6px 20px rgba(76, 29, 149, 0.5)';" onmouseout="this.style.background='#4c1d95'; this.style.boxShadow='0 4px 15px rgba(76, 29, 149, 0.3)';">
+      Verify Accelerated Allocation
+    </button>
+  </div>
+
+  <div id="v34-loading" style="display: none; padding: 50px 30px; text-align: center;">
+    <div style="width: 60px; height: 60px; border: 4px solid #e2e8f0; border-top: 4px solid #0ea5e9; border-radius: 50%; margin: 0 auto 25px; animation: v34Spin 0.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;"></div>
+    
+    <h4 id="v34-status" style="margin: 0; color: #0f172a; font-size: 18px; font-weight: 700;"><span class="ez-toc-section" id="Querying_Elite_Fast-Track_Endowments%E2%80%A6"></span>Querying Elite Fast-Track Endowments&#8230;<span class="ez-toc-section-end"></span></h4>
+    <p style="margin: 8px 0 0; color: #64748b; font-size: 13px; font-weight: 500;">Bypassing standard two-year admission bottlenecks.</p>
+    
+    <div style="width: 100%; background: #e2e8f0; border-radius: 6px; height: 6px; margin-top: 30px; overflow: hidden;">
+      <div id="v34-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4c1d95, #0ea5e9); transition: width 0.7s linear;"></div>
+    </div>
+  </div>
+
+  <div id="v34-result" style="display: none; padding: 45px 30px; text-align: center;">
+    <div style="width: 70px; height: 70px; background: rgba(14, 165, 233, 0.1); border: 2px solid #0ea5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #0ea5e9; font-size: 32px; font-weight: bold;">✓</div>
+    
+    <h3 style="margin: 0 0 15px 0; color: #0f172a; font-size: 24px; font-weight: 700;"><span class="ez-toc-section" id="Accelerated_Profile_Authorized"></span>Accelerated Profile Authorized<span class="ez-toc-section-end"></span></h3>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #0ea5e9; border-radius: 6px; padding: 20px; margin: 25px 0;">
+      <p style="margin: 0; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Admission &#038; Funding Status:</p>
+      <h2 style="margin: 8px 0 0; color: #4c1d95; font-size: 26px; font-weight: 800;"><span class="ez-toc-section" id="Elite_Fast-Track_Match_Secured"></span>Elite Fast-Track Match Secured<span class="ez-toc-section-end"></span></h2>
+    </div>
+    <p style="margin: 0; color: #334155; font-size: 15px; line-height: 1.6;">Your professional trajectory clears strict global institutional speed parameters. Review the verified accelerated study courses cataloged below to instantly lock your fully funded MBA admission.</p>
+  </div>
+
+</div>
+
+<style>
+  @keyframes v34Spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+function startV34Scanner() {
+  document.getElementById('v34-input').style.display = 'none';
+  document.getElementById('v34-loading').style.display = 'block';
+  
+  let t = 0;
+  let p = document.getElementById('v34-bar');
+  let s = document.getElementById('v34-status');
+
+  let int = setInterval(() => {
+    t += 6.66; // Reaches 100% in exactly 15 seconds
+    p.style.width = t + '%';
+
+    if(t > 20 && t <= 50) {
+      s.innerText = "Evaluating Corporate Leadership Portfolios...";
+    } else if(t > 50 && t <= 80) {
+      s.innerText = "Securing Fast-Track Institutional Waivers...";
+    } else if(t > 80 && t < 100) {
+      s.innerText = "Authorizing Elite Visa Compliance Modules...";
+    }
+
+    if(t >= 100) {
+      clearInterval(int);
+      setTimeout(() => {
+        document.getElementById('v34-loading').style.display = 'none';
+        document.getElementById('v34-result').style.display = 'block';
+      }, 300);
+    }
+  }, 1000);
+}
+</script>
