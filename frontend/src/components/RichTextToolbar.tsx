@@ -123,6 +123,7 @@ export const RichTextToolbar = ({ textareaRef, value, onChange, showImageUpload 
       <button type="button" onClick={() => insertTag('\\approx ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Approximately">≈</button>
       <button type="button" onClick={() => insertTag('\\pi ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Pi">π</button>
       <button type="button" onClick={() => insertTag('\\theta ', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Theta">θ</button>
+      <button type="button" onClick={() => insertTag('^{\\circ}', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Degree">°</button>
       
       <div className="w-px h-5 bg-slate-300 mx-1"></div>
       <button type="button" onClick={() => insertTag('\\%', '')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors font-bold text-xs" title="Percent">\%</button>

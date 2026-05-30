@@ -232,6 +232,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                       onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
                       className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-sm"
+                      style={{ fontFamily: "'Times New Roman', Times, serif" }}
                       placeholder={`Option ${opt.label}...`}
                       value={opt.body_html}
                       onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
@@ -240,7 +241,10 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                   </div>
                 )}
                 {showPreviews && (
-                  <div className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center">
+                  <div 
+                    className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-sm prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                  >
                     {opt.body_html ? <div className="w-full break-words">{renderLatex(opt.body_html)}</div> : <span className="text-slate-400 italic">Empty Option</span>}
                   </div>
                 )}
@@ -1059,10 +1063,11 @@ export default function BulkEditor() {
     .option { 
       position: relative;
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
+      border: 2px solid var(--border);
+      padding: 12px 16px 12px 48px;
+      border-radius: 12px;
       font-size: 1.1rem;
+      font-family: 'Times New Roman', Times, serif;
     }
     .option.correct { 
       background: var(--success-bg); 
