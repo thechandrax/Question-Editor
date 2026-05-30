@@ -1,0 +1,154 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Link2, ArrowRight, Loader2, Copy, CheckCircle2, ShieldCheck } from 'lucide-react';
+
+export default function ShortlinkBypassPage() {
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleBypass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url) return;
+
+    setIsLoading(true);
+    setResult(null);
+    setError(null);
+    setCopied(false);
+
+    try {
+      const response = await fetch('/api/shortlink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to bypass link');
+      }
+
+      setResult(data.bypassed);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while bypassing the link.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (result) {
+      navigator.clipboard.writeText(result);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans text-slate-800">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 mb-6 shadow-sm">
+            <ShieldCheck size={32} />
+          </div>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+            Deep Link Bypasser
+          </h1>
+          <p className="text-lg text-slate-500 max-w-lg mx-auto">
+            Instantly bypass ad-networks, tracking scripts, and countdown timers to reveal the true destination link.
+          </p>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 mb-8 border border-slate-100 transition-all">
+          <form onSubmit={handleBypass} className="space-y-6">
+            <div>
+              <label htmlFor="url" className="block text-sm font-semibold text-slate-700 mb-2">
+                Paste Shortlink URL
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                  <Link2 size={20} />
+                </div>
+                <input
+                  id="url"
+                  type="url"
+                  required
+                  placeholder="https://gplinks.co/..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-4 border-2 border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !url}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 border border-transparent rounded-2xl shadow-sm text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={24} />
+                  Bypassing Layers...
+                </>
+              ) : (
+                <>
+                  Bypass Link <ArrowRight size={20} />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Results Section */}
+        {error && (
+          <div className="p-6 bg-red-50 text-red-700 rounded-2xl border border-red-100 flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4">
+            <ShieldCheck size={24} className="text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold mb-1">Bypass Failed</h3>
+              <p className="text-red-600/90">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="p-8 bg-green-50 text-green-900 rounded-3xl border-2 border-green-200 shadow-lg shadow-green-100/50 animate-in fade-in slide-in-from-bottom-4">
+            <h3 className="text-sm font-bold tracking-widest uppercase text-green-600 mb-3 flex items-center gap-2">
+              <CheckCircle2 size={18} />
+              Destination Unlocked
+            </h3>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1 w-full p-4 bg-white rounded-xl border border-green-200 font-mono text-sm break-all text-slate-800 shadow-sm">
+                {result}
+              </div>
+              <button
+                onClick={copyToClipboard}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-sm whitespace-nowrap"
+              >
+                {copied ? <><CheckCircle2 size={18} /> Copied!</> : <><Copy size={18} /> Copy Link</>}
+              </button>
+            </div>
+            
+            <div className="mt-6 flex justify-center">
+               <a 
+                href={result} 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-green-700 font-semibold hover:text-green-800 underline underline-offset-4 decoration-green-300 hover:decoration-green-500 transition-all"
+               >
+                 Open Link in New Tab &rarr;
+               </a>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -4,3 +4,5 @@ pydantic
 python-multipart
 python-dotenv
 PyMuPDF
+cloudscraper
+beautifulsoup4

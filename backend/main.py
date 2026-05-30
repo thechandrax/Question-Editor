@@ -7,6 +7,12 @@ import base64
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+import time
+import sys
+from urllib.parse import urlparse, urljoin, unquote
+from bs4 import BeautifulSoup
+import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -19,6 +25,138 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- SHORTLINK BYPASS LOGIC ---
+TIMEOUT = 30
+MAX_DEPTH = 12
+KNOWN_NETWORKS = ['gplinks', 'droplink', 'rocklinks', 'shrinkme', 'mahnokari', 'vplink', 'studyeducations', 'asmultiverse']
+
+class ShortlinkRequest(BaseModel):
+    url: str
+
+def extract_base64_url(text):
+    matches = re.findall(r'(aHR0c[a-zA-Z0-9+/]+={0,2})', text)
+    for match in matches:
+        try:
+            decoded = base64.b64decode(match).decode('utf-8')
+            if decoded.startswith('http') and 'mahnokari' not in decoded and 'vplink' not in decoded:
+                if any(bad in decoded.lower() for bad in ['w3.org', 'schema.org', '<svg', '<path', 'xmlns']):
+                    continue
+                return decoded
+        except:
+            pass
+    return None
+
+def extract_js_urls(html, current_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup.find_all('script'):
+        if script.string:
+            js = script.string
+            urls = re.findall(r'["\'](https?:\/\/[^"\']+)["\']', js)
+            for u in urls:
+                clean_url = u.replace('\\/', '/')
+                if clean_url == current_url or 'googletagmanager' in clean_url:
+                    continue
+                if any(domain in clean_url for domain in KNOWN_NETWORKS):
+                    return clean_url
+                if 'location.href' in js or 'window.location' in js or 'location.replace' in js:
+                    return clean_url
+    return None
+
+def bypass_url(url, scraper, depth=0, visited=None):
+    if visited is None:
+        visited = set()
+        
+    clean_url = url.split('#')[0]
+    if depth > MAX_DEPTH:
+        return url
+    if clean_url in visited:
+        return url
+        
+    visited.add(clean_url)
+    
+    try:
+        if any(domain in clean_url for domain in ['mahnokari', 'vplink', 'olamovies']):
+            time.sleep(5) 
+        else:
+            time.sleep(1.5)
+        
+        resp = scraper.get(url, timeout=TIMEOUT, allow_redirects=True)
+        current_url = resp.url
+        html = resp.text
+        
+        if current_url != url:
+            if any(ext in current_url.lower() for ext in ['.zip', '.rar', '.pdf', '.mp4', 'drive.google', 'key=', 'auth=', 'file/']):
+                 return current_url
+                 
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        b64_url = extract_base64_url(html)
+        if b64_url:
+            return bypass_url(b64_url, scraper, depth + 1, visited)
+            
+        js_url = extract_js_urls(html, current_url)
+        if js_url:
+            return bypass_url(js_url, scraper, depth + 1, visited)
+
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if any(domain in href.lower() for domain in KNOWN_NETWORKS) and 'javascript' not in href:
+                full_url = urljoin(current_url, href)
+                return bypass_url(full_url, scraper, depth + 1, visited)
+                
+        for tag in soup.find_all(attrs={"onclick": True}):
+            onclick_text = tag['onclick']
+            urls = re.findall(r'["\'](https?:\/\/[^"\']+)["\']', onclick_text)
+            for u in urls:
+                clean_url = u.replace('\\/', '/')
+                if any(domain in clean_url for domain in KNOWN_NETWORKS):
+                    return bypass_url(clean_url, scraper, depth + 1, visited)
+
+        for form in soup.find_all('form'):
+            action = form.get('action') or current_url
+            inputs = form.find_all('input')
+            data = {inp.get('name'): inp.get('value', '') for inp in inputs if inp.get('name')}
+            
+            if data and ('_wpnonce' in data or 'token' in data or 'alias' in data or 'submit' in html.lower() or 'go' in html.lower()):
+                post_resp = scraper.post(action, data=data, timeout=TIMEOUT, allow_redirects=True)
+                if post_resp.url != action and post_resp.url.split('#')[0] != current_url.split('#')[0]:
+                    return bypass_url(post_resp.url, scraper, depth + 1, visited)
+                post_b64 = extract_base64_url(post_resp.text)
+                if post_b64:
+                    return bypass_url(post_b64, scraper, depth + 1, visited)
+
+        meta = soup.find('meta', attrs={'http-equiv': 'refresh'})
+        if meta:
+            match = re.search(r'url=([^;]+)', meta.get('content', ''), re.I)
+            if match:
+                return bypass_url(match.group(1).strip("'\" "), scraper, depth + 1, visited)
+
+        for a in soup.find_all('a', href=True):
+            full_url = urljoin(current_url, a['href'])
+            if 'javascript:' in full_url or '#' in full_url or 't.me' in full_url:
+                continue 
+            if re.search(r'\b(click here|go|continue|get link|download|open link|verify|generate key)\b', a.text.lower()):
+                return bypass_url(full_url, scraper, depth + 1, visited)
+
+        return current_url
+        
+    except Exception as e:
+        logging.error(f"Error at depth {depth}: {e}")
+        return url
+
+def full_bypass(shortlink):
+    scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+    return unquote(bypass_url(shortlink, scraper))
+
+@app.post("/api/bypass-shortlink")
+async def api_bypass_shortlink(request: ShortlinkRequest):
+    try:
+        final_url = full_bypass(request.url)
+        return {"original": request.url, "bypassed": final_url, "success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+# --- END SHORTLINK BYPASS LOGIC ---
 
 def convert_math(text: str, wrapper: str) -> str:
     """Converts $...$ into \(...\) if inline_parentheses is selected."""
