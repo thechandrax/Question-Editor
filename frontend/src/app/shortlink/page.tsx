@@ -19,9 +19,10 @@ export default function ShortlinkBypassPage() {
     setError(null);
     setCopied(false);
     
-    // Special check for Cloudflare protected domains like olamovies
-    if (url.toLowerCase().includes('links.olamovies.mov')) {
-      setError("Cloudflare Turnstile Detected! 🛡️ We cannot automatically bypass this first security layer. Please click the link to open it in your browser, wait a few seconds to pass the check, and then paste the new resulting link (like tpi.li or oii.la) here instead!");
+    // Special check for Cloudflare or JS protected domains like olamovies and fc-lc
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes('links.olamovies.mov') || lowerUrl.includes('fc-lc.xyz') || lowerUrl.includes('fc.lc')) {
+      setError("Security Check Detected! 🛡️ We cannot automatically bypass this first security layer (it requires a manual CAPTCHA or browser check). Please click the link to open it in your browser, pass the check, and then paste the new resulting link here instead!");
       setIsLoading(false);
       return;
     }

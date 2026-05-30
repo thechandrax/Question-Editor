@@ -29,7 +29,7 @@ app.add_middleware(
 # --- SHORTLINK BYPASS LOGIC ---
 TIMEOUT = 30
 MAX_DEPTH = 12
-KNOWN_NETWORKS = ['gplinks', 'droplink', 'rocklinks', 'shrinkme', 'mahnokari', 'vplink', 'studyeducations', 'asmultiverse']
+KNOWN_NETWORKS = ['gplinks', 'droplink', 'rocklinks', 'shrinkme', 'mahnokari', 'vplink', 'studyeducations', 'asmultiverse', 'fc-lc', 'fc.lc']
 
 class ShortlinkRequest(BaseModel):
     url: str
@@ -119,7 +119,8 @@ def bypass_url(url, scraper, depth=0, visited=None):
             data = {inp.get('name'): inp.get('value', '') for inp in inputs if inp.get('name')}
             
             if data and ('_wpnonce' in data or 'token' in data or 'alias' in data or 'submit' in html.lower() or 'go' in html.lower()):
-                post_resp = scraper.post(action, data=data, timeout=TIMEOUT, allow_redirects=True)
+                full_action = urljoin(current_url, action)
+                post_resp = scraper.post(full_action, data=data, timeout=TIMEOUT, allow_redirects=True)
                 if post_resp.url != action and post_resp.url.split('#')[0] != current_url.split('#')[0]:
                     return bypass_url(post_resp.url, scraper, depth + 1, visited)
                 post_b64 = extract_base64_url(post_resp.text)
@@ -130,7 +131,8 @@ def bypass_url(url, scraper, depth=0, visited=None):
         if meta:
             match = re.search(r'url=([^;]+)', meta.get('content', ''), re.I)
             if match:
-                return bypass_url(match.group(1).strip("'\" "), scraper, depth + 1, visited)
+                refresh_url = urljoin(current_url, match.group(1).strip("'\" "))
+                return bypass_url(refresh_url, scraper, depth + 1, visited)
 
         for a in soup.find_all('a', href=True):
             full_url = urljoin(current_url, a['href'])
