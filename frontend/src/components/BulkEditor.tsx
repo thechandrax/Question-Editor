@@ -235,7 +235,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                       ref={optionRefs[optIdx]}
                       onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
-                      className="w-full min-h-[100px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-base"
+                      className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-base"
                       style={{ fontFamily: "'Cambria', serif" }}
                       placeholder={`Option ${opt.label}...`}
                       value={opt.body_html}
