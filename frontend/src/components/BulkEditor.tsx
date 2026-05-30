@@ -22,7 +22,7 @@ export interface BulkEditorQuestion {
 
 const renderLatex = (text: string) => {
   if (!text) return null;
-  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$))/g);
+  const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}|(?<!\$)\$(?!\$)(?:(?!<\/?(?:table|tbody|thead|tr|td|th|div|p)\b)[^$])*?(?<!\$)\$(?!\$))/g);
   
   const isBlockMath = (s: string) => {
     if (!s) return false;
