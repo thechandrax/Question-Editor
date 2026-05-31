@@ -1,2 +1,0 @@
-id="tp-generate" style="display: none; margin: 5px;">
-        <h5 style="margin:0;">Scroll down And Click <b><span style="color:blue;"> CONTINUE</span></b></h5></div>
