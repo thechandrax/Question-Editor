@@ -198,46 +198,36 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
         </div>
 
         {/* Options Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+        <div className="grid grid-cols-1 gap-4 mb-8 pl-3 pr-1">
           {currentQ.options.map((opt, optIdx) => {
             const isCorrect = currentQ.correctOptionLabel === opt.label;
             return (
               <div
                 key={optIdx}
-                className={`relative rounded-xl border-2 ${
+                className={`relative rounded-[14px] border-2 transition-all flex items-center min-h-[60px] ${
                   isCorrect
-                    ? 'border-green-500 bg-green-50 shadow-md'
-                    : 'border-slate-200 bg-slate-50/50'
+                    ? 'border-[#22c55e] bg-white shadow-sm'
+                    : 'border-slate-200 bg-[#f8fafc] hover:bg-white hover:border-slate-300'
                 }`}
               >
-                <div className={`absolute -left-2 sm:-left-4 -top-3 sm:-top-4 w-9 h-9 sm:w-11 sm:h-11 text-lg sm:text-xl rounded-xl flex items-center justify-center font-black shadow-lg z-10 ${
-                  isCorrect ? 'bg-green-500 text-white' : 'bg-slate-700 text-white'
-                }`}>
+                <div 
+                  className={`absolute -left-4 top-1/2 -translate-y-1/2 w-11 h-11 text-xl rounded-[12px] flex items-center justify-center font-bold shadow-sm z-10 transition-colors ${
+                    isCorrect ? 'bg-[#22c55e] text-white' : 'bg-[#334155] text-white'
+                  }`}
+                  style={{ fontFamily: "'Cambria', serif" }}
+                >
                   {opt.label}
                 </div>
 
-                <button
-                  type="button"
-                  title={isCorrect ? 'Correct Answer' : 'Click to set as correct answer'}
-                  onClick={() => updateBulkQuestion('correctOptionLabel', opt.label, idx)}
-                  className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-lg font-black shadow ${
-                    isCorrect
-                      ? 'bg-green-500 text-white scale-110'
-                      : 'bg-red-100 text-red-500 hover:bg-red-200'
-                  }`}
-                >
-                  {isCorrect ? '✔' : '✗'}
-                </button>
-
                 {!showPreviews && (
-                  <div className="flex flex-col bg-white">
+                  <div className="flex-1 w-full pl-10 pr-2">
                     <textarea
                       ref={optionRefs[optIdx]}
                       onFocus={() => setActiveField(optIdx as ActiveField)}
                       spellCheck="true"
-                      className="w-full min-h-[60px] py-3 pr-4 pl-10 sm:pl-12 outline-none resize-y bg-transparent rounded-xl text-base"
+                      className={`w-full min-h-[44px] py-3 outline-none resize-none bg-transparent text-lg ${!opt.body_html ? 'italic text-[#94a3b8] font-light' : 'text-slate-800'}`}
                       style={{ fontFamily: "'Cambria', serif" }}
-                      placeholder={`Option ${opt.label}...`}
+                      placeholder="Empty Option"
                       value={opt.body_html}
                       onChange={(e) => updateBulkQuestionOption(optIdx, e.target.value, idx)}
                       onKeyDown={(e) => handleTextareaKeyDown(e, (val) => updateBulkQuestionOption(optIdx, val, idx), opt.body_html)}
@@ -246,12 +236,27 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
                 )}
                 {showPreviews && (
                   <div 
-                    className="py-3 pr-4 pl-10 sm:pl-12 bg-slate-50 text-slate-800 prose prose-base prose-p:m-0 max-w-none rounded-xl min-h-[40px] flex items-center"
+                    className="flex-1 w-full pl-10 pr-2 py-3 text-slate-800 prose prose-base prose-p:m-0 max-w-none flex items-center min-h-[60px]"
                     style={{ fontFamily: "'Cambria', serif" }}
                   >
-                    {opt.body_html ? <div className="w-full break-words">{renderLatex(opt.body_html)}</div> : <span className="text-slate-400 italic">Empty Option</span>}
+                    {opt.body_html ? <div className="w-full break-words">{renderLatex(opt.body_html)}</div> : <span className="text-[#94a3b8] italic font-light">Empty Option</span>}
                   </div>
                 )}
+
+                <div className="pr-4 shrink-0">
+                  <button
+                    type="button"
+                    title={isCorrect ? 'Correct Answer' : 'Click to set as correct answer'}
+                    onClick={() => updateBulkQuestion('correctOptionLabel', opt.label, idx)}
+                    className={`w-[30px] h-[30px] rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-all ${
+                      isCorrect
+                        ? 'bg-[#22c55e] text-white scale-110'
+                        : 'bg-[#fee2e2] text-[#ef4444] hover:bg-[#fecaca]'
+                    }`}
+                  >
+                    {isCorrect ? '✔' : 'X'}
+                  </button>
+                </div>
               </div>
             );
           })}
