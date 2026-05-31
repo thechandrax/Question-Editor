@@ -537,7 +537,7 @@ export default function BulkEditor() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`bulkQuestions`);
+    const saved = sessionStorage.getItem(`bulkQuestions`);
     if (saved) {
       try {
         setBulkQuestions(JSON.parse(saved));
@@ -560,8 +560,8 @@ export default function BulkEditor() {
   useEffect(() => {
     if (!autoSaveEnabled) return;
     const timer = setTimeout(() => {
-      localStorage.setItem(`bulkQuestions`, JSON.stringify(bulkQuestions));
-    }, 5000);
+      sessionStorage.setItem(`bulkQuestions`, JSON.stringify(bulkQuestions));
+    }, 2000);
     return () => clearTimeout(timer);
   }, [bulkQuestions, autoSaveEnabled]);
 
