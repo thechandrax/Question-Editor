@@ -16,7 +16,7 @@ import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-app = FastAPI(title="Parser Platform API")
+app = FastAPI(title="Question Editor API")
 
 app.add_middleware(
     CORSMiddleware,

@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bulk Parser Platform",
+  title: "Question Editor",
   description: "Advanced PDF and HTML Question Extraction",
 };
 

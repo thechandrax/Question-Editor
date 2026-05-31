@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Plus, Trash2, ArrowRight, ArrowLeft as ArrowLeftIcon, Eye, Download, Upload, List, Image as ImageIcon, Undo2, Redo2, ScanText, Copy, Save } from 'lucide-react';
-import { RichTextToolbar } from './RichTextToolbar';
+import { QuestionToolbar } from './QuestionToolbar';
 import 'katex/dist/katex.min.css';
 import { BlockMath, InlineMath } from 'react-katex';
 import { SnippingOverlay } from './SnippingOverlay';
@@ -168,7 +168,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
           <div className="border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 bg-slate-50/50">
             {!showPreviews && (
               <>
-                <RichTextToolbar 
+                <QuestionToolbar 
                   textareaRef={toolbarRef} 
                   value={toolbarValue} 
                   onChange={toolbarOnChange}
@@ -291,7 +291,7 @@ function QuestionEditorBlock({ question, index, updateBulkQuestion, updateBulkQu
   );
 }
 
-export default function BulkEditor() {
+export default function QuestionEditor() {
 
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
