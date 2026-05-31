@@ -77,7 +77,7 @@ export default function ShortlinkBypassPage() {
             Link Slayer
           </h1>
           <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed font-medium transition-colors duration-500">
-            Instantly bypass <span className="font-bold text-rose-500 drop-shadow-sm">ad-networks</span>, <span className="font-bold text-purple-600 drop-shadow-sm">tracking scripts</span>, and <span className="font-bold text-orange-500 drop-shadow-sm">countdown timers</span> to reveal the true destination link.
+            Break the <span className="font-bold text-rose-500 drop-shadow-sm">chain of redirects</span>, slash through <span className="font-bold text-purple-600 drop-shadow-sm">ad-networks</span>, and slay every <span className="font-bold text-orange-500 drop-shadow-sm">countdown lock</span> — the true link is yours.
           </p>
         </div>
 
