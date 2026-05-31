@@ -1,4 +1,4 @@
-# Supported Link Shorteners
+# Link Slayer — Supported Links
 
 This document provides a comprehensive list of the link shorteners and ad-networks that our bypasser engine can successfully bypass.
 

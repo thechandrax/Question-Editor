@@ -74,7 +74,7 @@ export default function ShortlinkBypassPage() {
             <ShieldCheck size={40} className="drop-shadow-md relative z-10" />
           </div>
           <h1 className="text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 via-blue-600 to-cyan-600">
-            Deep Link Bypasser
+            Link Slayer
           </h1>
           <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed font-medium transition-colors duration-500">
             Instantly bypass <span className="font-bold text-rose-500 drop-shadow-sm">ad-networks</span>, <span className="font-bold text-purple-600 drop-shadow-sm">tracking scripts</span>, and <span className="font-bold text-orange-500 drop-shadow-sm">countdown timers</span> to reveal the true destination link.
@@ -112,11 +112,11 @@ export default function ShortlinkBypassPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="animate-spin" size={24} />
-                  Bypassing Layers...
+                  Link Slayer at work...
                 </>
               ) : (
                 <>
-                  Bypass Link <ArrowRight size={20} />
+                  Slay This Link <ArrowRight size={20} />
                 </>
               )}
             </button>
