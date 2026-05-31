@@ -1,32 +1,17 @@
 @echo off
-title Question Parser Platform
-echo ========================================
-echo   Starting Question Parser Platform...
-echo ========================================
-echo.
+echo ===================================================
+echo Starting Question Platform (Frontend + Backend)
+echo ===================================================
 
-:: Kill any old instances on these ports
-echo [1/3] Clearing ports 3000 and 8000...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do taskkill /F /PID %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000"') do taskkill /F /PID %%a >nul 2>&1
-timeout /t 1 /nobreak >nul
+echo Starting Python Backend API on Port 8000...
+start cmd /k "cd backend && call venv\Scripts\activate && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
-:: Start Backend
-echo [2/3] Starting Backend (port 8000)...
-cd /d "%~dp0backend"
-start "Backend API" cmd /k ".\venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000"
-timeout /t 3 /nobreak >nul
+echo Waiting for backend to initialize...
+ping 127.0.0.1 -n 4 > nul
 
-:: Start Frontend
-echo [3/3] Starting Frontend (port 3000)...
-cd /d "%~dp0frontend"
-start "Frontend UI" cmd /k "npm.cmd run dev"
-timeout /t 5 /nobreak >nul
+echo Starting Next.js Frontend Server on Port 3000...
+start cmd /k "cd frontend && npm run dev"
 
-echo.
-echo ========================================
-echo   Platform is starting up!
-echo   Open: http://localhost:3000
-echo ========================================
-echo.
-start "" "http://localhost:3000"
+echo Both services have been launched in separate windows!
+echo Opening http://localhost:3000 in your default browser...
+start http://localhost:3000
