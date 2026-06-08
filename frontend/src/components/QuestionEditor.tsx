@@ -702,17 +702,25 @@ export default function QuestionEditor() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const text = ev.target?.result as string;
+        let text = ev.target?.result as string;
+        // Remove BOM if present
+        text = text.replace(/^\uFEFF/, '');
+        
         const lines = text.split('\n');
         const updates: { qNum: number; answerChar: string; solutionText: string }[] = [];
         
         let currentUpdate: any = null;
         let currentSolutionLines: string[] = [];
 
+        // Flexible regex for matching the header: "1. (c)", "$1.$ $(c)$", "$1. (c)$", etc.
+        const headerRegex = /^\$?\s*(\d+)\s*\.\s*\$?\s*\$?\s*\(\s*([a-zA-Z])\s*\)\s*\$?$/;
+        // Flexible regex for matching "Solution:" line
+        const solutionHeaderRegex = /^(?:\$?\\mathbf\{\\text\{Solution:?\}\}\$?|\*\*Solution:?\*\*|\*Solution:?\*|Solution:?|Sol:?)$/i;
+
         for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          // Match "$1. $ $(c)$" or "$1.$ $(c)$"
-          const headerMatch = line.match(/^\$(\d+)\.\$\s*\$\(([a-zA-Z])\)\$$/);
+          let line = lines[i].trim();
+          
+          const headerMatch = line.match(headerRegex);
           
           if (headerMatch) {
             // Save previous update if exists
@@ -727,7 +735,7 @@ export default function QuestionEditor() {
               solutionText: ''
             };
             currentSolutionLines = [];
-          } else if (line.match(/^\$\\mathbf\{\\text\{Solution:\}\}\$$/)) {
+          } else if (line.match(solutionHeaderRegex)) {
             // Ignore this specific line
             continue;
           } else if (currentUpdate) {
