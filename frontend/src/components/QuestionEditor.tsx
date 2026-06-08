@@ -631,6 +631,62 @@ export default function QuestionEditor() {
     e.target.value = ''; // reset
   };
 
+  const handleHtmlUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const content = ev.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'text/html');
+        const items = doc.querySelectorAll('.items');
+        
+        if (items.length === 0) {
+          showAlert("No questions found in this HTML file.", "Error");
+          return;
+        }
+
+        const parsedQuestions: BulkEditorQuestion[] = Array.from(items).map(item => {
+          const qElement = item.querySelector('.Q');
+          const yElement = item.querySelector('.Y');
+          const answerElement = item.querySelector('.Answer');
+          const explanationElement = item.querySelector('.roughEdits');
+          
+          const aElement = item.querySelector('.A');
+          const bElement = item.querySelector('.B');
+          const cElement = item.querySelector('.C');
+          const dElement = item.querySelector('.D');
+          
+          return {
+            id: Math.random().toString(),
+            bodyHtml: qElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '',
+            options: [
+              { label: 'A', body_html: aElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
+              { label: 'B', body_html: bElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
+              { label: 'C', body_html: cElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
+              { label: 'D', body_html: dElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
+            ],
+            correctOptionLabel: answerElement?.textContent?.trim() || 'A',
+            solutionText: explanationElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '',
+            year: yElement?.textContent?.trim() || '',
+            source: ''
+          };
+        });
+
+        setBulkQuestions(parsedQuestions);
+        setCurrentQuestionIndex(0);
+        setUndoStack([]);
+        setRedoStack([]);
+        showAlert(`Successfully loaded ${parsedQuestions.length} questions from HTML!`, "Success");
+      } catch (err) {
+        showAlert("Failed to parse HTML file.", "Error");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const addBulkQuestion = () => {
     const newQ: BulkEditorQuestion = {
       id: Math.random().toString(),
@@ -1528,9 +1584,26 @@ export default function QuestionEditor() {
               type="button"
               onClick={downloadHTML}
               className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              title="Download as HTML"
             >
               <Download size={15} /> HTML
             </button>
+
+            <div className="relative flex items-center">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                accept=".html" 
+                onChange={handleHtmlUpload}
+                title="Upload HTML to load questions"
+              />
+              <button 
+                type="button"
+                className="whitespace-nowrap shrink-0 px-3 py-1 bg-black/20 hover:bg-black/40 text-white rounded-lg shadow-inner transition-all flex items-center gap-1.5 font-bold text-sm"
+              >
+                ↑ Upload HTML
+              </button>
+            </div>
 
             <button 
               type="button"
