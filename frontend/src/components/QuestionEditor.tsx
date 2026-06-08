@@ -658,9 +658,17 @@ export default function QuestionEditor() {
           const cElement = item.querySelector('.C');
           const dElement = item.querySelector('.D');
           
+          const questionText = qElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '';
+          let explanationText = explanationElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '';
+          
+          // Fix for old HTML files where the question was accidentally saved in the explanation div
+          if (explanationText === questionText) {
+            explanationText = '';
+          }
+          
           return {
             id: Math.random().toString(),
-            bodyHtml: qElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '',
+            bodyHtml: questionText,
             options: [
               { label: 'A', body_html: aElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
               { label: 'B', body_html: bElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
@@ -668,7 +676,7 @@ export default function QuestionEditor() {
               { label: 'D', body_html: dElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '' },
             ],
             correctOptionLabel: answerElement?.textContent?.trim() || 'A',
-            solutionText: explanationElement?.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim() || '',
+            solutionText: explanationText,
             year: yElement?.textContent?.trim() || '',
             source: ''
           };
@@ -983,7 +991,7 @@ export default function QuestionEditor() {
       
       htmlContent += `      <div class="Answer">${q.correctOptionLabel || ''}</div>\n`;
       htmlContent += '    </div>\n';
-      htmlContent += `    <div class="roughEdits">${q.bodyHtml.replace(/\n/g, '<br/>')}</div>\n`;
+      htmlContent += `    <div class="roughEdits">${(q.solutionText || '').replace(/\n/g, '<br/>')}</div>\n`;
       htmlContent += '  </div>\n';
     });
     
