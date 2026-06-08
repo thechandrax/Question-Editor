@@ -712,10 +712,17 @@ export default function QuestionEditor() {
         let currentUpdate: any = null;
         let currentSolutionLines: string[] = [];
 
-        // Flexible regex for matching the header: "1. (c)", "$1.$ $(c)$", "$1. (c)$", etc.
-        const headerRegex = /^\$?\s*(\d+)\s*\.\s*\$?\s*\$?\s*\(\s*([a-zA-Z])\s*\)\s*\$?$/;
+        // Extremely flexible regex: Any non-alphanumeric chars, digits, non-alphanumeric chars, letter, non-alphanumeric chars
+        const headerRegex = /^[^a-zA-Z0-9]*(\d+)[^a-zA-Z0-9]+([a-zA-Z])[^a-zA-Z0-9]*$/;
         // Flexible regex for matching "Solution:" line
         const solutionHeaderRegex = /^(?:\$?\\mathbf\{\\text\{Solution:?\}\}\$?|\*\*Solution:?\*\*|\*Solution:?\*|Solution:?|Sol:?)$/i;
+
+        const processSolutionText = (linesArray: string[]) => {
+          let text = linesArray.join('\n').trim();
+          // Convert $...$ to \(...\) for inline LaTeX
+          text = text.replace(/(?<!\$)\$([^$]+)\$(?!\$)/g, '\\($1\\)');
+          return text;
+        };
 
         for (let i = 0; i < lines.length; i++) {
           let line = lines[i].trim();
@@ -725,7 +732,7 @@ export default function QuestionEditor() {
           if (headerMatch) {
             // Save previous update if exists
             if (currentUpdate) {
-              currentUpdate.solutionText = currentSolutionLines.join('\n').trim();
+              currentUpdate.solutionText = processSolutionText(currentSolutionLines);
               updates.push(currentUpdate);
             }
             
@@ -745,7 +752,7 @@ export default function QuestionEditor() {
 
         // Push the last one
         if (currentUpdate) {
-          currentUpdate.solutionText = currentSolutionLines.join('\n').trim();
+          currentUpdate.solutionText = processSolutionText(currentSolutionLines);
           updates.push(currentUpdate);
         }
 
