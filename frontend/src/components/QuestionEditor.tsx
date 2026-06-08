@@ -712,8 +712,8 @@ export default function QuestionEditor() {
         let currentUpdate: any = null;
         let currentSolutionLines: string[] = [];
 
-        // Extremely flexible regex: Any non-alphanumeric chars, digits, non-alphanumeric chars, letter, non-alphanumeric chars
-        const headerRegex = /^[^a-zA-Z0-9]*(\d+)[^a-zA-Z0-9]+([a-zA-Z])[^a-zA-Z0-9]*$/;
+        // Extremely flexible regex: Optional $, optional spaces, digits, optional spaces, DOT, non-word chars, letter A-E, non-word chars
+        const headerRegex = /^\$?\s*(\d+)\s*\.\s*[^\w]*([a-eA-E])[^\w]*$/;
         // Flexible regex for matching "Solution:" line
         const solutionHeaderRegex = /^(?:\$?\\mathbf\{\\text\{Solution:?\}\}\$?|\*\*Solution:?\*\*|\*Solution:?\*|Solution:?|Sol:?)$/i;
 
