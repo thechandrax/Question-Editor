@@ -695,6 +695,82 @@ export default function QuestionEditor() {
     e.target.value = '';
   };
 
+  const handleSolutionMdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target?.result as string;
+        const lines = text.split('\n');
+        const updates: { qNum: number; answerChar: string; solutionText: string }[] = [];
+        
+        let currentUpdate: any = null;
+        let currentSolutionLines: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          // Match "$1. $ $(c)$" or "$1.$ $(c)$"
+          const headerMatch = line.match(/^\$(\d+)\.\$\s*\$\(([a-zA-Z])\)\$$/);
+          
+          if (headerMatch) {
+            // Save previous update if exists
+            if (currentUpdate) {
+              currentUpdate.solutionText = currentSolutionLines.join('\n').trim();
+              updates.push(currentUpdate);
+            }
+            
+            currentUpdate = {
+              qNum: parseInt(headerMatch[1], 10),
+              answerChar: headerMatch[2].toUpperCase(),
+              solutionText: ''
+            };
+            currentSolutionLines = [];
+          } else if (line.match(/^\$\\mathbf\{\\text\{Solution:\}\}\$$/)) {
+            // Ignore this specific line
+            continue;
+          } else if (currentUpdate) {
+            currentSolutionLines.push(lines[i]); // keep original line with spaces
+          }
+        }
+
+        // Push the last one
+        if (currentUpdate) {
+          currentUpdate.solutionText = currentSolutionLines.join('\n').trim();
+          updates.push(currentUpdate);
+        }
+
+        if (updates.length === 0) {
+          showAlert("No solutions found matching the expected format.", "Error");
+          return;
+        }
+
+        // Apply updates
+        setBulkQuestions(prev => {
+          const newQs = [...prev];
+          updates.forEach(u => {
+            const idx = u.qNum - 1;
+            if (idx >= 0 && idx < newQs.length) {
+              newQs[idx] = {
+                ...newQs[idx],
+                correctOptionLabel: u.answerChar,
+                solutionText: u.solutionText
+              };
+            }
+          });
+          return newQs;
+        });
+
+        showAlert(`Successfully merged ${updates.length} solutions into the current questions!`, "Success");
+      } catch (err) {
+        showAlert("Failed to parse Markdown file.", "Error");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const addBulkQuestion = () => {
     const newQ: BulkEditorQuestion = {
       id: Math.random().toString(),
@@ -1296,25 +1372,41 @@ export default function QuestionEditor() {
           Question Editor
         </h1>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-3 relative">
-          <div className="flex rounded-lg border border-emerald-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:scale-105 hover:border-emerald-300 overflow-hidden bg-white">
-            <input 
-              type="file" 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-              accept=".md,.txt" 
-              onChange={handleFileUpload}
-              disabled={isImportingMd || isImportingPdf}
-              title="Upload Markdown File"
-            />
-            <button 
-              type="button"
-              className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold h-full w-full relative z-0 hover:from-emerald-400 hover:to-teal-400"
-            >
-              {isImportingMd ? 'Importing...' : <><Upload size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Import Markdown</>}
-            </button>
-          </div>
+        <div className="flex flex-wrap gap-3">
+            <div className="flex rounded-lg border border-emerald-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(16,185,129,0.25)] hover:scale-105 hover:border-emerald-300 overflow-hidden bg-white">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                accept=".md" 
+                onChange={handleFileUpload}
+                disabled={isImportingMd || isImportingPdf}
+                title="Import Markdown Questions"
+              />
+              <button 
+                type="button"
+                className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold h-full w-full relative z-0 hover:from-emerald-400 hover:to-teal-400"
+              >
+                {isImportingMd ? 'Importing...' : <><Upload size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Import Markdown</>}
+              </button>
+            </div>
 
-          <div className="flex rounded-lg border border-indigo-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(99,102,241,0.25)] hover:scale-105 hover:border-indigo-300 overflow-hidden bg-white">
+            <div className="flex rounded-lg border border-sky-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(14,165,233,0.25)] hover:scale-105 hover:border-sky-300 overflow-hidden bg-white">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                accept=".md" 
+                onChange={handleSolutionMdUpload}
+                title="Import Markdown Solutions & Answers"
+              />
+              <button 
+                type="button"
+                className="px-4 py-1.5 text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-500 text-white font-bold h-full w-full relative z-0 hover:from-sky-400 hover:to-blue-400"
+              >
+                <Upload size={16} className="text-white group-hover:-translate-y-0.5 transition-transform duration-300" /> Import Solutions (MD)
+              </button>
+            </div>
+
+            <div className="flex rounded-lg border border-indigo-200 shadow-sm relative h-10 items-center transition-all duration-300 hover:shadow-[0_8px_25px_rgba(99,102,241,0.25)] hover:scale-105 hover:border-indigo-300 overflow-hidden bg-white">
             <input 
               type="file" 
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
