@@ -687,7 +687,8 @@ export default function QuestionEditor() {
         setUndoStack([]);
         setRedoStack([]);
         showAlert(`Successfully loaded ${parsedQuestions.length} questions from HTML!`, "Success");
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         showAlert("Failed to parse HTML file.", "Error");
       }
     };
@@ -709,7 +710,7 @@ export default function QuestionEditor() {
         const lines = text.split('\n');
         const updates: { qNum: number; answerChar: string; solutionText: string }[] = [];
         
-        let currentUpdate: any = null;
+        let currentUpdate: { qNum: number; answerChar: string; solutionText: string } | null = null;
         let currentSolutionLines: string[] = [];
 
         // Extremely flexible regex: Optional $, optional spaces, digits, optional spaces, DOT, non-word chars, letter A-E, non-word chars
@@ -725,7 +726,7 @@ export default function QuestionEditor() {
         };
 
         for (let i = 0; i < lines.length; i++) {
-          let line = lines[i].trim();
+          const line = lines[i].trim();
           
           const headerMatch = line.match(headerRegex);
           
@@ -778,7 +779,8 @@ export default function QuestionEditor() {
         });
 
         showAlert(`Successfully merged ${updates.length} solutions into the current questions!`, "Success");
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         showAlert("Failed to parse Markdown file.", "Error");
       }
     };
