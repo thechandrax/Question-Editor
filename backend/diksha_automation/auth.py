@@ -31,6 +31,15 @@ class DikshaAuthenticator:
         
         self.home_url = "https://diksha.gov.in/index.html"
         self.learning_sso_url = "https://learning.diksha.gov.in/diksha/course_listing.php"
+        # Direct Keycloak login URL — skips homepage navigation, faster & more reliable headless
+        self.keycloak_login_url = (
+            "https://diksha.gov.in/auth/realms/sunbird/protocol/openid-connect/auth?"
+            "client_id=portal"
+            "&redirect_uri=https%3A%2F%2Fdiksha.gov.in%2Fsearch%2FLibrary%2F1%3FselectedTab%3Dall%26auth_callback%3D1"
+            "&scope=openid"
+            "&response_type=code"
+            "&version=4"
+        )
 
     def login(self) -> Page:
         """
@@ -68,36 +77,10 @@ class DikshaAuthenticator:
         
         self.page = self.context.new_page()
         
-        # Step 1: Open main homepage
-        logger.info(f"Step 1: Opening landing page: {self.home_url}")
-        self.page.goto(self.home_url, wait_until='domcontentloaded', timeout=30000)
+        # Step 1: Go directly to Keycloak login page (faster than homepage → click Login)
+        logger.info(f"Step 1: Navigating directly to Keycloak login: {self.keycloak_login_url[:60]}...")
+        self.page.goto(self.keycloak_login_url, wait_until='domcontentloaded', timeout=30000)
         time.sleep(2)
-        
-        # Step 2: Click Login button
-        logger.info("Step 2: Clicking Login button...")
-        try:
-            login_btn = (
-                self.page.query_selector('a:has-text("Login / Register")') or
-                self.page.query_selector('button:has-text("Login / Register")') or
-                self.page.query_selector('a:has-text("Login")') or
-                self.page.query_selector('.login-btn')
-            )
-            if login_btn and login_btn.is_visible():
-                login_btn.click()
-                time.sleep(3)
-            else:
-                keycloak_url = (
-                    "https://diksha.gov.in/auth/realms/sunbird/protocol/openid-connect/auth?"
-                    "client_id=portal"
-                    "&redirect_uri=https%3A%2F%2Fdiksha.gov.in%2Fsearch%2FLibrary%2F1%3FselectedTab%3Dall%26auth_callback%3D1"
-                    "&scope=openid"
-                    "&response_type=code"
-                    "&version=4"
-                )
-                self.page.goto(keycloak_url, wait_until="domcontentloaded")
-                time.sleep(3)
-        except Exception:
-            pass
 
         # Step 3: Enter credentials
         try:
