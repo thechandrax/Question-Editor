@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://question-editor-production-b815.up.railway.app";
+
+// Use Next.js API proxy routes (/api/diksha/...) to avoid CORS.
+// The proxy calls Railway server-to-server with no browser CORS restrictions.
+const BACKEND = '';
+
 
 type Stage = "form" | "progress";
 type StatusType = { running: boolean; status: string; step: string; progress: number; started_at: string | null; logs: string[] };
