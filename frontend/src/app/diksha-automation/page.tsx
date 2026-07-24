@@ -64,7 +64,7 @@ export default function DikshaAutomationPage() {
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs));
         if (data.status === "done" || data.status === "error") stopPolling();
-      } catch (_) { /* network hiccup — keep polling */ }
+      } catch { /* network hiccup — keep polling */ }
     }, 2500);
 
     return stopPolling;
