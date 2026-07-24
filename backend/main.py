@@ -13,6 +13,11 @@ import sys
 from urllib.parse import urlparse, urljoin, unquote
 from bs4 import BeautifulSoup
 import cloudscraper
+from fastapi import BackgroundTasks
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "diksha_automation"))
+from orchestrator import run_automation
+import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -410,6 +415,23 @@ async def parse_pdf(file: UploadFile = File(...)):
         })
 
     return {"questions": parsed_questions, "message": "Parsed successfully using Magic PDF Engine"}
+
+class DikshaRunRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/diksha/run")
+async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
+    try:
+        background_tasks.add_task(
+            run_automation, 
+            username=req.username, 
+            password=req.password, 
+            headless=True
+        )
+        return {"status": "success", "message": "Automation started successfully in the background."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

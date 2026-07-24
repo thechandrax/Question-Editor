@@ -7,3 +7,5 @@ PyMuPDF
 cloudscraper
 beautifulsoup4
 PyBypass
+playwright
+requests
