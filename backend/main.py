@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import re
+import threading
 import random
 import logging
 import fitz
@@ -25,12 +26,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # ── DIKSHA global state ────────────────────────────────────────────────────
 _diksha: dict = {
     "running": False,
-    "status": "idle",   # idle | running | done | error
+    "status": "idle",   # idle | running | done | error | paused
     "step": "",
     "progress": 0,
     "logs": [],
     "started_at": None,
+    "paused": False,
+    "courses": [],      # list of {title, progress, status, current}
+    "current_course": None,
 }
+
+# Threading primitives for pause/stop control
+_pause_event = threading.Event()
+_pause_event.set()   # set = NOT paused (bot runs freely)
+_stop_event = threading.Event()  # set = stop requested
 
 class _DikshaLogCapture(logging.Handler):
     """Captures log records from the automation into the global state dict."""
@@ -38,32 +47,63 @@ class _DikshaLogCapture(logging.Handler):
         try:
             msg = f"[{record.levelname}] {record.getMessage()}"
             _diksha["logs"].append(msg)
-            # Keep last 400 lines to avoid unbounded growth
             if len(_diksha["logs"]) > 400:
                 _diksha["logs"] = _diksha["logs"][-300:]
-            # Infer current step from log content
             lo = msg.lower()
-            if "login" in lo or "authenticat" in lo:
+            raw = record.getMessage()
+
+            # ── Step inference ──────────────────────────────────────────
+            if "login" in lo or "authenticat" in lo or "keycloak" in lo:
                 _diksha["step"] = "Authenticating with DIKSHA..."
                 _diksha["progress"] = 10
-            elif "course" in lo and "navig" in lo:
-                _diksha["step"] = "Navigating to course list..."
+            elif "course" in lo and ("navig" in lo or "listing" in lo or "list" in lo):
+                _diksha["step"] = "Fetching course list..."
                 _diksha["progress"] = 20
-            elif "incomplete" in lo:
-                _diksha["step"] = "Scanning for incomplete modules..."
+            elif "incomplete" in lo or "scanning" in lo:
+                _diksha["step"] = "Scanning incomplete modules..."
                 _diksha["progress"] = 30
+            elif "opening" in lo or "→ opening" in lo:
+                _diksha["step"] = "Opening course content..."
+                _diksha["progress"] = max(35, min(_diksha["progress"] + 3, 85))
             elif "playing" in lo or "video" in lo:
                 _diksha["step"] = "Playing module video..."
                 _diksha["progress"] = max(40, min(_diksha["progress"] + 2, 85))
-            elif "pdf" in lo:
+            elif "pdf" in lo or "scrolling" in lo:
                 _diksha["step"] = "Reading PDF material..."
                 _diksha["progress"] = max(50, min(_diksha["progress"] + 2, 85))
-            elif "assessment" in lo:
+            elif "assessment" in lo or "quiz" in lo:
                 _diksha["step"] = "Submitting assessment..."
                 _diksha["progress"] = 90
-            elif "completed" in lo or "finished" in lo:
+            elif "module completed" in lo or "course completed" in lo:
                 _diksha["step"] = "Module completed!"
                 _diksha["progress"] = min(_diksha["progress"] + 5, 95)
+
+            # ── Course name extraction from log lines ────────────────────
+            # Pattern: [INFO] → Opening: 'Course Title'
+            title_match = re.search(r"opening[:\s→]+['\"](.+?)['\"]\s*$", raw, re.IGNORECASE)
+            if title_match:
+                title = title_match.group(1).strip()
+                courses = _diksha["courses"]
+                existing_titles = [c["title"] for c in courses]
+                if title and title not in existing_titles:
+                    courses.append({"title": title, "progress": 0, "status": "pending", "current": False})
+                # Mark as running
+                _diksha["current_course"] = title
+                for c in courses:
+                    c["current"] = c["title"] == title
+                    if c["title"] == title:
+                        c["status"] = "running"
+
+            # Update progress of current running course
+            if _diksha["current_course"]:
+                for c in _diksha["courses"]:
+                    if c["title"] == _diksha["current_course"] and c["status"] == "running":
+                        if "pdf" in lo or "video" in lo or "playing" in lo:
+                            c["progress"] = min(c["progress"] + 3, 90)
+                        elif "completed" in lo or "done" in lo:
+                            c["progress"] = 100
+                            c["status"] = "done"
+                            c["current"] = False
         except Exception:
             pass
 
@@ -473,20 +513,31 @@ class DikshaRunRequest(BaseModel):
 
 def _run_diksha_task(username: str, password: str) -> None:
     """Wrapper that tracks global state around run_automation."""
+    _pause_event.set()
+    _stop_event.clear()
     _diksha.update({
         "running": True,
         "status": "running",
         "step": "Starting bot on Railway...",
         "progress": 5,
         "logs": [],
+        "courses": [],
+        "current_course": None,
+        "paused": False,
         "started_at": datetime.now().isoformat(),
     })
     try:
         run_automation(username=username, password=password, headless=True)
-        _diksha.update({"running": False, "status": "done", "step": "All courses completed! 🎉", "progress": 100})
+        if _stop_event.is_set():
+            _diksha.update({"running": False, "status": "stopped", "step": "Automation stopped by user.", "progress": _diksha["progress"], "paused": False})
+        else:
+            _diksha.update({"running": False, "status": "done", "step": "All courses completed! 🎉", "progress": 100, "paused": False})
     except Exception as exc:
-        _diksha.update({"running": False, "status": "error", "step": f"Error: {exc}", "progress": _diksha["progress"]})
-        logging.error("DIKSHA automation failed: %s", exc)
+        if _stop_event.is_set():
+            _diksha.update({"running": False, "status": "stopped", "step": "Automation stopped.", "progress": _diksha["progress"], "paused": False})
+        else:
+            _diksha.update({"running": False, "status": "error", "step": f"Error: {exc}", "progress": _diksha["progress"], "paused": False})
+            logging.error("DIKSHA automation failed: %s", exc)
 
 @app.post("/api/diksha/run")
 async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
@@ -495,14 +546,46 @@ async def run_diksha_automation(req: DikshaRunRequest, background_tasks: Backgro
     background_tasks.add_task(_run_diksha_task, req.username, req.password)
     return {"status": "success", "message": "Automation started successfully in the background."}
 
+@app.post("/api/diksha/pause")
+async def pause_diksha_automation():
+    if not _diksha["running"]:
+        raise HTTPException(status_code=400, detail="Automation is not running.")
+    if _diksha["paused"]:
+        _pause_event.set()
+        _diksha["paused"] = False
+        _diksha["status"] = "running"
+        _diksha["step"] = "Resumed automation..."
+        return {"status": "success", "message": "Automation resumed."}
+    else:
+        _pause_event.clear()
+        _diksha["paused"] = True
+        _diksha["status"] = "paused"
+        _diksha["step"] = "Automation paused by user."
+        return {"status": "success", "message": "Automation paused."}
+
+@app.post("/api/diksha/stop")
+async def stop_diksha_automation():
+    if not _diksha["running"]:
+        return {"status": "success", "message": "Automation is already stopped."}
+    _stop_event.set()
+    _pause_event.set()
+    _diksha["running"] = False
+    _diksha["paused"] = False
+    _diksha["status"] = "stopped"
+    _diksha["step"] = "Automation stopped."
+    return {"status": "success", "message": "Automation stopping..."}
+
 @app.get("/api/diksha/status")
 async def get_diksha_status():
     return {
         "running": _diksha["running"],
+        "paused": _diksha.get("paused", False),
         "status": _diksha["status"],
         "step": _diksha["step"],
         "progress": _diksha["progress"],
         "started_at": _diksha["started_at"],
+        "courses": _diksha.get("courses", []),
+        "current_course": _diksha.get("current_course"),
         "logs": _diksha["logs"][-60:],
     }
 
