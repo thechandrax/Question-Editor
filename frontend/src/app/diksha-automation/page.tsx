@@ -1,11 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React, { useState } from "react";
 
 export default function DikshaAutomationPage() {
   const [username, setUsername] = useState("");
@@ -25,12 +20,12 @@ export default function DikshaAutomationPage() {
     setMessage("");
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://question-editor-production-b815.up.railway.app";
       const res = await fetch(`${backendUrl}/api/diksha/run`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
@@ -41,95 +36,142 @@ export default function DikshaAutomationPage() {
       }
 
       setStatus("success");
-      setMessage(data.message || "Automation started in the background. It will automatically log in and complete your courses!");
-      
-      // Clear form on success
+      setMessage(
+        data.message ||
+          "Automation started! The bot is now logging in and completing your courses in the background."
+      );
       setUsername("");
       setPassword("");
     } catch (err: any) {
       console.error(err);
       setStatus("error");
-      setMessage(err.message || "An unexpected error occurred while connecting to the backend.");
+      setMessage(
+        err.message || "An unexpected error occurred while connecting to the backend."
+      );
     }
   };
 
   return (
-    <div className="container mx-auto py-12 px-4 max-w-2xl">
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            DIKSHA Cloud Automation
-          </CardTitle>
-          <CardDescription className="text-lg mt-2">
-            Enter your DIKSHA credentials to automatically complete your pending courses in the background.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {status === "success" && (
-            <Alert className="mb-6 border-green-500 bg-green-50/10">
-              <AlertTitle className="text-green-600 font-semibold">Started Successfully!</AlertTitle>
-              <AlertDescription className="text-green-500">
-                {message}
-              </AlertDescription>
-            </Alert>
-          )}
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans text-slate-800">
+      <div className="w-full max-w-xl">
 
-          {status === "error" && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-          )}
+        {/* Header */}
+        <div className="text-center mb-12 group cursor-default">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-400 text-white mb-6 shadow-xl shadow-orange-400/40 group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500 ease-out">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <h1 className="text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600">
+            DIKSHA Automation
+          </h1>
+          <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed font-medium">
+            Enter your DIKSHA credentials and the bot will{" "}
+            <span className="font-bold text-orange-500">automatically complete</span> all your
+            pending courses{" "}
+            <span className="font-bold text-amber-600">silently in the cloud</span>.
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                DIKSHA Username or Mobile
+        {/* Success alert */}
+        {status === "success" && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex gap-3 items-start shadow-sm">
+            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div>
+              <p className="font-bold text-green-700 text-sm">Started Successfully! 🎉</p>
+              <p className="text-green-600 text-sm mt-0.5">{message}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error alert */}
+        {status === "error" && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex gap-3 items-start shadow-sm">
+            <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </div>
+            <div>
+              <p className="font-bold text-red-700 text-sm">Error</p>
+              <p className="text-red-600 text-sm mt-0.5">{message}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Card */}
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 mb-6 border border-slate-100">
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Username */}
+            <div>
+              <label htmlFor="diksha-username" className="block text-sm font-semibold text-slate-700 mb-2">
+                DIKSHA Username / Mobile Number
               </label>
-              <Input 
-                type="text" 
-                placeholder="Enter your username..." 
+              <input
+                id="diksha-username"
+                type="text"
+                required
+                placeholder="e.g. 9876543210"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={status === "loading"}
-                className="bg-white/5 border-white/10 text-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Password
-              </label>
-              <Input 
-                type="password" 
-                placeholder="Enter your password..." 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={status === "loading"}
-                className="bg-white/5 border-white/10 text-white"
+                className="block w-full px-4 py-4 border-2 border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50"
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
+            {/* Password */}
+            <div>
+              <label htmlFor="diksha-password" className="block text-sm font-semibold text-slate-700 mb-2">
+                Password
+              </label>
+              <input
+                id="diksha-password"
+                type="password"
+                required
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={status === "loading"}
+                className="block w-full px-4 py-4 border-2 border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
               disabled={status === "loading"}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-lg font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {status === "loading" ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Starting Server...
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Launching Bot...
                 </>
               ) : (
-                "Start Automation"
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  Start Automation
+                </>
               )}
-            </Button>
+            </button>
           </form>
-        </CardContent>
-        <CardFooter className="flex flex-col text-sm text-gray-500 text-center border-t border-white/10 pt-6">
-          <p>This runs silently on your backend server. Do not start multiple sessions simultaneously.</p>
-        </CardFooter>
-      </Card>
+        </div>
+
+        {/* Info box */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-sm text-amber-800">
+          <p className="font-bold mb-1">⚠️ Important</p>
+          <ul className="list-disc list-inside space-y-1 text-amber-700">
+            <li>You can safely close this page after starting.</li>
+            <li>The bot runs on the cloud server — <strong>not your device</strong>.</li>
+            <li>Do <strong>not</strong> click Start multiple times. Wait for one course to finish.</li>
+          </ul>
+        </div>
+
+      </div>
     </div>
   );
 }
