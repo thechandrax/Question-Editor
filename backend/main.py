@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import re
 import random
 import logging
@@ -20,6 +21,56 @@ from orchestrator import run_automation
 import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# ── DIKSHA global state ────────────────────────────────────────────────────
+_diksha: dict = {
+    "running": False,
+    "status": "idle",   # idle | running | done | error
+    "step": "",
+    "progress": 0,
+    "logs": [],
+    "started_at": None,
+}
+
+class _DikshaLogCapture(logging.Handler):
+    """Captures log records from the automation into the global state dict."""
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            msg = f"[{record.levelname}] {record.getMessage()}"
+            _diksha["logs"].append(msg)
+            # Keep last 400 lines to avoid unbounded growth
+            if len(_diksha["logs"]) > 400:
+                _diksha["logs"] = _diksha["logs"][-300:]
+            # Infer current step from log content
+            lo = msg.lower()
+            if "login" in lo or "authenticat" in lo:
+                _diksha["step"] = "Authenticating with DIKSHA..."
+                _diksha["progress"] = 10
+            elif "course" in lo and "navig" in lo:
+                _diksha["step"] = "Navigating to course list..."
+                _diksha["progress"] = 20
+            elif "incomplete" in lo:
+                _diksha["step"] = "Scanning for incomplete modules..."
+                _diksha["progress"] = 30
+            elif "playing" in lo or "video" in lo:
+                _diksha["step"] = "Playing module video..."
+                _diksha["progress"] = max(40, min(_diksha["progress"] + 2, 85))
+            elif "pdf" in lo:
+                _diksha["step"] = "Reading PDF material..."
+                _diksha["progress"] = max(50, min(_diksha["progress"] + 2, 85))
+            elif "assessment" in lo:
+                _diksha["step"] = "Submitting assessment..."
+                _diksha["progress"] = 90
+            elif "completed" in lo or "finished" in lo:
+                _diksha["step"] = "Module completed!"
+                _diksha["progress"] = min(_diksha["progress"] + 5, 95)
+        except Exception:
+            pass
+
+_capture_handler = _DikshaLogCapture()
+_capture_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(_capture_handler)
+# ── end DIKSHA state ────────────────────────────────────────────────────────
 
 app = FastAPI(title="Question Editor API")
 
@@ -420,18 +471,40 @@ class DikshaRunRequest(BaseModel):
     username: str
     password: str
 
+def _run_diksha_task(username: str, password: str) -> None:
+    """Wrapper that tracks global state around run_automation."""
+    _diksha.update({
+        "running": True,
+        "status": "running",
+        "step": "Starting bot on Railway...",
+        "progress": 5,
+        "logs": [],
+        "started_at": datetime.now().isoformat(),
+    })
+    try:
+        run_automation(username=username, password=password, headless=True)
+        _diksha.update({"running": False, "status": "done", "step": "All courses completed! 🎉", "progress": 100})
+    except Exception as exc:
+        _diksha.update({"running": False, "status": "error", "step": f"Error: {exc}", "progress": _diksha["progress"]})
+        logging.error("DIKSHA automation failed: %s", exc)
+
 @app.post("/api/diksha/run")
 async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
-    try:
-        background_tasks.add_task(
-            run_automation, 
-            username=req.username, 
-            password=req.password, 
-            headless=True
-        )
-        return {"status": "success", "message": "Automation started successfully in the background."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if _diksha["running"]:
+        raise HTTPException(status_code=409, detail="Automation already running. Please wait for the current session to finish.")
+    background_tasks.add_task(_run_diksha_task, req.username, req.password)
+    return {"status": "success", "message": "Automation started successfully in the background."}
+
+@app.get("/api/diksha/status")
+async def get_diksha_status():
+    return {
+        "running": _diksha["running"],
+        "status": _diksha["status"],
+        "step": _diksha["step"],
+        "progress": _diksha["progress"],
+        "started_at": _diksha["started_at"],
+        "logs": _diksha["logs"][-60:],
+    }
 
 if __name__ == "__main__":
     import uvicorn

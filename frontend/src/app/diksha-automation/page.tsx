@@ -1,175 +1,284 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://question-editor-production-b815.up.railway.app";
+
+type Stage = "form" | "progress";
+type StatusType = { running: boolean; status: string; step: string; progress: number; started_at: string | null; logs: string[] };
+
+const STEP_KEYWORDS: { keywords: string[]; label: string; icon: string }[] = [
+  { keywords: ["starting", "launching", "bot"], label: "Launching bot on Railway", icon: "🚀" },
+  { keywords: ["login", "authenticat", "signing"], label: "Authenticating with DIKSHA", icon: "🔐" },
+  { keywords: ["course", "navig", "diksha", "explore", "learning"], label: "Navigating to courses", icon: "🌐" },
+  { keywords: ["incomplete", "scanning", "check"], label: "Scanning incomplete modules", icon: "🔍" },
+  { keywords: ["playing", "video", "module", "content"], label: "Playing module content", icon: "▶️" },
+  { keywords: ["pdf", "document", "reading"], label: "Reading PDF material", icon: "📄" },
+  { keywords: ["assessment", "quiz", "question"], label: "Completing assessment", icon: "📝" },
+  { keywords: ["completed", "finished", "done", "next module"], label: "Module completed", icon: "✅" },
+];
+
+function inferStep(logs: string[]): number {
+  const combined = logs.slice(-30).join(" ").toLowerCase();
+  for (let i = STEP_KEYWORDS.length - 1; i >= 0; i--) {
+    if (STEP_KEYWORDS[i].keywords.some((k) => combined.includes(k))) return i;
+  }
+  return 0;
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
 
 export default function DikshaAutomationPage() {
+  const [stage, setStage] = useState<Stage>("form");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [status, setStatus] = useState<StatusType | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const logRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (stage !== "progress") return;
+    setElapsed(0);
+
+    timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND}/api/diksha/status`);
+        if (!res.ok) return;
+        const data: StatusType = await res.json();
+        setStatus(data);
+        setCurrentStepIdx(inferStep(data.logs));
+        if (data.status === "done" || data.status === "error") stopPolling();
+      } catch (_) { /* network hiccup — keep polling */ }
+    }, 2500);
+
+    return stopPolling;
+  }, [stage, stopPolling]);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [status?.logs]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      setMessage("Please enter both username and password.");
-      setStatus("error");
-      return;
-    }
-
-    setStatus("loading");
-    setMessage("");
-
+    setFormError("");
+    if (!username || !password) { setFormError("Enter both username and password."); return; }
+    setSubmitting(true);
     try {
-      const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        "https://question-editor-production-b815.up.railway.app";
-      const res = await fetch(`${backendUrl}/api/diksha/run`, {
+      const res = await fetch(`${BACKEND}/api/diksha/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to start automation");
-      }
-
-      setStatus("success");
-      setMessage(
-        data.message ||
-          "Automation started! The bot is now logging in and completing your courses in the background."
-      );
-      setUsername("");
-      setPassword("");
+      if (!res.ok) throw new Error(data.detail || "Failed to start");
+      setStage("progress");
     } catch (err: unknown) {
-      console.error(err);
-      setStatus("error");
-      setMessage(
-        err instanceof Error ? err.message : "An unexpected error occurred while connecting to the backend."
-      );
+      setFormError(err instanceof Error ? err.message : "Connection failed. Is Railway backend live?");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans text-slate-800">
-      <div className="w-full max-w-xl">
-
-        {/* Header */}
-        <div className="text-center mb-12 group cursor-default">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-400 text-white mb-6 shadow-xl shadow-orange-400/40 group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500 ease-out">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
-            </svg>
+  /* ── FORM VIEW ────────────────────────────────────────────────────── */
+  if (stage === "form") {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          {/* Logo + title */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 shadow-lg shadow-orange-500/30 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight">DIKSHA Automation</h1>
+            <p className="text-xs text-slate-400 mt-1">Cloud bot — completes your courses in the background</p>
           </div>
-          <h1 className="text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600">
-            DIKSHA Automation
-          </h1>
-          <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed font-medium">
-            Enter your DIKSHA credentials and the bot will{" "}
-            <span className="font-bold text-orange-500">automatically complete</span> all your
-            pending courses{" "}
-            <span className="font-bold text-amber-600">silently in the cloud</span>.
+
+          {/* Card */}
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl">
+            {formError && (
+              <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 flex gap-2 items-start">
+                <span className="text-red-400 text-xs mt-0.5">⚠</span>
+                <p className="text-red-400 text-xs leading-relaxed">{formError}</p>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="dik-user" className="block text-xs font-semibold text-slate-300 mb-1.5">Username / Mobile</label>
+                <input id="dik-user" type="text" required placeholder="e.g. 9876543210"
+                  value={username} onChange={(e) => setUsername(e.target.value)} disabled={submitting}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-40 transition-all" />
+              </div>
+              <div>
+                <label htmlFor="dik-pass" className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+                <input id="dik-pass" type="password" required placeholder="Your DIKSHA password"
+                  value={password} onChange={(e) => setPassword(e.target.value)} disabled={submitting}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-40 transition-all" />
+              </div>
+              <button type="submit" disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-orange-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500">
+                {submitting ? (
+                  <><svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Connecting…</>
+                ) : (
+                  <><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>Start Automation</>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer note */}
+          <p className="text-center text-xs text-slate-500 mt-4 leading-relaxed">
+            🔒 Runs on Railway cloud · You can close this page safely
           </p>
         </div>
+      </div>
+    );
+  }
 
-        {/* Success alert */}
-        {status === "success" && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex gap-3 items-start shadow-sm">
-            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  /* ── PROGRESS VIEW ────────────────────────────────────────────────── */
+  const isDone = status?.status === "done";
+  const isError = status?.status === "error";
+  const progress = status?.progress ?? 5;
+  const step = status?.step || "Starting bot…";
+  const logs = status?.logs ?? [];
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center py-8 px-4">
+      <div className="w-full max-w-2xl space-y-4">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
             </div>
             <div>
-              <p className="font-bold text-green-700 text-sm">Started Successfully! 🎉</p>
-              <p className="text-green-600 text-sm mt-0.5">{message}</p>
+              <h1 className="text-sm font-bold text-white">DIKSHA Automation</h1>
+              <p className="text-xs text-slate-400">Running on Railway</p>
             </div>
           </div>
-        )}
-
-        {/* Error alert */}
-        {status === "error" && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex gap-3 items-start shadow-sm">
-            <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </div>
-            <div>
-              <p className="font-bold text-red-700 text-sm">Error</p>
-              <p className="text-red-600 text-sm mt-0.5">{message}</p>
-            </div>
+          {/* Status badge */}
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+            isDone ? "bg-green-500/10 border-green-500/30 text-green-400"
+            : isError ? "bg-red-500/10 border-red-500/30 text-red-400"
+            : "bg-orange-500/10 border-orange-500/30 text-orange-400"
+          }`}>
+            {!isDone && !isError && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"/>}
+            {isDone ? "✅ Done" : isError ? "❌ Error" : "⚙ Running"}
           </div>
-        )}
+        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 mb-6 border border-slate-100">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Server info bar */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/>
+            <span className="font-mono text-slate-400 truncate max-w-[200px]">question-editor-production-b815.up.railway.app</span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-400">
+            <span>⏱ {formatTime(elapsed)}</span>
+            {status?.started_at && <span className="hidden sm:inline">{new Date(status.started_at).toLocaleTimeString()}</span>}
+          </div>
+        </div>
 
-            {/* Username */}
-            <div>
-              <label htmlFor="diksha-username" className="block text-sm font-semibold text-slate-700 mb-2">
-                DIKSHA Username / Mobile Number
-              </label>
-              <input
-                id="diksha-username"
-                type="text"
-                required
-                placeholder="e.g. 9876543210"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={status === "loading"}
-                className="block w-full px-4 py-4 border-2 border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50"
-              />
-            </div>
+        {/* Progress bar */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-2">
+          <div className="flex justify-between text-xs text-slate-400 mb-1">
+            <span className="font-medium text-white truncate pr-2">{step}</span>
+            <span className="flex-shrink-0 font-bold text-orange-400">{progress}%</span>
+          </div>
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${isDone ? "bg-green-500" : isError ? "bg-red-500" : "bg-gradient-to-r from-orange-500 to-amber-400"}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="diksha-password" className="block text-sm font-semibold text-slate-700 mb-2">
-                Password
-              </label>
-              <input
-                id="diksha-password"
-                type="password"
-                required
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={status === "loading"}
-                className="block w-full px-4 py-4 border-2 border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50"
-              />
-            </div>
+        {/* Steps list */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Bot Steps</p>
+          <div className="space-y-1.5">
+            {STEP_KEYWORDS.map((s, i) => {
+              const done = isDone ? true : i < currentStepIdx;
+              const active = !isDone && i === currentStepIdx;
+              return (
+                <div key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+                  active ? "bg-orange-500/10 border border-orange-500/20"
+                  : done ? "opacity-60"
+                  : "opacity-30"
+                }`}>
+                  <span className="text-sm">{done ? "✅" : active ? "⚙️" : "⏳"}</span>
+                  <span className={active ? "font-semibold text-orange-300" : done ? "text-slate-300 line-through" : "text-slate-500"}>
+                    {s.icon} {s.label}
+                  </span>
+                  {active && <span className="ml-auto text-orange-400 animate-pulse">●</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={status === "loading"}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-lg font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {status === "loading" ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Launching Bot...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                  Start Automation
-                </>
-              )}
+        {/* Live terminal logs */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Live Server Logs</p>
+            <span className="text-xs text-slate-500">{logs.length} lines</span>
+          </div>
+          <div ref={logRef} className="bg-slate-950 rounded-lg p-3 h-48 overflow-y-auto font-mono text-xs text-slate-300 space-y-0.5 border border-slate-800">
+            {logs.length === 0 ? (
+              <p className="text-slate-600 italic">Waiting for logs from Railway server…</p>
+            ) : (
+              logs.map((line, i) => {
+                const isWarn = line.includes("[WARNING]") || line.includes("[WARN]");
+                const isErr = line.includes("[ERROR]") || line.includes("[CRITICAL]");
+                const isInfo = line.includes("[INFO]");
+                return (
+                  <p key={i} className={`leading-relaxed ${isErr ? "text-red-400" : isWarn ? "text-yellow-400" : isInfo ? "text-green-300" : "text-slate-400"}`}>
+                    {line}
+                  </p>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Done / Error message */}
+        {isDone && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-center">
+            <p className="text-green-400 font-bold text-sm">🎉 All courses completed successfully!</p>
+            <p className="text-green-500/70 text-xs mt-1">DIKSHA progress has been saved. You can close this page.</p>
+            <button onClick={() => { setStage("form"); setStatus(null); setElapsed(0); }}
+              className="mt-3 text-xs px-4 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-all">
+              Run Again
             </button>
-          </form>
-        </div>
-
-        {/* Info box */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-sm text-amber-800">
-          <p className="font-bold mb-1">⚠️ Important</p>
-          <ul className="list-disc list-inside space-y-1 text-amber-700">
-            <li>You can safely close this page after starting.</li>
-            <li>The bot runs on the cloud server — <strong>not your device</strong>.</li>
-            <li>Do <strong>not</strong> click Start multiple times. Wait for one course to finish.</li>
-          </ul>
-        </div>
+          </div>
+        )}
+        {isError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-center">
+            <p className="text-red-400 font-bold text-sm">❌ Automation stopped with an error</p>
+            <p className="text-red-500/70 text-xs mt-1 font-mono">{step}</p>
+            <button onClick={() => { setStage("form"); setStatus(null); setElapsed(0); }}
+              className="mt-3 text-xs px-4 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all">
+              Try Again
+            </button>
+          </div>
+        )}
 
       </div>
     </div>
