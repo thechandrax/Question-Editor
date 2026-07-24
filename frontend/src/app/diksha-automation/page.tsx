@@ -42,11 +42,11 @@ export default function DikshaAutomationPage() {
       );
       setUsername("");
       setPassword("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setStatus("error");
       setMessage(
-        err.message || "An unexpected error occurred while connecting to the backend."
+        err instanceof Error ? err.message : "An unexpected error occurred while connecting to the backend."
       );
     }
   };
