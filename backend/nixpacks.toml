@@ -1,3 +1,9 @@
+[phases.setup]
+nixPkgs = ['chromium', 'nss', 'atk', 'at-spi2-atk', 'libdrm', 'libxkbcommon', 'xorg.libX11', 'xorg.libXcomposite', 'xorg.libXdamage', 'xorg.libXext', 'xorg.libXfixes', 'xorg.libXrandr', 'mesa', 'alsa-lib', 'pango', 'cairo', 'cups']
+
 [phases.playwright]
-dependsOn = ['build']
-cmds = ['python -m playwright install --with-deps chromium']
+dependsOn = ['install']
+cmds = ['python -m playwright install chromium']
+
+[variables]
+PLAYWRIGHT_BROWSERS_PATH = '/root/.cache/ms-playwright'
