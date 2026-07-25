@@ -267,14 +267,14 @@ class CourseNavigator:
             logger.info(f'Already on course_listing.php — reloading to ensure fresh data...')
             try:
                 self.page.reload(wait_until='networkidle', timeout=30000)
-                time.sleep(3)
+                time.sleep(2)
             except Exception as e:
                 logger.warning(f'Reload note: {e}')
         else:
             logger.info(f'Navigating directly to: {target}')
             try:
                 self.page.goto(target, wait_until='networkidle', timeout=35000)
-                time.sleep(3)
+                time.sleep(2)
             except Exception as e:
                 logger.warning(f'Navigation note: {e}')
         self._check_and_recover_access_denied()
@@ -290,7 +290,7 @@ class CourseNavigator:
                     break
             except Exception:
                 pass
-        time.sleep(2)
+        time.sleep(1)
 
     def fetch_from_course_listing(self) -> dict:
         """
@@ -345,7 +345,7 @@ class CourseNavigator:
         logger.info('==================================================')
         try:
             self.page.goto(target, wait_until='networkidle', timeout=35000)
-            time.sleep(3)
+            time.sleep(2)
             self._check_and_recover_access_denied()
             logger.info(f'  Page URL after load: {self.page.url}')
             logger.info(f'  Page title: {self.page.title()}')
@@ -364,7 +364,7 @@ class CourseNavigator:
                         break
                 except Exception:
                     pass
-            time.sleep(2)
+            time.sleep(1)
         except Exception as e:
             logger.warning(f'Note during Step 5: {e}')
 
@@ -393,14 +393,32 @@ class CourseNavigator:
             ('tab=finished',        'tab=finished'),
         ]
 
-        # ── Strategy A: In-browser fetch() — same-origin, all cookies ──────
-        logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
-        for payload, label in ongoing_payloads:
-            ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
-            if ok and courses:
-                result['ongoing'] = courses
-                logger.info(f'  ✔ In-browser AJAX ongoing [{label}] → {len(courses)} courses')
-                break
+        # ── Strategy B: Parse full rendered page HTML (FASTEST — try first) ─
+        # HTML parse directly reads the DOM — no AJAX needed, no extra roundtrips.
+        logger.info('=== Strategy B: Full page HTML parse ===')
+        try:
+            page_html = self.page.content()
+            logger.info(f'  HTML length: {len(page_html)} | preview: {page_html[:200].strip()!r}')
+            parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+            if parsed:
+                result['ongoing'] = parsed
+                logger.info(f'  ✔ Page HTML parse → {len(parsed)} ongoing courses')
+            else:
+                if 'login' in page_html.lower() or 'sign in' in page_html.lower():
+                    logger.warning('  ⚠ Page shows login prompt — session may have expired!')
+        except Exception as e:
+            logger.warning(f'  Strategy B error: {e}')
+
+        # ── Strategy A: In-browser fetch() AJAX — only if HTML parse failed ─
+        # These typically return [] but kept as fallback for API-first portals.
+        if not result['ongoing']:
+            logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
+            for payload, label in ongoing_payloads:
+                ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
+                if ok and courses:
+                    result['ongoing'] = courses
+                    logger.info(f'  ✔ In-browser AJAX ongoing [{label}] → {len(courses)} courses')
+                    break
 
         if not result['ongoing']:
             logger.info('=== Strategy A2: page.request AJAX fallback ===')
@@ -411,12 +429,14 @@ class CourseNavigator:
                     logger.info(f'  ✔ page.request AJAX ongoing [{label}] → {len(courses)} courses')
                     break
 
-        for payload, label in finished_payloads:
-            ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
-            if ok and courses:
-                result['finished'] = courses
-                logger.info(f'  ✔ In-browser AJAX finished [{label}] → {len(courses)} courses')
-                break
+        # AJAX for finished (only if Strategy B didn't already find them)
+        if not result['finished']:
+            for payload, label in finished_payloads:
+                ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
+                if ok and courses:
+                    result['finished'] = courses
+                    logger.info(f'  ✔ In-browser AJAX finished [{label}] → {len(courses)} courses')
+                    break
 
         if not result['finished']:
             for payload, label in finished_payloads:
@@ -425,24 +445,6 @@ class CourseNavigator:
                     result['finished'] = courses
                     logger.info(f'  ✔ page.request AJAX finished [{label}] → {len(courses)} courses')
                     break
-
-        # ── Strategy B: Parse full rendered page HTML ────────────────────
-        if not result['ongoing']:
-            logger.info('=== Strategy B: Full page HTML parse ===')
-            try:
-                page_html = self.page.content()
-                logger.info(f'  HTML length: {len(page_html)} | preview: {page_html[:300].strip()!r}')
-                parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
-                if parsed:
-                    result['ongoing'] = parsed
-                    logger.info(f'  ✔ Page HTML parse → {len(parsed)} ongoing courses')
-                else:
-                    if 'login' in page_html.lower() or 'sign in' in page_html.lower():
-                        logger.warning('  ⚠ Page shows login prompt — session may have expired!')
-                    if 'access denied' in page_html.lower():
-                        logger.warning('  ⚠ Access Denied in page HTML!')
-            except Exception as e:
-                logger.warning(f'  Strategy B error: {e}')
 
         # ── Strategy C: Click Ongoing tab then re-parse ──────────────────
         if not result['ongoing']:
@@ -454,7 +456,7 @@ class CourseNavigator:
                     try:
                         el = self.page.query_selector(sel)
                         if el:
-                            el.click(); time.sleep(3)
+                            el.click(); time.sleep(2)
                             page_html = self.page.content()
                             parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
                             if parsed:

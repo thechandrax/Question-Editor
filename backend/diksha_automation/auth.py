@@ -85,7 +85,7 @@ class DikshaAuthenticator:
         # Step 1: Go directly to Keycloak login page (faster than homepage → click Login)
         logger.info(f"Step 1: Navigating directly to Keycloak login: {self.keycloak_login_url[:60]}...")
         self.page.goto(self.keycloak_login_url, wait_until='domcontentloaded', timeout=30000)
-        time.sleep(2)
+        time.sleep(1)
 
         # Step 3: Enter credentials
         try:
@@ -120,7 +120,7 @@ class DikshaAuthenticator:
                 if password_input:
                     password_input.press("Enter")
             
-            time.sleep(4)
+            time.sleep(2)  # Keycloak redirects quickly
         except PlaywrightTimeoutError:
             logger.info("Keycloak form completed or session active.")
 
@@ -150,7 +150,7 @@ class DikshaAuthenticator:
         logger.info("--- SSO Sync: learning.diksha.gov.in ---")
         try:
             self.page.goto(self.learning_sso_url, wait_until="domcontentloaded", timeout=30000)
-            time.sleep(2)
+            time.sleep(1)
 
             current_url = self.page.url
             logger.info(f"SSO landing URL: {current_url}")
@@ -187,10 +187,10 @@ class DikshaAuthenticator:
             logger.info(f"Navigating to SSO: {sso_link}")
             try:
                 self.page.goto(sso_link, wait_until='networkidle', timeout=30000)
-                time.sleep(3)
+                time.sleep(2)
             except Exception as e:
                 logger.info(f"networkidle note (timeout ok): {e}")
-                time.sleep(3)
+                time.sleep(2)
 
             url_now   = self.page.url
             title_now = self.page.title()
@@ -216,10 +216,10 @@ class DikshaAuthenticator:
                     logger.info(f"Navigating to SSO token URL: {sso_token_url[:120]}...")
                     try:
                         self.page.goto(sso_token_url, wait_until='networkidle', timeout=25000)
-                        time.sleep(4)
+                        time.sleep(3)
                     except Exception as e:
                         logger.info(f"SSO token nav note: {e}")
-                        time.sleep(4)
+                        time.sleep(3)
 
                     url_after = self.page.url
                     logger.info(f"After token nav: {url_after}")
@@ -229,7 +229,7 @@ class DikshaAuthenticator:
                     # Navigate to course listing now that PHPSESSID should be set
                     logger.info("SSO token processed — navigating to course_listing.php...")
                     self.page.goto(self.learning_sso_url, wait_until='domcontentloaded', timeout=20000)
-                    time.sleep(3)
+                    time.sleep(1)
                     logger.info(f"course_listing URL: {self.page.url}")
                     return
 
@@ -246,7 +246,7 @@ class DikshaAuthenticator:
                         btn.click()
                     else:
                         self.page.keyboard.press('Enter')
-                    time.sleep(6)
+                    time.sleep(4)
                     logger.info(f"After Keycloak re-auth: {self.page.url}")
                 except PlaywrightTimeoutError:
                     logger.info("SSO sync: Keycloak auto-approved (no form visible)")
