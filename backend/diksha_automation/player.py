@@ -434,6 +434,8 @@ class VideoPlayer:
             logger.info("  Video detected — running 16x speed (up to 600s real-time)...")
             start = time.time()
             last_log_time = 0.0
+            last_time = -1.0
+            stuck_count = 0
             while (time.time() - start) < 600:
                 self._simulate_mouse()
                 time.sleep(2)
@@ -458,6 +460,24 @@ class VideoPlayer:
                         if info:
                             pct = int((info["currentTime"] / info["duration"]) * 100) if info["duration"] else 0
                             logger.info(f"  Video progress: {int(info['currentTime'])}s / {int(info['duration'])}s ({pct}%) | rate={info['playbackRate']} | paused={info['paused']} | err={info['error']}")
+                            
+                            # Stuck detection
+                            current_val = info["currentTime"]
+                            if current_val == last_time and not info["paused"]:
+                                stuck_count += 1
+                                if stuck_count >= 2:  # Stuck for 20 seconds
+                                    logger.warning(f"  [WARNING] Video is stuck at {int(current_val)}s. Attempting to seek to the end...")
+                                    video_frame.evaluate("""() => {
+                                        let v = document.querySelector("video");
+                                        if (v && v.duration) {
+                                            v.currentTime = Math.max(0, v.duration - 3);
+                                            v.play().catch(() => {});
+                                        }
+                                    }""")
+                                    stuck_count = 0  # reset
+                            else:
+                                stuck_count = 0
+                            last_time = current_val
                     except Exception as log_ex:
                         logger.debug(f"Progress log error: {log_ex}")
 
