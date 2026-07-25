@@ -433,10 +433,34 @@ class VideoPlayer:
         if video_element:
             logger.info("  Video detected — running 16x speed (up to 600s real-time)...")
             start = time.time()
+            last_log_time = 0.0
             while (time.time() - start) < 600:
                 self._simulate_mouse()
                 time.sleep(2)
                 self._inject_speed_override() # keep applying speed override
+                
+                # Fetch progress and diagnostic info every 10 seconds
+                now = time.time()
+                if now - last_log_time >= 10:
+                    last_log_time = now
+                    try:
+                        info = video_frame.evaluate("""() => {
+                            let v = document.querySelector("video");
+                            if (!v) return null;
+                            return {
+                                currentTime: v.currentTime,
+                                duration: v.duration,
+                                paused: v.paused,
+                                playbackRate: v.playbackRate,
+                                error: v.error ? v.error.code : null
+                            };
+                        }""")
+                        if info:
+                            pct = int((info["currentTime"] / info["duration"]) * 100) if info["duration"] else 0
+                            logger.info(f"  Video progress: {int(info['currentTime'])}s / {int(info['duration'])}s ({pct}%) | rate={info['playbackRate']} | paused={info['paused']} | err={info['error']}")
+                    except Exception as log_ex:
+                        logger.debug(f"Progress log error: {log_ex}")
+
                 try:
                     ended = video_frame.evaluate(
                         'document.querySelector("video")'
