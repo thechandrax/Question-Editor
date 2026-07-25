@@ -466,15 +466,16 @@ class VideoPlayer:
                             if current_val == last_time and not info["paused"]:
                                 stuck_count += 1
                                 if stuck_count >= 2:  # Stuck for 20 seconds
-                                    logger.warning(f"  [WARNING] Video is stuck at {int(current_val)}s. Attempting to seek to the end...")
+                                    logger.warning(f"  [WARNING] Video is stuck at {int(current_val)}s. Forcing completion...")
                                     video_frame.evaluate("""() => {
                                         let v = document.querySelector("video");
-                                        if (v && v.duration) {
-                                            v.currentTime = Math.max(0, v.duration - 3);
-                                            v.play().catch(() => {});
+                                        if (v) {
+                                            try { v.currentTime = v.duration; } catch(e){}
+                                            v.dispatchEvent(new Event('ended'));
                                         }
                                     }""")
-                                    stuck_count = 0  # reset
+                                    logger.info("  Forced ended event. Exiting video loop.")
+                                    break
                             else:
                                 stuck_count = 0
                             last_time = current_val
