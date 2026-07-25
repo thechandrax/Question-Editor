@@ -1,5 +1,6 @@
 import os
 import time
+import uuid
 import logging
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright, Page, TimeoutError as PlaywrightTimeoutError
@@ -31,15 +32,19 @@ class DikshaAuthenticator:
         
         self.home_url = "https://diksha.gov.in/index.html"
         self.learning_sso_url = "https://learning.diksha.gov.in/diksha/course_listing.php"
-        # Direct Keycloak login URL — skips homepage navigation, faster & more reliable headless
+        # Direct Keycloak login URL — includes state UUID (OAuth2 PKCE) to match real browser flow
+        _state = str(uuid.uuid4())
         self.keycloak_login_url = (
-            "https://diksha.gov.in/auth/realms/sunbird/protocol/openid-connect/auth?"
-            "client_id=portal"
-            "&redirect_uri=https%3A%2F%2Fdiksha.gov.in%2Fsearch%2FLibrary%2F1%3FselectedTab%3Dall%26auth_callback%3D1"
-            "&scope=openid"
-            "&response_type=code"
-            "&version=4"
+            f"https://diksha.gov.in/auth/realms/sunbird/protocol/openid-connect/auth?"
+            f"client_id=portal"
+            f"&state={_state}"
+            f"&redirect_uri=https%3A%2F%2Fdiksha.gov.in%2Fsearch%2FLibrary%2F1%3FselectedTab%3Dall%26auth_callback%3D1"
+            f"&scope=openid"
+            f"&response_type=code"
+            f"&version=4"
         )
+        logger.info(f"Keycloak login URL state={_state}")
+
 
     def login(self) -> Page:
         """
