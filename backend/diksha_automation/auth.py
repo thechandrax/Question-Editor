@@ -135,94 +135,109 @@ class DikshaAuthenticator:
         """
         Establishes an authenticated PHP session on learning.diksha.gov.in.
 
-        learning.diksha.gov.in runs a separate Moodle/PHP system that requires
-        its own session — separate from the diksha.gov.in Keycloak session.
+        DIKSHA SSO flow:
+          1. learning.diksha.gov.in/login.php has 'LOGIN with DIKSHA' → diksha.gov.in/resources?lms=diksha2
+          2. diksha.gov.in/resources generates an SSO token, puts URL in page title:
+             "Loading https://learning.diksha.gov.in/diksha/diksha_sso.php?token=..."
+          3. JavaScript redirects browser to diksha_sso.php?token=...
+          4. diksha_sso.php validates token → sets PHPSESSID → redirects to course_listing.php
 
-        Flow:
-          1. Navigate to course_listing.php → likely redirected to login.php
-          2. Find the SSO / OAuth2 login link on login.php
-          3. Click it → redirects to Keycloak on diksha.gov.in
-          4. Keycloak sees existing session cookie → auto-approves (no password needed)
-          5. Redirected back to learning portal with authenticated session ✅
+        Fix: use networkidle so JS can run; if JS redirect missed, extract URL from page title.
         """
+        import re
+        import html as _html
+
         logger.info("--- SSO Sync: learning.diksha.gov.in ---")
         try:
             self.page.goto(self.learning_sso_url, wait_until="domcontentloaded", timeout=30000)
-            time.sleep(3)
+            time.sleep(2)
 
             current_url = self.page.url
             logger.info(f"SSO landing URL: {current_url}")
 
-            # Already authenticated — no login.php redirect
             if "login.php" not in current_url:
                 logger.info("SSO sync: already authenticated on learning portal ✓")
                 return
 
-            logger.info("SSO sync: redirected to login.php — scanning for OAuth2/SSO button...")
+            # ── Find SSO login link on login.php ────────────────────────────
+            logger.info("SSO sync: on login.php — scanning for SSO link...")
+            links = self.page.evaluate("""() =>
+                Array.from(document.querySelectorAll('a')).map(e => ({
+                    text: (e.innerText || '').trim(),
+                    href: e.href || ''
+                }))
+            """)
 
-            # Enumerate all links + buttons on login page for debugging + clicking
-            elements = self.page.evaluate("""() => {
-                return Array.from(document.querySelectorAll('a, button, input[type="submit"], [role="button"]')).map(el => ({
-                    tag: el.tagName,
-                    text: (el.innerText || el.value || '').trim().slice(0, 80),
-                    href: (el.href || '').slice(0, 200),
-                    cls: (el.className || '').slice(0, 60),
-                }));
-            }""")
+            sso_link = None
+            for link in links:
+                logger.info(f"  Link: '{link['text'][:60]}' → {link['href'][:100]}")
+                href = (link['href'] or '').lower()
+                text = (link['text'] or '').lower()
+                if 'resources' in href or 'lms=diksha' in href or 'oauth2' in href or 'diksha' in text:
+                    sso_link = link['href']
+                    logger.info(f"  → SSO link found: {sso_link[:100]}")
+                    break
 
-            logger.info(f"Login page has {len(elements)} clickable elements:")
-            for el in elements[:25]:
-                logger.info(f"  [{el['tag']}] '{el['text']}' → {el['href'][:100]}")
+            if not sso_link:
+                logger.warning("SSO sync: no SSO link found on login.php — skipping")
+                return
 
-            # Try clicking an OAuth2/SSO/Keycloak link
-            sso_url_keywords  = ["oauth2", "keycloak", "/auth/", "openid", "sso", "token"]
-            sso_text_keywords = ["login with", "sign in with", "diksha", "oauth", "continue with", "microsoft"]
+            # ── Navigate to SSO link with networkidle so JS redirect runs ───
+            # diksha.gov.in/resources?lms=diksha2 will JS-redirect to diksha_sso.php?token=...
+            logger.info(f"Navigating to SSO: {sso_link}")
+            try:
+                self.page.goto(sso_link, wait_until='networkidle', timeout=30000)
+                time.sleep(3)
+            except Exception as e:
+                logger.info(f"networkidle note (timeout ok): {e}")
+                time.sleep(3)
 
-            clicked_href = None
-            for el in elements:
-                href = (el["href"] or "").lower()
-                text = (el["text"] or "").lower()
-                if any(k in href for k in sso_url_keywords) or any(k in text for k in sso_text_keywords):
-                    logger.info(f"  → SSO candidate: text='{el['text']}' href='{el['href'][:120]}'")
+            url_now   = self.page.url
+            title_now = self.page.title()
+            logger.info(f"After SSO nav — URL: {url_now}")
+            logger.info(f"After SSO nav — Title: {title_now[:200]}")
+
+            # ── SUCCESS: JS redirect took us to learning portal ──────────────
+            if 'learning.diksha.gov.in' in url_now and 'login.php' not in url_now:
+                logger.info("SSO sync: ✓ session established on learning portal!")
+                return
+
+            # ── FALLBACK: Extract diksha_sso.php?token= from page title ──────
+            # diksha.gov.in/resources sets the title to "Loading https://...diksha_sso.php?token=..."
+            # If networkidle missed the JS redirect, we extract and navigate manually.
+            if 'diksha_sso.php' in title_now or 'diksha_sso.php' in url_now:
+                sso_token_url = url_now if 'diksha_sso.php' in url_now else None
+                if not sso_token_url:
+                    m = re.search(r'(https://\S+diksha_sso\.php[^\s"\'<>]*)', title_now)
+                    if m:
+                        sso_token_url = _html.unescape(m.group(1))
+
+                if sso_token_url:
+                    logger.info(f"Navigating to SSO token URL: {sso_token_url[:120]}...")
                     try:
-                        if el["href"]:
-                            self.page.goto(el["href"], wait_until="domcontentloaded", timeout=20000)
-                        else:
-                            self.page.click(f'[href="{el["href"]}"]')
-                        clicked_href = el["href"]
-                        time.sleep(5)
-                        break
-                    except Exception as ex:
-                        logger.warning(f"  Click error: {ex}")
-
-            # Fallback: try known Moodle OAuth2 URL patterns
-            if not clicked_href:
-                logger.info("SSO sync: no SSO link found — trying Moodle OAuth2 URL patterns...")
-                for trial_url in [
-                    "https://learning.diksha.gov.in/login/oauth2/login.php",
-                    "https://learning.diksha.gov.in/diksha/login/oauth2/login.php?id=1",
-                    "https://learning.diksha.gov.in/diksha/login/index.php",
-                ]:
-                    try:
-                        self.page.goto(trial_url, wait_until="domcontentloaded", timeout=15000)
+                        self.page.goto(sso_token_url, wait_until='networkidle', timeout=25000)
                         time.sleep(4)
-                        if "login.php" not in self.page.url:
-                            logger.info(f"  SSO via direct URL success: {trial_url}")
-                            clicked_href = trial_url
-                            break
-                        else:
-                            logger.info(f"  Still on login.php after: {trial_url}")
-                    except Exception as ex:
-                        logger.warning(f"  Trial URL error ({trial_url}): {ex}")
+                    except Exception as e:
+                        logger.info(f"SSO token nav note: {e}")
+                        time.sleep(4)
 
-            # If Keycloak page appears → may need to fill credentials again (no session sharing)
-            final_url = self.page.url
-            logger.info(f"SSO sync post-click URL: {final_url}")
+                    url_after = self.page.url
+                    logger.info(f"After token nav: {url_after}")
+                    if 'learning.diksha.gov.in' in url_after and 'login.php' not in url_after:
+                        logger.info("SSO sync: ✓ session established via SSO token!")
+                        return
+                    # Navigate to course listing now that PHPSESSID should be set
+                    logger.info("SSO token processed — navigating to course_listing.php...")
+                    self.page.goto(self.learning_sso_url, wait_until='domcontentloaded', timeout=20000)
+                    time.sleep(3)
+                    logger.info(f"course_listing URL: {self.page.url}")
+                    return
 
-            if "openid-connect/auth" in final_url or "keycloak" in final_url.lower():
-                logger.info("SSO sync: on Keycloak — filling credentials for learning portal auth...")
+            # ── FALLBACK 2: Keycloak re-appeared (no shared session) ─────────
+            if 'openid-connect/auth' in url_now:
+                logger.info("SSO sync: on Keycloak — re-entering credentials for learning portal...")
                 try:
-                    self.page.wait_for_selector('input[name="username"]', timeout=8000)
+                    self.page.wait_for_selector('input[name="username"]', timeout=6000)
                     self.page.fill('input[name="username"]', self.username)
                     self.page.fill('input[name="password"]', self.password)
                     btn = (self.page.query_selector('button[type="submit"]') or
@@ -230,24 +245,13 @@ class DikshaAuthenticator:
                     if btn:
                         btn.click()
                     else:
-                        self.page.keyboard.press("Enter")
-                    time.sleep(5)
-                    logger.info(f"SSO sync: post Keycloak submit URL: {self.page.url}")
+                        self.page.keyboard.press('Enter')
+                    time.sleep(6)
+                    logger.info(f"After Keycloak re-auth: {self.page.url}")
                 except PlaywrightTimeoutError:
                     logger.info("SSO sync: Keycloak auto-approved (no form visible)")
 
-            # Final check
-            final_url = self.page.url
-            if "login.php" in final_url:
-                logger.warning(f"SSO sync: still on login.php — session NOT established. URL: {final_url}")
-                # Save page HTML for debugging
-                try:
-                    html_preview = self.page.content()[:800]
-                    logger.info(f"Login page HTML preview:\n{html_preview}")
-                except Exception:
-                    pass
-            else:
-                logger.info(f"SSO sync: session established on learning portal ✓ URL: {final_url}")
+            logger.info(f"SSO sync final URL: {self.page.url}")
 
         except Exception as e:
             logger.error(f"SSO sync error: {e}", exc_info=True)
