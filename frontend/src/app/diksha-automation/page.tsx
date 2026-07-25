@@ -182,21 +182,36 @@ export default function DikshaAutomationPage() {
 
   const handleScanCourses = async () => {
     setScanning(true);
-    setScanMessage("Authenticating & scanning DIKSHA account for courses...");
+    setScanMessage("🔐 Authenticating & scanning DIKSHA account... (may take 60-90 seconds)");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 150000); // 150s timeout
     try {
       const res = await fetch("/api/diksha/fetch-courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to scan enrolled courses.");
-      const fetchedList: Course[] = data.courses || [];
+      const ongoing: Course[] = (data.ongoing || []).map((c: Course) => ({ ...c, status: "ongoing" }));
+      const finished: Course[] = (data.finished || []).map((c: Course) => ({ ...c, status: "finished" }));
+      const fetchedList: Course[] = [...ongoing, ...finished];
       setCourses(fetchedList);
       setHasScanned(true);
-      setScanMessage(`Scan complete! Found ${fetchedList.length} course(s).`);
+      if (fetchedList.length === 0) {
+        setScanMessage("⚠️ Scan complete but no courses found. Check Railway logs for details.");
+      } else {
+        setScanMessage(`✅ Scan complete! Found ${ongoing.length} ongoing + ${finished.length} finished course(s).`);
+      }
     } catch (err: unknown) {
-      setScanMessage(err instanceof Error ? err.message : "Error scanning courses.");
+      clearTimeout(timeout);
+      if (err instanceof Error && err.name === "AbortError") {
+        setScanMessage("⏱️ Scan timed out after 150s. Railway may be starting up — try again in 30 seconds.");
+      } else {
+        setScanMessage(err instanceof Error ? `❌ ${err.message}` : "❌ Error scanning courses.");
+      }
     } finally {
       setScanning(false);
     }
