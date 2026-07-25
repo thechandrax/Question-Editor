@@ -279,6 +279,39 @@ class VideoPlayer:
                 'button:has-text("Open"),   a:has-text("Open")'
             )
 
+            # Check if there are any visible unlocked buttons
+            has_visible_activities = False
+            for btn in view_buttons:
+                try:
+                    if btn.is_visible() and btn.is_enabled():
+                        has_visible_activities = True
+                        break
+                except Exception:
+                    pass
+
+            # If 0 visible buttons are found, try clicking the trigger to expand it!
+            if not has_visible_activities:
+                logger.info("  No visible activities found. Module might be collapsed. Toggling accordion...")
+                try:
+                    trigger = (
+                        self.page.query_selector(f"[data-id='{mod_id}']") or
+                        self.page.query_selector(f"[id*='{mod_id}']") or
+                        self.page.query_selector(f"#section-{mod_id}")
+                    )
+                    if trigger:
+                        trigger.click(force=True)
+                        time.sleep(3)
+                        # Re-read
+                        scope = self._get_active_module_container(mod_id, mod_name)
+                        view_buttons = scope.query_selector_all(
+                            'button:has-text("View"),   a:has-text("View"), '
+                            'button:has-text("Start"),  a:has-text("Start"), '
+                            'button:has-text("Resume"), a:has-text("Resume"), '
+                            'button:has-text("Open"),   a:has-text("Open")'
+                        )
+                except Exception as ex:
+                    logger.debug(f"Accordion toggle error: {ex}")
+
             unlocked_btn = None
             item_title   = f"Activity_{act_num}"
 
