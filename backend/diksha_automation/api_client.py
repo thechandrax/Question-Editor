@@ -97,21 +97,74 @@ class DikshaAPIClient:
     #  Module progress API
     # ------------------------------------------------------------------ #
 
-    def get_module_progress(self, course_id: str, section_id: str) -> list:
+    def get_module_progress(self, course_id: str, section_id: str, page: Page = None) -> list:
         """
         Fetch real-time module progress from DIKSHA API.
-
-        Tries (in order):
-          1. Captured payload (from setup_interception / live browser)
-          2. Common Moodle POST body patterns
+        If page (Playwright Page) is provided, executes the fetch directly inside the browser
+        context to bypass Cloudflare / security 403 blocks.
         """
         url = f"{BASE}/diksha/course.php?id={course_id}&section={section_id}"
+
+        # 1. Try in-browser fetch (100% reliable session/auth)
+        if page:
+            try:
+                logger.info("Attempting in-browser API fetch for module progress...")
+                result = page.evaluate("""
+                    async (fetchUrl) => {
+                        try {
+                            const resp = await fetch(
+                                fetchUrl,
+                                {
+                                    method: 'POST',
+                                    credentials: 'include',
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application/json, text/javascript, */*',
+                                    },
+                                    body: 'function=get_course_syllabus_data&type=all'
+                                }
+                            );
+                            const text = await resp.text();
+                            return { status: resp.status, body: text, ok: resp.ok };
+                        } catch(e) {
+                            return { status: 0, body: e.message, ok: false };
+                        }
+                    }
+                """, url)
+                
+                if result and result.get("ok"):
+                    import json
+                    data = json.loads(result["body"])
+                    modules = []
+                    if isinstance(data, dict):
+                        raw_modules = None
+                        if "syllabus" in data:
+                            raw_modules = data["syllabus"]
+                        elif "modules" in data:
+                            raw_modules = data["modules"]
+                        
+                        if raw_modules:
+                            for m in raw_modules:
+                                modules.append({
+                                    "id": str(m.get("syl_id") or m.get("id") or ""),
+                                    "name": m.get("syl_name") or m.get("name") or "",
+                                    "progress": int(m.get("progress") or m.get("syl_progress") or 0),
+                                    "iscompleted": bool(m.get("iscompleted") or m.get("completed") or False)
+                                })
+                    if modules:
+                        logger.info(f"Module progress fetched via in-browser AJAX: {len(modules)} modules.")
+                        return modules
+            except Exception as e:
+                logger.debug(f"In-browser AJAX fetch failed: {e}")
 
         # Build candidate payloads — captured first, then guesses
         payloads_to_try: list = []
 
         if self._captured_payload:
             payloads_to_try.append(self._captured_payload)   # raw string body
+            
+        payloads_to_try.append("function=get_course_syllabus_data&type=all")
 
         # Common patterns (covers most Moodle/DIKSHA variants)
         payloads_to_try += [
@@ -143,8 +196,24 @@ class DikshaAPIClient:
                 if resp.status_code == 200:
                     try:
                         data = resp.json()
-                        if isinstance(data, dict) and "modules" in data:
-                            modules = data["modules"]
+                        modules = []
+                        if isinstance(data, dict):
+                            raw_modules = None
+                            if "syllabus" in data:
+                                raw_modules = data["syllabus"]
+                            elif "modules" in data:
+                                raw_modules = data["modules"]
+                            
+                            if raw_modules:
+                                for m in raw_modules:
+                                    modules.append({
+                                        "id": str(m.get("syl_id") or m.get("id") or ""),
+                                        "name": m.get("syl_name") or m.get("name") or "",
+                                        "progress": int(m.get("progress") or m.get("syl_progress") or 0),
+                                        "iscompleted": bool(m.get("iscompleted") or m.get("completed") or False)
+                                    })
+                        
+                        if modules:
                             logger.info(
                                 f"Module progress fetched via API: {len(modules)} modules."
                             )

@@ -54,7 +54,10 @@ class VideoPlayer:
             self._section_id = qs.get("section", ["2486"])[0]
         except Exception:
             pass
-        self.page.goto(course_url, wait_until="domcontentloaded")
+        try:
+            self.page.goto(course_url, wait_until="domcontentloaded", timeout=35000)
+        except Exception as e:
+            logger.warning(f"Course page navigation note (proceeding anyway): {e}")
         time.sleep(3)
         take_screenshot_sync(self.page, "step7_course_opened")
 
@@ -119,7 +122,10 @@ class VideoPlayer:
             module_url = self._build_module_url(course_url, mod_id)
             logger.info(f"Navigating to module URL: {module_url}")
 
-            self.page.goto(module_url, wait_until="domcontentloaded", timeout=25000)
+            try:
+                self.page.goto(module_url, wait_until="domcontentloaded", timeout=30000)
+            except Exception as e:
+                logger.warning(f"Module page navigation note (proceeding anyway): {e}")
             time.sleep(3)
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
@@ -135,7 +141,7 @@ class VideoPlayer:
         Returns module list from API (with progress data) or hardcoded fallback.
         """
         if self.api and self._course_id and self._section_id:
-            api_modules = self.api.get_module_progress(self._course_id, self._section_id)
+            api_modules = self.api.get_module_progress(self._course_id, self._section_id, page=self.page)
             if api_modules:
                 logger.info(f"Using live API module list ({len(api_modules)} modules).")
                 return api_modules
@@ -265,7 +271,10 @@ class VideoPlayer:
 
             # Always start from the clean module page
             if self.page.url.split("?")[0] != module_url.split("?")[0]:
-                self.page.goto(module_url, wait_until="domcontentloaded", timeout=20000)
+                try:
+                    self.page.goto(module_url, wait_until="domcontentloaded", timeout=25000)
+                except Exception as e:
+                    logger.warning(f"Activity loop page navigation note (proceeding anyway): {e}")
                 time.sleep(3)
 
             # Find active module container to scope the buttons search

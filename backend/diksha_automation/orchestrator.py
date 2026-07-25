@@ -91,7 +91,7 @@ def run_automation(username=None, password=None, headless=False, target_course_u
 
         # ── Show current module progress ───────────────────────────────────
         logger.info("─── Current Module Progress ──────────────────────────")
-        modules = api.get_module_progress(course_id, section_id)
+        modules = api.get_module_progress(course_id, section_id, page=player.page)
         if modules:
             for m in modules:
                 pct  = str(m.get("progress", "?")).rjust(3)
@@ -111,7 +111,7 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         # ── Final progress check ───────────────────────────────────────────
         api.refresh_cookies(auth.context)
         logger.info("─── Final Module Progress ────────────────────────────")
-        final_modules = api.get_module_progress(course_id, section_id)
+        final_modules = api.get_module_progress(course_id, section_id, page=player.page)
         if final_modules:
             for m in final_modules:
                 pct  = str(m.get("progress", "?")).rjust(3)
@@ -155,7 +155,10 @@ def fetch_course_details_only(username=None, password=None, course_url=None, hea
 
         # Navigate to course page
         logger.info(f"Navigating to course page: {course_url}")
-        page.goto(course_url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            page.goto(course_url, wait_until="domcontentloaded", timeout=30000)
+        except Exception as e:
+            logger.warning(f"Navigation warning (proceeding anyway): {e}")
         time.sleep(3)
 
         # Click About Course tab to make sure description is loaded
@@ -203,19 +206,28 @@ def fetch_course_details_only(username=None, password=None, course_url=None, hea
 
         # Refresh cookies and get modules
         api.refresh_cookies(auth.context)
-        modules = api.get_module_progress(course_id, section_id)
+        modules = api.get_module_progress(course_id, section_id, page=page)
 
-        title = page.title() or "DIKSHA Course"
+        title = "DIKSHA Course"
         try:
-            title_el = (
-                page.query_selector('h2') or
-                page.query_selector('h1') or
+            breadcrumb_el = (
+                page.query_selector('.breadcrumb') or
+                page.query_selector('[class*="breadcrumb"]') or
                 page.query_selector('.page-header-headings')
             )
-            if title_el:
-                title = title_el.inner_text().strip()
+            if breadcrumb_el:
+                crumbs = breadcrumb_el.inner_text().strip()
+                import re
+                parts = [p.strip() for p in re.split(r'[>/\n]', crumbs) if p.strip()]
+                if len(parts) >= 2:
+                    title = parts[1]
+                else:
+                    title = parts[0]
+            else:
+                title_el = page.query_selector('h2') or page.query_selector('h1')
+                title = title_el.inner_text().strip() if title_el else page.title()
         except Exception:
-            pass
+            title = page.title() or "DIKSHA Course"
 
         logger.info(f"Successfully scraped details for: {title}")
         return {
