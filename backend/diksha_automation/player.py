@@ -171,9 +171,26 @@ class VideoPlayer:
         ]:
             try:
                 el = self.page.query_selector(sel)
-                if el and el.is_visible():
-                    logger.info(f"  Scoped module container found: {sel}")
-                    return el
+                if el:
+                    # Find parent section/card wrapper that contains the activities
+                    parent = el.evaluate_handle("""(node) => {
+                        let p = node;
+                        while (p && p.tagName !== 'BODY') {
+                            if (p.classList.contains('section') || 
+                                p.classList.contains('card') || 
+                                p.tagName === 'LI' || 
+                                p.classList.contains('course-section') ||
+                                p.classList.contains('accordion-item')) {
+                                return p;
+                            }
+                            p = p.parentElement;
+                        }
+                        return node; // fallback
+                    }""")
+                    container = parent.as_element()
+                    if container and container.is_visible():
+                        logger.info(f"  Scoped module container found (wrapper of {sel})")
+                        return container
             except Exception:
                 pass
                 
