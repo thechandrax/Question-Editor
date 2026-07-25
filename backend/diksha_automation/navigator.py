@@ -468,14 +468,16 @@ class CourseNavigator:
             except Exception as e:
                 logger.warning(f'  Strategy C error: {e}')
 
-        # ── Strategy D: DOM card scraping ────────────────────────────────
+        # ── Strategy D: DOM card scraping for ONGOING (last resort) ─────────
         if not result['ongoing']:
-            logger.info('=== Strategy D: DOM scraping for ONGOING ===')
+            logger.info('=== Strategy D: DOM scraping for ONGOING (last resort) ===')
             result['ongoing'] = self._scrape_cards_from_page(status='ongoing')
 
+        # ── Strategy D: HTML parse for FINISHED (clicking tab first) ─────
         if not result['finished']:
-            logger.info('=== Strategy D: DOM scraping for FINISHED (clicking tab first) ===')
-            # Click the Finished tab so the DOM shows finished courses, not ongoing ones
+            logger.info('=== Strategy D: HTML parse for FINISHED (clicking tab first) ===')
+            # Click Finished tab → then HTML parse (same reliable method as Strategy B for ongoing)
+            # DOM scraping is NOT used here — it picks up wrong course cards from other page sections
             finished_tab_clicked = False
             for sel in [
                 'a[href*="finished"]', 'button[data-tab="finished"]',
@@ -487,7 +489,7 @@ class CourseNavigator:
                     el = self.page.query_selector(sel)
                     if el:
                         el.click()
-                        time.sleep(3)
+                        time.sleep(2)
                         finished_tab_clicked = True
                         logger.info(f'  Clicked Finished tab: {sel}')
                         break
@@ -495,12 +497,21 @@ class CourseNavigator:
                     pass
 
             if not finished_tab_clicked:
-                logger.info('  No Finished tab found — skipping DOM scrape for finished')
+                logger.info('  No Finished tab found — 0 finished courses')
             else:
-                result['finished'] = self._scrape_cards_from_page(status='finished')
+                # Parse the Finished tab HTML (not DOM scrape — avoids false positives)
+                try:
+                    finished_html = self.page.content()
+                    parsed_finished = parse_diksha_coursedata_html(finished_html, status='finished')
+                    if parsed_finished:
+                        result['finished'] = parsed_finished
+                        logger.info(f'  ✔ Finished tab HTML parse → {len(parsed_finished)} course(s)')
+                    else:
+                        logger.info('  Finished tab HTML parse → 0 courses (matches DIKSHA "No Courses Found")')
+                except Exception as e:
+                    logger.warning(f'  Finished HTML parse error: {e}')
 
-        # ── Deduplication: remove finished entries that duplicate ongoing ─
-        # Happens when DOM scraping runs on the same page (ongoing view) for both tabs
+        # ── Safety deduplication ──────────────────────────────────────────
         ongoing_titles = {c.get('title', '').strip().lower() for c in result['ongoing'] if c.get('title')}
         before = len(result['finished'])
         result['finished'] = [
@@ -509,7 +520,7 @@ class CourseNavigator:
         ]
         removed = before - len(result['finished'])
         if removed:
-            logger.info(f'  Deduplication removed {removed} duplicate(s) from finished list')
+            logger.info(f'  Deduplication removed {removed} false duplicate(s) from finished list')
 
         result['all'] = result['ongoing'] + result['finished']
         logger.info(f'Fetch Summary: {len(result["ongoing"])} Ongoing, {len(result["finished"])} Finished courses.')
