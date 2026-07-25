@@ -18,7 +18,7 @@ import cloudscraper
 from fastapi import BackgroundTasks
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "diksha_automation"))
-from orchestrator import run_automation
+from orchestrator import run_automation, fetch_courses_only
 import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -507,11 +507,31 @@ async def parse_pdf(file: UploadFile = File(...)):
 
     return {"questions": parsed_questions, "message": "Parsed successfully using Magic PDF Engine"}
 
-class DikshaRunRequest(BaseModel):
+class DikshaFetchRequest(BaseModel):
     username: str
     password: str
 
-def _run_diksha_task(username: str, password: str) -> None:
+class DikshaRunRequest(BaseModel):
+    username: str
+    password: str
+    target_course_url: str | None = None
+
+@app.post("/api/diksha/fetch-courses")
+async def fetch_diksha_courses(req: DikshaFetchRequest):
+    try:
+        data = fetch_courses_only(username=req.username, password=req.password, headless=True)
+        all_courses = data.get("all", [])
+        _diksha["courses"] = all_courses
+        return {
+            "status": "success",
+            "courses": all_courses,
+            "ongoing": data.get("ongoing", []),
+            "finished": data.get("finished", [])
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch courses: {str(e)}")
+
+def _run_diksha_task(username: str, password: str, target_course_url: str | None = None) -> None:
     """Wrapper that tracks global state around run_automation."""
     _pause_event.set()
     _stop_event.clear()
@@ -521,17 +541,16 @@ def _run_diksha_task(username: str, password: str) -> None:
         "step": "Starting bot on Railway...",
         "progress": 5,
         "logs": [],
-        "courses": [],
         "current_course": None,
         "paused": False,
         "started_at": datetime.now().isoformat(),
     })
     try:
-        run_automation(username=username, password=password, headless=True)
+        run_automation(username=username, password=password, headless=True, target_course_url=target_course_url)
         if _stop_event.is_set():
             _diksha.update({"running": False, "status": "stopped", "step": "Automation stopped by user.", "progress": _diksha["progress"], "paused": False})
         else:
-            _diksha.update({"running": False, "status": "done", "step": "All courses completed! 🎉", "progress": 100, "paused": False})
+            _diksha.update({"running": False, "status": "done", "step": "Automation completed! 🎉", "progress": 100, "paused": False})
     except Exception as exc:
         if _stop_event.is_set():
             _diksha.update({"running": False, "status": "stopped", "step": "Automation stopped.", "progress": _diksha["progress"], "paused": False})
@@ -543,7 +562,7 @@ def _run_diksha_task(username: str, password: str) -> None:
 async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
     if _diksha["running"]:
         raise HTTPException(status_code=409, detail="Automation already running. Please wait for the current session to finish.")
-    background_tasks.add_task(_run_diksha_task, req.username, req.password)
+    background_tasks.add_task(_run_diksha_task, req.username, req.password, req.target_course_url)
     return {"status": "success", "message": "Automation started successfully in the background."}
 
 @app.post("/api/diksha/pause")

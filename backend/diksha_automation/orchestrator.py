@@ -8,7 +8,27 @@ from api_client import DikshaAPIClient
 from utils import logger, take_screenshot_sync
 
 
-def run_automation(username=None, password=None, headless=False):
+def fetch_courses_only(username=None, password=None, headless=True):
+    """
+    Logs in to DIKSHA, visits search/Library, course_library, course_listing,
+    and returns all ongoing & finished enrolled courses.
+    """
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger.info("=== Fetching DIKSHA Enrolled Courses ===")
+    auth = DikshaAuthenticator(headless=headless, username=username, password=password)
+    try:
+        page = auth.login()
+        navigator = CourseNavigator(page)
+        courses_data = navigator.fetch_all_courses()
+        return courses_data
+    except Exception as e:
+        logger.error(f"Error fetching courses: {e}", exc_info=True)
+        return {'ongoing': [], 'finished': [], 'all': []}
+    finally:
+        auth.close()
+
+
+def run_automation(username=None, password=None, headless=False, target_course_url=None):
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger.info("==================================================")
     logger.info("=== Starting Complete DIKSHA Course Automation ===")
@@ -26,24 +46,27 @@ def run_automation(username=None, password=None, headless=False):
         navigator = CourseNavigator(page)
         player    = VideoPlayer(page, api_client=api)
 
-        # Steps 3–5: Navigate to course listing
-        navigator.step_3_diksha_courses()
-        navigator.step_4_explore_courses()
-        navigator.step_5_my_learning()
+        if not target_course_url:
+            # Steps 3–5: Navigate to course listing
+            navigator.step_3_diksha_courses()
+            navigator.step_4_explore_courses()
+            navigator.step_5_my_learning()
 
-        # Step 6: Find incomplete course
-        incomplete_courses = navigator.step_6_check_incomplete_courses()
+            # Step 6: Find incomplete course
+            incomplete_courses = navigator.step_6_check_incomplete_courses()
 
-        if incomplete_courses:
-            target_course_url = incomplete_courses[0]['url']
-            logger.info(
-                f"Targeting: '{incomplete_courses[0]['title']}' → {target_course_url}"
-            )
+            if incomplete_courses:
+                target_course_url = incomplete_courses[0]['url']
+                logger.info(
+                    f"Targeting: '{incomplete_courses[0]['title']}' → {target_course_url}"
+                )
+            else:
+                target_course_url = (
+                    "https://learning.diksha.gov.in/diksha/course.php?id=1186&section=2486"
+                )
+                logger.info(f"Fallback course URL: {target_course_url}")
         else:
-            target_course_url = (
-                "https://learning.diksha.gov.in/diksha/course.php?id=1186&section=2486"
-            )
-            logger.info(f"Fallback course URL: {target_course_url}")
+            logger.info(f"Targeting specific course URL provided by user: {target_course_url}")
 
         # Extract course/section IDs for API calls
         qs = parse_qs(urlparse(target_course_url).query)

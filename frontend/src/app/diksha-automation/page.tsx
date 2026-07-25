@@ -6,8 +6,12 @@ type Stage = "form" | "dashboard";
 
 interface Course {
   title: string;
+  ends_on?: string;
+  pct?: number;
   progress: number;
-  status: "pending" | "running" | "done" | "paused";
+  url: string;
+  status: "ongoing" | "finished" | "pending" | "running" | "done";
+  image_url?: string;
   current?: boolean;
 }
 
@@ -52,13 +56,17 @@ export default function DikshaAutomationPage() {
   const [stage, setStage] = useState<Stage>("form");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [fetching, setFetching] = useState(false);
   const [formError, setFormError] = useState("");
+
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [activeTab, setActiveTab] = useState<"ongoing" | "finished">("ongoing");
+
   const [status, setStatus] = useState<StatusType | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
-  const [activeTab, setActiveTab] = useState<"all" | "ongoing" | "finished">("ongoing");
   const [actionLoading, setActionLoading] = useState(false);
+  const [automatingCourseUrl, setAutomatingCourseUrl] = useState<string | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -69,6 +77,7 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  // Polling for live status when dashboard is active
   useEffect(() => {
     if (stage !== "dashboard") return;
 
@@ -81,44 +90,72 @@ export default function DikshaAutomationPage() {
         const data: StatusType = await res.json();
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
-        if (data.status === "done" || data.status === "error" || data.status === "stopped") {
-          // Keep dashboard visible so user can see final results
+        if (data.courses && data.courses.length > 0) {
+          setCourses(data.courses);
         }
       } catch {
-        /* silent catch for network polling */
+        /* silent polling error */
       }
     }, 2000);
 
     return stopPolling;
   }, [stage, stopPolling]);
 
-  // Auto-scroll logs terminal
+  // Auto-scroll log console
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
 
-  const handleStartAutomation = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Step 1: Login & Fetch Enrolled Courses
+  const handleFetchCourses = async (e: React.FormEvent) => {
+    e.preventDefault();
     setFormError("");
     if (!username || !password) {
       setFormError("Please enter your DIKSHA username and password.");
       return;
     }
-    setSubmitting(true);
+    setFetching(true);
     try {
-      const res = await fetch("/api/diksha/run", {
+      const res = await fetch("/api/diksha/fetch-courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to start automation.");
+      if (!res.ok) throw new Error(data.detail || "Failed to fetch enrolled courses.");
+
+      const fetchedList: Course[] = data.courses || [];
+      setCourses(fetchedList);
       setStage("dashboard");
       setElapsed(0);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Connection failed to backend.");
+      setFormError(err instanceof Error ? err.message : "Connection failed to backend server.");
     } finally {
-      setSubmitting(false);
+      setFetching(false);
+    }
+  };
+
+  // Step 2: Start Automation (All courses or specific target_course_url)
+  const handleStartAutomation = async (targetUrl?: string) => {
+    setActionLoading(true);
+    setAutomatingCourseUrl(targetUrl || "all");
+    try {
+      const res = await fetch("/api/diksha/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          password,
+          target_course_url: targetUrl || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to start automation.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error starting automation.");
+    } finally {
+      setActionLoading(false);
+      setAutomatingCourseUrl(null);
     }
   };
 
@@ -134,7 +171,7 @@ export default function DikshaAutomationPage() {
   };
 
   const handleStop = async () => {
-    if (!confirm("Are you sure you want to stop the automation?")) return;
+    if (!confirm("Are you sure you want to stop the current automation?")) return;
     setActionLoading(true);
     try {
       await fetch("/api/diksha/stop", { method: "POST" });
@@ -148,13 +185,13 @@ export default function DikshaAutomationPage() {
   /* ── 1. LOGIN / CREDENTIALS FORM VIEW ──────────────────────────────── */
   if (stage === "form") {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-        {/* Glowing background decor */}
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans text-slate-100">
+        {/* Decorative blur elements */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-72 h-72 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header */}
+          {/* Header Branding */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-600 via-amber-500 to-yellow-400 p-0.5 shadow-xl shadow-orange-500/20 mb-3">
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
@@ -162,10 +199,10 @@ export default function DikshaAutomationPage() {
               </div>
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              DIKSHA Automation Hub
+              DIKSHA Learning Portal
             </h1>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Cloud-powered course auto-completer &amp; learning tracker
+              Login to fetch your enrolled courses &amp; manage automation
             </p>
           </div>
 
@@ -178,18 +215,18 @@ export default function DikshaAutomationPage() {
               </div>
             )}
 
-            <form onSubmit={handleStartAutomation} className="space-y-4">
+            <form onSubmit={handleFetchCourses} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  DIKSHA Username / Mobile
+                  DIKSHA Username / Mobile Number
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. borkej@smanthaai.online or Mobile No."
+                  placeholder="e.g. borkej@smanthaai.online or Mobile"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  disabled={submitting}
+                  disabled={fetching}
                   className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 disabled:opacity-50 transition-all"
                 />
               </div>
@@ -204,66 +241,59 @@ export default function DikshaAutomationPage() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={submitting}
+                  disabled={fetching}
                   className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 disabled:opacity-50 transition-all"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={submitting}
-                className="w-full mt-2 flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 disabled:opacity-50 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                disabled={fetching}
+                className="w-full mt-2 flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/25 disabled:opacity-50 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
               >
-                {submitting ? (
+                {fetching ? (
                   <>
                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    <span>Authenticating &amp; Starting...</span>
+                    <span>Logging in &amp; Fetching Enrolled Courses...</span>
                   </>
                 ) : (
                   <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    <span>Start Automation &amp; Track Courses</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    <span>Login &amp; Fetch Courses</span>
                   </>
                 )}
               </button>
             </form>
           </div>
 
-          {/* Security footnote */}
           <div className="mt-5 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-            <span>🔒 Runs 100% cloud side on Railway</span>
+            <span>🔒 Keycloak SSO Authenticated</span>
             <span>•</span>
-            <span>No data stored</span>
+            <span>Cloud Playwright Bot</span>
           </div>
         </div>
       </div>
     );
   }
 
-  /* ── 2. DASHBOARD VIEW (LIVE CONTROL & COURSE LISTING) ──────────────── */
-  const isRunning = status?.running ?? true;
+  /* ── 2. DASHBOARD VIEW (MY LEARNING JOURNEY + COURSE SELECTION) ──────── */
+  const isRunning = status?.running ?? false;
   const isPaused = status?.paused ?? false;
   const isDone = status?.status === "done";
   const isStopped = status?.status === "stopped";
   const isError = status?.status === "error";
-  const overallProgress = status?.progress ?? 5;
-  const currentStepMsg = status?.step || "Initializing cloud bot...";
-  const coursesList = status?.courses || [];
+  const overallProgress = status?.progress ?? 0;
+  const currentStepMsg = status?.step || "Idle - Select a course to automate";
   const logsList = status?.logs || [];
 
-  const ongoingCourses = coursesList.filter((c) => c.status !== "done");
-  const finishedCourses = coursesList.filter((c) => c.status === "done");
+  const ongoingCourses = courses.filter((c) => (c.status === "ongoing" || (c.pct ?? c.progress ?? 0) < 100));
+  const finishedCourses = courses.filter((c) => (c.status === "finished" || (c.pct ?? c.progress ?? 0) === 100));
 
-  const displayedCourses =
-    activeTab === "ongoing"
-      ? ongoingCourses
-      : activeTab === "finished"
-      ? finishedCourses
-      : coursesList;
+  const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 py-6 px-4 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
 
         {/* ── Top Header Navigation Bar ──────────────────────────────── */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md shadow-xl">
@@ -275,16 +305,16 @@ export default function DikshaAutomationPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-white">DIKSHA Learning Journey</h1>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">
-                  Cloud Backend
+                <h1 className="text-base font-bold text-white">DIKSHA Courses Portal</h1>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono">
+                  {username || "User Account"}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">User: <span className="text-orange-400 font-medium">{username || "Logged In"}</span></p>
+              <p className="text-xs text-slate-400">My Learning Journey &amp; Course Automation</p>
             </div>
           </div>
 
-          {/* Controls: Pause, Resume, Stop, New Session */}
+          {/* Controls Header */}
           <div className="flex items-center gap-2 flex-wrap">
             {isRunning && (
               <>
@@ -311,168 +341,247 @@ export default function DikshaAutomationPage() {
             )}
 
             <button
+              onClick={(e) => handleFetchCourses(e as unknown as React.FormEvent)}
+              disabled={fetching || isRunning}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all disabled:opacity-40"
+            >
+              🔄 Refresh Courses
+            </button>
+
+            <button
               onClick={() => setStage("form")}
               className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
             >
-              🔄 Change User
+              🚪 Logout
             </button>
           </div>
         </div>
 
-        {/* ── Status Banner & Overall Progress ──────────────────────── */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className={`w-3 h-3 rounded-full ${
-                isDone ? "bg-emerald-400 shadow-lg shadow-emerald-500/50" :
-                isPaused ? "bg-amber-400 shadow-lg shadow-amber-500/50" :
-                isStopped ? "bg-slate-500" :
-                isError ? "bg-red-400 shadow-lg shadow-red-500/50" :
-                "bg-orange-500 animate-pulse shadow-lg shadow-orange-500/50"
-              }`} />
-              <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Current Activity</p>
-                <p className="text-sm font-bold text-white mt-0.5">{currentStepMsg}</p>
+        {/* ── Status Banner (When Automation is Active or Finished) ──── */}
+        {isRunning || isDone || isStopped || isError ? (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className={`w-3 h-3 rounded-full ${
+                  isDone ? "bg-emerald-400 shadow-lg shadow-emerald-500/50" :
+                  isPaused ? "bg-amber-400 shadow-lg shadow-amber-500/50" :
+                  isStopped ? "bg-slate-500" :
+                  isError ? "bg-red-400 shadow-lg shadow-red-500/50" :
+                  "bg-orange-500 animate-pulse shadow-lg shadow-orange-500/50"
+                }`} />
+                <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Bot Status</p>
+                  <p className="text-sm font-bold text-white mt-0.5">{currentStepMsg}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
+                <div>⏱ Elapsed: <span className="text-white font-semibold">{formatTime(elapsed)}</span></div>
+                <div className="text-orange-400 font-bold text-base">{overallProgress}%</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-              <div>⏱ Elapsed: <span className="text-white font-semibold">{formatTime(elapsed)}</span></div>
-              <div className="text-orange-400 font-bold text-base">{overallProgress}%</div>
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  isDone ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
+                  isPaused ? "bg-amber-500" :
+                  isError ? "bg-red-500" :
+                  "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400"
+                }`}
+                style={{ width: `${overallProgress}%` }}
+              />
             </div>
           </div>
+        ) : null}
 
-          {/* Progress Bar */}
-          <div className="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${
-                isDone ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
-                isPaused ? "bg-amber-500" :
-                isError ? "bg-red-500" :
-                "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400"
-              }`}
-              style={{ width: `${overallProgress}%` }}
-            />
-          </div>
-        </div>
+        {/* ── Main Section: My Learning Journey ──────────────────────── */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
 
-        {/* ── Enrolled Courses Section ──────────────────────────────── */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          {/* Section Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <span>📚 My Enrolled Courses</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-normal">
-                  {coursesList.length} Found
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Click any course to automate specifically or run all automatically</p>
+              <h2 className="text-xl font-bold text-white tracking-tight">My Learning Journey</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Home &gt; My Learning Journey
+              </p>
             </div>
 
-            {/* Course Filter Tabs */}
-            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-              <button
-                onClick={() => setActiveTab("ongoing")}
-                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                  activeTab === "ongoing"
-                    ? "bg-orange-500 text-white font-semibold shadow-md shadow-orange-500/20"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Ongoing ({ongoingCourses.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("finished")}
-                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                  activeTab === "finished"
-                    ? "bg-orange-500 text-white font-semibold shadow-md shadow-orange-500/20"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Finished ({finishedCourses.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("all")}
-                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                  activeTab === "all"
-                    ? "bg-orange-500 text-white font-semibold shadow-md shadow-orange-500/20"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                All ({coursesList.length})
-              </button>
-            </div>
+            {/* Global Start All Automation Button */}
+            <button
+              onClick={() => handleStartAutomation()}
+              disabled={isRunning || actionLoading || ongoingCourses.length === 0}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/20 disabled:opacity-40 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              {actionLoading && automatingCourseUrl === "all" ? (
+                <span>Starting All Automation...</span>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span>Start All Ongoing Automation ({ongoingCourses.length})</span>
+                </>
+              )}
+            </button>
           </div>
 
-          {/* Courses Cards Grid */}
+          {/* DIKSHA Style Tab Buttons: Ongoing Courses vs Finished Courses */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActiveTab("ongoing")}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                activeTab === "ongoing"
+                  ? "bg-amber-900/80 border-amber-600 text-amber-200 shadow-md shadow-amber-900/40 ring-1 ring-amber-500/40"
+                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+              }`}
+            >
+              Ongoing Courses ({ongoingCourses.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab("finished")}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                activeTab === "finished"
+                  ? "bg-amber-900/80 border-amber-600 text-amber-200 shadow-md shadow-amber-900/40 ring-1 ring-amber-500/40"
+                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+              }`}
+            >
+              Finished Courses ({finishedCourses.length})
+            </button>
+          </div>
+
+          {/* Course Cards Grid */}
           {displayedCourses.length === 0 ? (
-            <div className="py-10 text-center text-slate-500 text-xs space-y-2">
-              <p className="text-2xl">📖</p>
-              <p>Scanning DIKSHA account for enrolled courses...</p>
-              <p className="text-[11px] text-slate-600">Courses will populate automatically as the bot navigates your profile.</p>
+            <div className="py-12 text-center text-slate-500 text-xs space-y-2 bg-slate-950/50 rounded-2xl border border-slate-800/60">
+              <p className="text-3xl">📚</p>
+              <p className="font-semibold text-slate-300">No {activeTab} courses found in this category.</p>
+              <p className="text-[11px] text-slate-500">
+                Click &quot;Refresh Courses&quot; to rescan your DIKSHA profile.
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {displayedCourses.map((course, idx) => (
-                <div
-                  key={idx}
-                  className={`bg-slate-950/80 border rounded-xl p-4 flex flex-col justify-between transition-all ${
-                    course.current
-                      ? "border-orange-500/70 shadow-lg shadow-orange-500/10 ring-1 ring-orange-500/30"
-                      : course.status === "done"
-                      ? "border-emerald-500/30 opacity-80"
-                      : "border-slate-800 hover:border-slate-700"
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-xs font-bold text-white leading-snug line-clamp-2">
-                        {course.title}
-                      </h3>
-                      <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                        course.status === "done"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                          : course.current
-                          ? "bg-orange-500/20 text-orange-300 border border-orange-500/40 animate-pulse"
-                          : "bg-slate-800 text-slate-400"
-                      }`}>
-                        {course.status === "done" ? "✓ 100% Done" : course.current ? "▶ Running" : "Pending"}
-                      </span>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
+              {displayedCourses.map((c, idx) => {
+                const currentPct = c.pct ?? c.progress ?? 0;
+                const isFinished = currentPct === 100 || c.status === "finished";
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] text-slate-400">
-                        <span>Progress</span>
-                        <span className="font-semibold text-slate-200">{course.progress}%</span>
-                      </div>
-                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            course.status === "done" ? "bg-emerald-400" : "bg-orange-500"
-                          }`}
-                          style={{ width: `${course.progress}%` }}
+                return (
+                  <div
+                    key={idx}
+                    className={`bg-slate-950 border rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 ${
+                      c.current
+                        ? "border-orange-500 shadow-lg shadow-orange-500/10 ring-2 ring-orange-500/30"
+                        : isFinished
+                        ? "border-slate-800 opacity-90 hover:border-emerald-500/40"
+                        : "border-slate-800 hover:border-amber-500/40"
+                    }`}
+                  >
+                    {/* Top Image Preview Banner */}
+                    <div className="w-full h-36 bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4 relative border-b border-slate-800/80 overflow-hidden">
+                      {c.image_url ? (
+                        /* eslint-disable-next-html-element-for-img */
+                        <img
+                          src={c.image_url}
+                          alt={c.title}
+                          className="w-full h-full object-contain"
                         />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-center space-y-2">
+                          <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                            <span className="text-2xl">🎓</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-medium">DIKSHA Digital Learning</span>
+                        </div>
+                      )}
+
+                      {/* Status Tag Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold shadow-md ${
+                          isFinished
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            : c.current
+                            ? "bg-orange-500/30 text-orange-200 border border-orange-500/50 animate-pulse"
+                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        }`}>
+                          {isFinished ? "✓ 100% Completed" : c.current ? "▶ Automating Now" : `${currentPct}% Completed`}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 pt-2 border-t border-slate-900 flex justify-between items-center text-[11px]">
-                    <span className="text-slate-500">Auto-detected module</span>
-                    <button
-                      onClick={() => handleStartAutomation()}
-                      disabled={isRunning && !isPaused}
-                      className="px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 font-medium transition-all disabled:opacity-30"
-                    >
-                      {course.status === "done" ? "Re-Run" : "Automate This"}
-                    </button>
+                    {/* Card Content Body */}
+                    <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-bold text-white leading-relaxed line-clamp-2">
+                          Course Title : <span className="text-slate-200 font-semibold">{c.title}</span>
+                        </h3>
+
+                        {c.ends_on && (
+                          <p className="text-[11px] text-slate-400 font-medium">
+                            Ends on : <span className="text-slate-300">{c.ends_on}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Course Progress Bar */}
+                      <div className="space-y-1.5 pt-2">
+                        <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isFinished
+                                ? "bg-emerald-400"
+                                : "bg-gradient-to-r from-emerald-500 via-amber-500 to-orange-500"
+                            }`}
+                            style={{ width: `${currentPct}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                          <span>Progress</span>
+                          <span className={isFinished ? "text-emerald-400 font-bold" : "text-orange-400 font-bold"}>
+                            {currentPct}% Completed
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer Actions: View Course + Start Automation */}
+                    <div className="px-5 py-3.5 bg-slate-900/60 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        <span>View Course</span>
+                      </a>
+
+                      <button
+                        onClick={() => handleStartAutomation(c.url)}
+                        disabled={isRunning || actionLoading || isFinished}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                          isFinished
+                            ? "bg-slate-800 text-slate-500 border border-slate-700 opacity-50 cursor-not-allowed"
+                            : "bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white shadow-orange-500/20 cursor-pointer"
+                        }`}
+                      >
+                        {automatingCourseUrl === c.url ? (
+                          <span>Starting...</span>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <span>{isFinished ? "Completed" : "Start Automation"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* ── Bot Workflow Steps & Server Log Console Grid ──────────── */}
+        {/* ── Bot Workflow Steps & Server Log Console ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Left: Workflow Steps */}
@@ -483,7 +592,7 @@ export default function DikshaAutomationPage() {
             <div className="space-y-2">
               {STEP_KEYWORDS.map((s, i) => {
                 const isStepDone = isDone ? true : i < currentStepIdx;
-                const isStepActive = !isDone && i === currentStepIdx;
+                const isStepActive = isRunning && i === currentStepIdx;
                 return (
                   <div
                     key={i}
@@ -506,7 +615,7 @@ export default function DikshaAutomationPage() {
             </div>
           </div>
 
-          {/* Right: Real-time Cloud Logs Terminal */}
+          {/* Right: Live Railway Server Console */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
