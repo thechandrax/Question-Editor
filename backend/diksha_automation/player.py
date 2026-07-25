@@ -157,7 +157,26 @@ class VideoPlayer:
 
     def _get_active_module_container(self, mod_id: str, mod_name: str):
         """Finds the DOM element representing the active module container."""
-        # Try finding by ID / attributes first
+        # 1. Make sure we are on the "Lessons" tab where the activities are displayed
+        try:
+            lessons_tab = (
+                self.page.query_selector('a:has-text("Lessons")') or
+                self.page.query_selector('button:has-text("Lessons")') or
+                self.page.query_selector('text="Lessons"')
+            )
+            if lessons_tab and lessons_tab.is_visible():
+                class_attr = lessons_tab.get_attribute("class") or ""
+                aria_sel = lessons_tab.get_attribute("aria-selected") or ""
+                is_active = 'active' in class_attr or aria_sel == "true"
+                if not is_active:
+                    logger.info("  Switching to 'Lessons' tab...")
+                    lessons_tab.click(force=True)
+                    time.sleep(2)
+        except Exception as e:
+            logger.debug(f"Lessons tab check note: {e}")
+
+        # 2. Find the module trigger element by ID/attributes
+        target_el = None
         for sel in [
             f"#section-{mod_id}",
             f"[data-sectionid='{mod_id}']",
@@ -171,30 +190,50 @@ class VideoPlayer:
         ]:
             try:
                 el = self.page.query_selector(sel)
-                if el:
-                    # Find parent section/card wrapper that contains the activities
-                    parent = el.evaluate_handle("""(node) => {
-                        let p = node;
-                        while (p && p.tagName !== 'BODY') {
-                            if (p.classList.contains('section') || 
-                                p.classList.contains('card') || 
-                                p.tagName === 'LI' || 
-                                p.classList.contains('course-section') ||
-                                p.classList.contains('accordion-item')) {
-                                return p;
-                            }
-                            p = p.parentElement;
-                        }
-                        return node; // fallback
-                    }""")
-                    container = parent.as_element()
-                    if container and container.is_visible():
-                        logger.info(f"  Scoped module container found (wrapper of {sel})")
-                        return container
+                if el and el.is_visible():
+                    target_el = el
+                    logger.info(f"  Found module trigger element: {sel}")
+                    
+                    # Try to expand it if it's collapsed
+                    try:
+                        aria_expanded = el.get_attribute("aria-expanded")
+                        class_attr = el.get_attribute("class") or ""
+                        is_collapsed = aria_expanded == "false" or "collapsed" in class_attr
+                        if is_collapsed:
+                            logger.info("  Module is collapsed. Clicking header to expand...")
+                            el.click(force=True)
+                            time.sleep(2.5)
+                    except Exception as ex:
+                        logger.debug(f"Expand check note: {ex}")
+                    break
             except Exception:
                 pass
-                
-        # Try finding the currently expanded/visible section container
+
+        if target_el:
+            try:
+                # Find parent section/card wrapper that contains the activities
+                parent = target_el.evaluate_handle("""(node) => {
+                    let p = node;
+                    while (p && p.tagName !== 'BODY') {
+                        if (p.classList.contains('section') || 
+                            p.classList.contains('card') || 
+                            p.tagName === 'LI' || 
+                            p.classList.contains('course-section') ||
+                            p.classList.contains('accordion-item')) {
+                            return p;
+                        }
+                        p = p.parentElement;
+                    }
+                    return node; // fallback
+                }""")
+                container = parent.as_element()
+                if container and container.is_visible():
+                    logger.info(f"  Scoped module container found (wrapper)")
+                    return container
+            except Exception as e:
+                logger.warning(f"Parent traversal error: {e}")
+
+        # Try finding the currently expanded/visible section container as fallback
         for sel in [
             '.section.show',
             '.section.active',
