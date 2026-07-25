@@ -1,72 +1,99 @@
 import time
 import re
+import json
 from bs4 import BeautifulSoup
 from playwright.sync_api import Page
 from config import Config
 from utils import logger
 
 
+# ── HTML/JSON parsing helpers ──────────────────────────────────────────────
+
 def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> list:
     """
-    Parses the JSON 'coursedata' HTML string returned by DIKSHA's course_listing.php AJAX endpoint.
+    Parses the HTML fragment returned by DIKSHA's course_listing.php AJAX endpoint.
+    Handles multiple possible HTML structures DIKSHA uses.
     """
     courses = []
-    if not html_content:
+    if not html_content or len(html_content.strip()) < 20:
         return courses
 
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
-        # Find spans/cards with data-href or class course-library-link
-        spans = soup.find_all('span', class_=re.compile(r'course-library-link|library-card'))
-        if not spans:
-            spans = soup.find_all(lambda tag: tag.has_attr('data-href') or (tag.name == 'div' and ('library-card' in tag.get('class', []) or 'new-card' in tag.get('class', []))))
+        candidates = []
 
-        if not spans:
-            # Fallback: search all divs or spans containing "Course Title"
-            spans = soup.find_all(lambda tag: 'Course Title' in tag.get_text())
+        # Strategy 1: elements with data-href (most common)
+        candidates = soup.find_all(lambda tag: tag.has_attr('data-href'))
+
+        # Strategy 2: divs / spans with card-related classes
+        if not candidates:
+            candidates = soup.find_all(
+                lambda tag: tag.name in ('div', 'span') and
+                any(kw in ' '.join(tag.get('class', [])) for kw in
+                    ['course-library-link', 'library-card', 'new-card', 'course-card', 'card-'])
+            )
+
+        # Strategy 3: any element containing "Course Title"
+        if not candidates:
+            candidates = soup.find_all(lambda tag: 'Course Title' in (tag.get_text() or ''))
+
+        # Strategy 4: divs containing links to course.php
+        if not candidates:
+            links = soup.find_all('a', href=re.compile(r'course\.php', re.I))
+            for lnk in links:
+                parent = lnk.parent
+                if parent and parent not in candidates:
+                    candidates.append(parent)
 
         seen_titles = set()
-        for span in spans:
+        for elem in candidates:
             try:
-                url = span.get('data-href') or ""
+                url = (elem.get('data-href') or '').strip()
                 if not url:
-                    a_tag = span.find('a', href=True)
-                    url = a_tag['href'] if a_tag else ""
-
+                    a_tag = elem.find('a', href=True)
+                    url = a_tag['href'] if a_tag else ''
                 if url and not url.startswith('http'):
-                    url = "https://learning.diksha.gov.in/diksha/" + url.lstrip('/')
+                    url = 'https://learning.diksha.gov.in/diksha/' + url.lstrip('/')
 
-                img_tag = span.find('img')
-                img_url = img_tag['src'] if img_tag and img_tag.has_attr('src') else ""
+                img_tag = elem.find('img')
+                img_url = (img_tag.get('src') or '') if img_tag else ''
                 if img_url and not img_url.startswith('http'):
-                    img_url = "https://learning.diksha.gov.in/diksha/" + img_url.lstrip('/')
+                    img_url = 'https://learning.diksha.gov.in/diksha/' + img_url.lstrip('/')
 
-                h4_tag = span.find('h4') or span.find('bdi')
-                title = ""
-                if h4_tag:
-                    title = h4_tag.get_text().replace("Course Title", "").replace(":", "").strip()
+                # Title: try h4 > bdi > any heading > first text line
+                h4 = elem.find(['h4', 'h3', 'h2', 'bdi'])
+                title = ''
+                if h4:
+                    title = h4.get_text().replace('Course Title', '').replace(':', '').strip()
                 if not title:
-                    title = span.get_text().split("\n")[0].strip()[:60]
+                    raw_text = elem.get_text('\n').strip()
+                    for line in raw_text.splitlines():
+                        line = line.strip()
+                        if line and 'Ends on' not in line and '%' not in line:
+                            title = line[:80]
+                            break
 
                 if not title or title in seen_titles:
                     continue
                 seen_titles.add(title)
 
-                ends_on = ""
-                ends_match = re.search(r'Ends on\s*:\s*<span>(.*?)</span>', str(span), re.IGNORECASE)
-                if not ends_match:
-                    ends_match = re.search(r'Ends on\s*:\s*([^\n<]+)', str(span), re.IGNORECASE)
-                if ends_match:
-                    ends_on = ends_match.group(1).strip()
+                # Ends on
+                ends_on = ''
+                em = re.search(r'Ends on\s*:?\s*<[^>]+>(.*?)</[^>]+>', str(elem), re.I | re.S)
+                if not em:
+                    em = re.search(r'Ends on\s*:?\s*([^\n<]{3,40})', str(elem), re.I)
+                if em:
+                    ends_on = re.sub(r'<[^>]+>', '', em.group(1)).strip()
 
-                pct = 100 if status == "finished" else 0
-                pct_match = re.search(r'(\d+)%\s*Completed', str(span), re.IGNORECASE)
-                if pct_match:
-                    pct = int(pct_match.group(1))
+                # Progress %
+                pct = 100 if status == 'finished' else 0
+                pm = re.search(r'(\d{1,3})%\s*Completed', str(elem), re.I)
+                if pm:
+                    pct = int(pm.group(1))
                 else:
-                    pct_style = re.search(r'width:\s*(\d+)%', str(span), re.IGNORECASE)
-                    if pct_style:
-                        pct = int(pct_style.group(1))
+                    ps = re.search(r'width:\s*(\d{1,3})%', str(elem), re.I)
+                    if ps:
+                        pct = int(ps.group(1))
 
                 courses.append({
                     'title': title,
@@ -75,16 +102,91 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
                     'progress': pct,
                     'url': url,
                     'status': status,
-                    'image_url': img_url
+                    'image_url': img_url,
                 })
-                logger.info(f"  Parsed DIKSHA HTML [{status}]: '{title}' ({pct}% Completed, Ends: '{ends_on}')")
+                logger.info(f"  ✔ Parsed [{status}]: '{title[:55]}' → {pct}%")
             except Exception as ex:
-                logger.debug(f"Span parse note: {ex}")
+                logger.debug(f'Element parse note: {ex}')
     except Exception as e:
-        logger.warning(f"Error parsing coursedata HTML: {e}")
+        logger.warning(f'Error in parse_diksha_coursedata_html: {e}')
 
     return courses
 
+
+def _do_ajax_post(page: Page, payload: str, label: str) -> tuple[bool, list]:
+    """
+    Sends a single AJAX POST to course_listing.php.
+    Returns (success, courses_list).
+    Tries JSON → raw-HTML → empty fallback.
+    """
+    status = 'finished' if 'finish' in payload or 'complet' in payload else 'ongoing'
+    try:
+        resp = page.request.post(
+            'https://learning.diksha.gov.in/diksha/course_listing.php',
+            headers={
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Referer': 'https://learning.diksha.gov.in/diksha/course_listing.php',
+                'Accept': 'application/json, text/html, */*',
+            },
+            data=payload,
+        )
+        body = resp.text()
+        logger.info(f"  AJAX [{label}] → HTTP {resp.status}, body length={len(body)}, preview={body[:120].strip()!r}")
+
+        if not resp.ok or not body.strip():
+            return False, []
+
+        # Try JSON first
+        try:
+            jdata = resp.json()
+            logger.info(f"  JSON keys: {list(jdata.keys())}")
+            for key in ('coursedata', 'data', 'html', 'content', 'courses'):
+                fragment = jdata.get(key, '')
+                if fragment:
+                    parsed = parse_diksha_coursedata_html(str(fragment), status=status)
+                    if parsed:
+                        return True, parsed
+            # Maybe the whole JSON is a list of course objects
+            if isinstance(jdata, list) and jdata:
+                return True, _parse_json_course_list(jdata, status)
+        except Exception:
+            pass
+
+        # Not JSON — treat entire body as HTML
+        parsed = parse_diksha_coursedata_html(body, status=status)
+        if parsed:
+            return True, parsed
+
+    except Exception as e:
+        logger.info(f"  AJAX [{label}] exception: {e}")
+    return False, []
+
+
+def _parse_json_course_list(items: list, status: str) -> list:
+    """Handle case where AJAX returns a raw list of course dicts."""
+    courses = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        title = item.get('title') or item.get('name') or item.get('courseName') or ''
+        if not title:
+            continue
+        pct = item.get('progress') or item.get('percentage') or (100 if status == 'finished' else 0)
+        url = item.get('url') or item.get('link') or item.get('courseUrl') or ''
+        courses.append({
+            'title': title,
+            'ends_on': item.get('endDate') or item.get('ends_on') or '',
+            'pct': int(pct),
+            'progress': int(pct),
+            'url': url,
+            'status': status,
+            'image_url': item.get('image') or item.get('thumbnail') or '',
+        })
+    return courses
+
+
+# ── CourseNavigator class ──────────────────────────────────────────────────
 
 class CourseNavigator:
     """
@@ -97,56 +199,58 @@ class CourseNavigator:
     def _check_and_recover_access_denied(self):
         """Self-healing helper: detects Access Denied and auto-recovers SSO session."""
         try:
-            body_text = self.page.inner_text("body").lower()
-            if "access denied" in body_text:
-                logger.warning("Self-Healing: 'Access Denied' detected! Auto-refreshing SSO session tokens...")
-                self.page.goto("https://diksha.gov.in/search/Library/1?selectedTab=all&auth_callback=1", wait_until="domcontentloaded")
+            body_text = self.page.inner_text('body').lower()
+            if 'access denied' in body_text:
+                logger.warning("Self-Healing: 'Access Denied' detected! Auto-refreshing SSO tokens...")
+                self.page.goto('https://diksha.gov.in/search/Library/1?selectedTab=all&auth_callback=1',
+                               wait_until='domcontentloaded')
                 time.sleep(3)
-                self.page.reload(wait_until="domcontentloaded")
+                self.page.reload(wait_until='domcontentloaded')
                 time.sleep(2)
         except Exception:
             pass
 
     def step_3_diksha_courses(self):
-        """Step 3: Open DIKSHA Courses search page."""
-        target = "https://diksha.gov.in/search/Library/1?selectedTab=all"
-        logger.info("==================================================")
-        logger.info(f"Step 3: Navigating to DIKSHA Courses: {target}")
-        logger.info("==================================================")
-        self.page.goto(target, wait_until="domcontentloaded")
+        target = 'https://diksha.gov.in/search/Library/1?selectedTab=all'
+        logger.info('==================================================')
+        logger.info(f'Step 3: Navigating to DIKSHA Courses: {target}')
+        logger.info('==================================================')
+        self.page.goto(target, wait_until='domcontentloaded')
         time.sleep(2)
         self._check_and_recover_access_denied()
 
     def step_4_explore_courses(self):
-        """Step 4: Open Explore Courses library page."""
-        target = "https://learning.diksha.gov.in/diksha/course_library.php"
-        logger.info("==================================================")
-        logger.info(f"Step 4: Navigating to Explore Courses: {target}")
-        logger.info("==================================================")
+        target = 'https://learning.diksha.gov.in/diksha/course_library.php'
+        logger.info('==================================================')
+        logger.info(f'Step 4: Navigating to Explore Courses: {target}')
+        logger.info('==================================================')
         try:
-            self.page.goto(target, wait_until="domcontentloaded", timeout=25000)
+            self.page.goto(target, wait_until='domcontentloaded', timeout=25000)
             time.sleep(2)
             self._check_and_recover_access_denied()
         except Exception as e:
-            logger.warning(f"Note during Step 4: {e}")
+            logger.warning(f'Note during Step 4: {e}')
 
     def step_5_my_learning(self):
-        """Step 5: Open My Learning Journey page."""
-        target = "https://learning.diksha.gov.in/diksha/course_listing.php"
-        logger.info("==================================================")
-        logger.info(f"Step 5: Navigating to My Learning Journey: {target}")
-        logger.info("==================================================")
+        target = 'https://learning.diksha.gov.in/diksha/course_listing.php'
+        logger.info('==================================================')
+        logger.info(f'Step 5: Navigating to My Learning Journey: {target}')
+        logger.info('==================================================')
         try:
-            self.page.goto(target, wait_until="domcontentloaded", timeout=25000)
-            time.sleep(2)
+            self.page.goto(target, wait_until='networkidle', timeout=30000)
+            time.sleep(4)
             self._check_and_recover_access_denied()
+            logger.info(f'  Page URL after load: {self.page.url}')
+            logger.info(f'  Page title: {self.page.title()}')
         except Exception as e:
-            logger.warning(f"Note during Step 5: {e}")
+            logger.warning(f'Note during Step 5: {e}')
+
+    # ── Main course fetcher ──────────────────────────────────────────────
 
     def fetch_all_courses(self) -> dict:
         """
-        Navigates through Steps 3, 4, 5 and fetches both Ongoing Courses and Finished Courses
-        using direct AJAX POST requests to course_listing.php & HTML parsing.
+        Navigate steps 3→4→5, then try multiple strategies to extract
+        ongoing and finished courses.
         """
         self.step_3_diksha_courses()
         self.step_4_explore_courses()
@@ -154,117 +258,162 @@ class CourseNavigator:
 
         result = {'ongoing': [], 'finished': [], 'all': []}
 
-        # 1. Fetch Ongoing Courses via AJAX POST
-        logger.info("Fetching Ongoing Courses via course_listing.php AJAX POST...")
-        try:
-            post_payloads = ["tab_type=ongoing", "type=ongoing", "tab=ongoing", ""]
-            for payload in post_payloads:
-                resp = self.page.request.post(
-                    "https://learning.diksha.gov.in/diksha/course_listing.php",
-                    headers={
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-                    },
-                    data=payload
-                )
-                if resp.ok:
-                    try:
-                        res_json = resp.json()
-                        coursedata_html = res_json.get("coursedata", "")
-                        if coursedata_html:
-                            parsed = parse_diksha_coursedata_html(coursedata_html, status="ongoing")
-                            if parsed:
-                                result['ongoing'] = parsed
-                                logger.info(f"Successfully fetched {len(parsed)} ongoing course(s) via AJAX POST.")
-                                break
-                    except Exception as json_err:
-                        logger.debug(f"JSON decode note: {json_err}")
-        except Exception as e:
-            logger.warning(f"AJAX POST for ongoing courses failed: {e}")
+        # ── Strategy A: AJAX POST with many payload variants ───────────
+        logger.info('=== Strategy A: AJAX POST to course_listing.php ===')
+        ongoing_payloads = [
+            ('tab_type=ongoing', 'tab_type=ongoing'),
+            ('tab_type=1', 'tab_type=1'),
+            ('type=ongoing', 'type=ongoing'),
+            ('tab=ongoing', 'tab=ongoing'),
+            ('action=get_courses&tab=ongoing', 'action=get_courses+tab=ongoing'),
+            ('', 'empty-body'),
+        ]
+        for payload, label in ongoing_payloads:
+            ok, courses = _do_ajax_post(self.page, payload, label)
+            if ok and courses:
+                result['ongoing'] = courses
+                logger.info(f'  ✔ AJAX ongoing SUCCESS with [{label}] → {len(courses)} courses')
+                break
 
-        # If AJAX POST yielded 0, fallback to page DOM element evaluation
+        finished_payloads = [
+            ('tab_type=finished', 'tab_type=finished'),
+            ('tab_type=2', 'tab_type=2'),
+            ('tab_type=completed', 'tab_type=completed'),
+            ('type=finished', 'type=finished'),
+            ('tab=finished', 'tab=finished'),
+        ]
+        for payload, label in finished_payloads:
+            ok, courses = _do_ajax_post(self.page, payload, label)
+            if ok and courses:
+                result['finished'] = courses
+                logger.info(f'  ✔ AJAX finished SUCCESS with [{label}] → {len(courses)} courses')
+                break
+
+        # ── Strategy B: Parse full rendered page HTML ───────────────────
         if not result['ongoing']:
-            logger.info("Fallback: Scraping Ongoing Courses from page DOM...")
-            result['ongoing'] = self._scrape_cards_from_page(status="ongoing")
+            logger.info('=== Strategy B: Parsing full rendered page HTML ===')
+            try:
+                page_html = self.page.content()
+                logger.info(f'  Page HTML length: {len(page_html)} chars')
+                # Log first 600 chars to help debug structure
+                logger.info(f'  HTML head preview: {page_html[:400].strip()!r}')
+                ongoing_parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+                if ongoing_parsed:
+                    result['ongoing'] = ongoing_parsed
+                    logger.info(f'  ✔ Page HTML parse → {len(ongoing_parsed)} ongoing courses')
+                else:
+                    logger.info('  Page HTML parse returned 0 courses — checking for auth issues...')
+                    if 'login' in page_html.lower() or 'sign in' in page_html.lower():
+                        logger.warning('  ⚠ Page contains login prompt — session may have expired!')
+                    if 'access denied' in page_html.lower():
+                        logger.warning('  ⚠ Access Denied found in page HTML!')
+            except Exception as e:
+                logger.warning(f'  Strategy B error: {e}')
 
-        # 2. Fetch Finished Courses via AJAX POST
-        logger.info("Fetching Finished Courses via course_listing.php AJAX POST...")
-        try:
-            post_payloads = ["tab_type=finished", "tab_type=completed", "type=finished"]
-            for payload in post_payloads:
-                resp = self.page.request.post(
-                    "https://learning.diksha.gov.in/diksha/course_listing.php",
-                    headers={
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-                    },
-                    data=payload
-                )
-                if resp.ok:
+        # ── Strategy C: Click Ongoing tab then re-parse ─────────────────
+        if not result['ongoing']:
+            logger.info('=== Strategy C: Clicking Ongoing tab and waiting ===')
+            try:
+                tab_selectors = [
+                    'a[href*="ongoing"]', 'button[data-tab="ongoing"]',
+                    '.nav-link:has-text("Ongoing")', 'a:has-text("Ongoing")',
+                    '[data-type="ongoing"]', '#ongoing-tab', '.tab-ongoing',
+                ]
+                clicked = False
+                for sel in tab_selectors:
                     try:
-                        res_json = resp.json()
-                        coursedata_html = res_json.get("coursedata", "")
-                        if coursedata_html:
-                            parsed = parse_diksha_coursedata_html(coursedata_html, status="finished")
-                            if parsed:
-                                result['finished'] = parsed
-                                logger.info(f"Successfully fetched {len(parsed)} finished course(s) via AJAX POST.")
-                                break
-                    except Exception as json_err:
-                        logger.debug(f"JSON decode note: {json_err}")
-        except Exception as e:
-            logger.warning(f"AJAX POST for finished courses failed: {e}")
+                        el = self.page.query_selector(sel)
+                        if el:
+                            el.click()
+                            time.sleep(3)
+                            clicked = True
+                            logger.info(f'  Clicked tab selector: {sel}')
+                            break
+                    except Exception:
+                        pass
+                if clicked:
+                    page_html = self.page.content()
+                    parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+                    if parsed:
+                        result['ongoing'] = parsed
+                        logger.info(f'  ✔ After tab click → {len(parsed)} ongoing courses')
+            except Exception as e:
+                logger.warning(f'  Strategy C error: {e}')
+
+        # ── Strategy D: DOM element scraping ───────────────────────────
+        if not result['ongoing']:
+            logger.info('=== Strategy D: DOM card element scraping ===')
+            result['ongoing'] = self._scrape_cards_from_page(status='ongoing')
+
+        if not result['finished']:
+            logger.info('=== Strategy D: DOM scraping for finished courses ===')
+            result['finished'] = self._scrape_cards_from_page(status='finished')
 
         result['all'] = result['ongoing'] + result['finished']
-        logger.info(f"Fetch Summary: Found {len(result['ongoing'])} Ongoing and {len(result['finished'])} Finished courses.")
+        logger.info(f'Fetch Summary: Found {len(result["ongoing"])} Ongoing and {len(result["finished"])} Finished courses.')
         return result
 
-    def _scrape_cards_from_page(self, status: str = "ongoing") -> list:
+    def _scrape_cards_from_page(self, status: str = 'ongoing') -> list:
+        """DOM-level card scraping fallback."""
         courses = []
         try:
-            cards = self.page.query_selector_all('div[class*="card"], .card, .library-card, span[data-href]')
-            logger.info(f"DOM Fallback: Found {len(cards)} card elements for '{status}'.")
+            selectors = [
+                'span[data-href]', 'div[data-href]',
+                '.card', '.library-card', '.course-card',
+                'div[class*="card"]', 'span[class*="card"]',
+            ]
+            cards = []
+            for sel in selectors:
+                found = self.page.query_selector_all(sel)
+                if found:
+                    cards = found
+                    logger.info(f'  DOM Fallback [{sel}]: {len(found)} elements found')
+                    break
 
-            seen_titles = set()
+            seen_titles: set = set()
             for card in cards:
                 try:
                     text_content = card.inner_text().strip()
-                    if not text_content or ("Course Title" not in text_content and "Completed" not in text_content):
+                    if not text_content:
                         continue
 
-                    title = "Course"
+                    title = ''
                     title_match = re.search(r'Course Title\s*:\s*(.+)', text_content)
                     if title_match:
                         title = title_match.group(1).split('\n')[0].strip()
-                    else:
-                        title = text_content.split('\n')[0][:60].strip()
+                    if not title:
+                        lines = [l.strip() for l in text_content.splitlines() if l.strip()]
+                        title = lines[0][:80] if lines else ''
 
-                    if title in seen_titles:
+                    if not title or title in seen_titles:
                         continue
                     seen_titles.add(title)
 
-                    ends_on = ""
-                    ends_match = re.search(r'Ends on\s*:\s*(.+)', text_content)
-                    if ends_match:
-                        ends_on = ends_match.group(1).split('\n')[0].strip()
+                    ends_on = ''
+                    em = re.search(r'Ends on\s*:\s*(.+)', text_content)
+                    if em:
+                        ends_on = em.group(1).split('\n')[0].strip()
 
-                    pct = 100 if status == "finished" else 0
-                    percent_match = re.search(r'(\d+)%\s*Completed', text_content)
-                    if percent_match:
-                        pct = int(percent_match.group(1))
+                    pct = 100 if status == 'finished' else 0
+                    pm = re.search(r'(\d{1,3})%\s*Completed', text_content)
+                    if pm:
+                        pct = int(pm.group(1))
 
-                    link_el = card if card.evaluate('el => el.hasAttribute("data-href") or el.tagName.toLowerCase() == "a"') else card.query_selector('span[data-href], a[href*="course.php"]')
-                    url = link_el.get_attribute('data-href') if link_el and link_el.has_attribute('data-href') else (link_el.get_attribute('href') if link_el else None)
-
-                    if url and not url.startswith('http'):
-                        url = "https://learning.diksha.gov.in/diksha/" + url.lstrip('/')
+                    # URL
+                    url = card.get_attribute('data-href') or ''
                     if not url:
-                        url = "https://learning.diksha.gov.in/diksha/course_listing.php"
+                        a_el = card.query_selector('a[href*="course.php"]')
+                        if a_el:
+                            url = a_el.get_attribute('href') or ''
+                    if url and not url.startswith('http'):
+                        url = 'https://learning.diksha.gov.in/diksha/' + url.lstrip('/')
+                    if not url:
+                        url = 'https://learning.diksha.gov.in/diksha/course_listing.php'
 
                     img_el = card.query_selector('img')
-                    img_url = img_el.get_attribute('src') if img_el else None
+                    img_url = (img_el.get_attribute('src') or '') if img_el else ''
                     if img_url and not img_url.startswith('http'):
-                        img_url = "https://learning.diksha.gov.in/diksha/" + img_url.lstrip('/')
+                        img_url = 'https://learning.diksha.gov.in/diksha/' + img_url.lstrip('/')
 
                     courses.append({
                         'title': title,
@@ -273,24 +422,24 @@ class CourseNavigator:
                         'progress': pct,
                         'url': url,
                         'status': status,
-                        'image_url': img_url
+                        'image_url': img_url,
                     })
+                    logger.info(f'  DOM card [{status}]: {title[:55]} → {pct}%')
                 except Exception as ex:
-                    logger.debug(f"Card parse note: {ex}")
+                    logger.debug(f'Card parse note: {ex}')
         except Exception as e:
-            logger.warning(f"Error scraping DOM {status} courses: {e}")
-
+            logger.warning(f'Error scraping DOM {status} courses: {e}')
         return courses
 
     def step_6_check_incomplete_courses(self) -> list:
-        """
-        Step 6: Scan 'Ongoing Courses' cards and filter for courses < 100% Completed.
-        """
-        logger.info("==================================================")
-        logger.info("Step 6: Checking for Ongoing Courses < 100% Completed...")
-        logger.info("==================================================")
-
+        """Step 6: Scan 'Ongoing Courses' cards and filter for courses < 100%."""
+        logger.info('==================================================')
+        logger.info('Step 6: Checking for Ongoing Courses < 100% Completed...')
+        logger.info('==================================================')
         all_data = self.fetch_all_courses()
-        incomplete = [c for c in all_data.get('ongoing', []) if (c.get('pct', 0) < 100 or c.get('progress', 0) < 100)]
-        logger.info(f"Step 6 Result: Identified {len(incomplete)} incomplete course(s).")
+        incomplete = [
+            c for c in all_data.get('ongoing', [])
+            if (c.get('pct', 0) < 100 or c.get('progress', 0) < 100)
+        ]
+        logger.info(f'Step 6 Result: Identified {len(incomplete)} incomplete course(s).')
         return incomplete
