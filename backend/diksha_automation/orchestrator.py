@@ -10,16 +10,22 @@ from utils import logger, take_screenshot_sync
 
 def fetch_courses_only(username=None, password=None, headless=True):
     """
-    Logs in to DIKSHA, visits search/Library, course_library, course_listing,
-    and returns all ongoing & finished enrolled courses.
+    Logs in to DIKSHA and directly reads course_listing.php.
+    auth.login() already lands on course_listing.php after SSO sync — no extra navigation needed.
+    This saves ~20-30 seconds vs navigating through Steps 3, 4, 5.
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger.info("=== Fetching DIKSHA Enrolled Courses ===")
     auth = DikshaAuthenticator(headless=headless, username=username, password=password)
     try:
         page = auth.login()
+        # auth.login() already navigates to course_listing.php for SSO sync.
+        # We are already on the right page — no need for Step 3/4/5 navigation.
+        logger.info(f"Post-login page URL: {page.url}")
+        logger.info(f"Post-login page title: {page.title()}")
         navigator = CourseNavigator(page)
-        courses_data = navigator.fetch_all_courses()
+        # Go directly to course_listing.php and fetch — skips Steps 3, 4
+        courses_data = navigator.fetch_from_course_listing()
         return courses_data
     except Exception as e:
         logger.error(f"Error fetching courses: {e}", exc_info=True)

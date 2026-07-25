@@ -256,6 +256,53 @@ class CourseNavigator:
     def __init__(self, page: Page):
         self.page = page
 
+    def _ensure_on_course_listing(self):
+        """
+        Navigates directly to course_listing.php if not already there.
+        auth.login() already lands here after SSO sync, so this is usually a no-op.
+        """
+        target = 'https://learning.diksha.gov.in/diksha/course_listing.php'
+        current = self.page.url or ''
+        if 'course_listing.php' in current:
+            logger.info(f'Already on course_listing.php — reloading to ensure fresh data...')
+            try:
+                self.page.reload(wait_until='networkidle', timeout=30000)
+                time.sleep(3)
+            except Exception as e:
+                logger.warning(f'Reload note: {e}')
+        else:
+            logger.info(f'Navigating directly to: {target}')
+            try:
+                self.page.goto(target, wait_until='networkidle', timeout=35000)
+                time.sleep(3)
+            except Exception as e:
+                logger.warning(f'Navigation note: {e}')
+        self._check_and_recover_access_denied()
+        logger.info(f'  URL: {self.page.url}')
+        logger.info(f'  Title: {self.page.title()}')
+        # Wait for JS-rendered course cards
+        for sel in ['span[data-href]', 'div[data-href]', '.library-card', '[class*="card"]', 'h4', 'bdi']:
+            try:
+                self.page.wait_for_selector(sel, timeout=6000)
+                count = len(self.page.query_selector_all(sel))
+                if count > 0:
+                    logger.info(f'  Ready: {count} elements matching "{sel}"')
+                    break
+            except Exception:
+                pass
+        time.sleep(2)
+
+    def fetch_from_course_listing(self) -> dict:
+        """
+        Direct fetch: goes straight to course_listing.php and reads courses.
+        Used by fetch_courses_only() since auth.login() already lands there.
+        Saves ~20-30s vs fetch_all_courses() which does Steps 3, 4, 5.
+        """
+        logger.info('=== Direct Fetch: course_listing.php ===')
+        self._ensure_on_course_listing()
+        return self._run_fetch_strategies()
+
+
     def _check_and_recover_access_denied(self):
         """Self-healing helper: detects Access Denied and auto-recovers SSO session."""
         try:
@@ -321,56 +368,54 @@ class CourseNavigator:
         except Exception as e:
             logger.warning(f'Note during Step 5: {e}')
 
-    # ── Main course fetcher ──────────────────────────────────────────────
+    # ── Shared fetch strategy engine ─────────────────────────────────────
 
-    def fetch_all_courses(self) -> dict:
+    def _run_fetch_strategies(self) -> dict:
         """
-        Navigate steps 3→4→5, then try multiple strategies to extract
-        ongoing and finished courses.
+        Tries 4 strategies in order to extract ongoing + finished courses
+        from the current page (assumed to be course_listing.php).
+        Shared by fetch_from_course_listing() and fetch_all_courses().
         """
-        self.step_3_diksha_courses()
-        self.step_4_explore_courses()
-        self.step_5_my_learning()
-
         result = {'ongoing': [], 'finished': [], 'all': []}
 
-        # ── Strategy A: In-browser AJAX (uses all session cookies) ───────
-        logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
         ongoing_payloads = [
             ('tab_type=ongoing', 'tab_type=ongoing'),
-            ('tab_type=1', 'tab_type=1'),
-            ('type=ongoing', 'type=ongoing'),
-            ('tab=ongoing', 'tab=ongoing'),
-            ('', 'empty-body'),
+            ('tab_type=1',       'tab_type=1'),
+            ('type=ongoing',     'type=ongoing'),
+            ('tab=ongoing',      'tab=ongoing'),
+            ('',                 'empty-body'),
         ]
+        finished_payloads = [
+            ('tab_type=finished',   'tab_type=finished'),
+            ('tab_type=2',          'tab_type=2'),
+            ('tab_type=completed',  'tab_type=completed'),
+            ('type=finished',       'type=finished'),
+            ('tab=finished',        'tab=finished'),
+        ]
+
+        # ── Strategy A: In-browser fetch() — same-origin, all cookies ──────
+        logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
         for payload, label in ongoing_payloads:
             ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
             if ok and courses:
                 result['ongoing'] = courses
-                logger.info(f'  ✔ In-browser AJAX ongoing SUCCESS [{label}] → {len(courses)} courses')
+                logger.info(f'  ✔ In-browser AJAX ongoing [{label}] → {len(courses)} courses')
                 break
 
         if not result['ongoing']:
-            logger.info('=== Strategy A2: page.request AJAX POST fallback ===')
+            logger.info('=== Strategy A2: page.request AJAX fallback ===')
             for payload, label in ongoing_payloads:
                 ok, courses = _do_ajax_post(self.page, payload, label)
                 if ok and courses:
                     result['ongoing'] = courses
-                    logger.info(f'  ✔ page.request AJAX ongoing SUCCESS [{label}] → {len(courses)} courses')
+                    logger.info(f'  ✔ page.request AJAX ongoing [{label}] → {len(courses)} courses')
                     break
 
-        finished_payloads = [
-            ('tab_type=finished', 'tab_type=finished'),
-            ('tab_type=2', 'tab_type=2'),
-            ('tab_type=completed', 'tab_type=completed'),
-            ('type=finished', 'type=finished'),
-            ('tab=finished', 'tab=finished'),
-        ]
         for payload, label in finished_payloads:
             ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
             if ok and courses:
                 result['finished'] = courses
-                logger.info(f'  ✔ In-browser AJAX finished SUCCESS [{label}] → {len(courses)} courses')
+                logger.info(f'  ✔ In-browser AJAX finished [{label}] → {len(courses)} courses')
                 break
 
         if not result['finished']:
@@ -378,72 +423,71 @@ class CourseNavigator:
                 ok, courses = _do_ajax_post(self.page, payload, label)
                 if ok and courses:
                     result['finished'] = courses
-                    logger.info(f'  ✔ page.request AJAX finished SUCCESS [{label}] → {len(courses)} courses')
+                    logger.info(f'  ✔ page.request AJAX finished [{label}] → {len(courses)} courses')
                     break
 
-        # ── Strategy B: Parse full rendered page HTML ───────────────────
+        # ── Strategy B: Parse full rendered page HTML ────────────────────
         if not result['ongoing']:
-            logger.info('=== Strategy B: Parsing full rendered page HTML ===')
+            logger.info('=== Strategy B: Full page HTML parse ===')
             try:
                 page_html = self.page.content()
-                logger.info(f'  Page HTML length: {len(page_html)} chars')
-                # Log first 600 chars to help debug structure
-                logger.info(f'  HTML head preview: {page_html[:400].strip()!r}')
-                ongoing_parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
-                if ongoing_parsed:
-                    result['ongoing'] = ongoing_parsed
-                    logger.info(f'  ✔ Page HTML parse → {len(ongoing_parsed)} ongoing courses')
+                logger.info(f'  HTML length: {len(page_html)} | preview: {page_html[:300].strip()!r}')
+                parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+                if parsed:
+                    result['ongoing'] = parsed
+                    logger.info(f'  ✔ Page HTML parse → {len(parsed)} ongoing courses')
                 else:
-                    logger.info('  Page HTML parse returned 0 courses — checking for auth issues...')
                     if 'login' in page_html.lower() or 'sign in' in page_html.lower():
-                        logger.warning('  ⚠ Page contains login prompt — session may have expired!')
+                        logger.warning('  ⚠ Page shows login prompt — session may have expired!')
                     if 'access denied' in page_html.lower():
-                        logger.warning('  ⚠ Access Denied found in page HTML!')
+                        logger.warning('  ⚠ Access Denied in page HTML!')
             except Exception as e:
                 logger.warning(f'  Strategy B error: {e}')
 
-        # ── Strategy C: Click Ongoing tab then re-parse ─────────────────
+        # ── Strategy C: Click Ongoing tab then re-parse ──────────────────
         if not result['ongoing']:
-            logger.info('=== Strategy C: Clicking Ongoing tab and waiting ===')
+            logger.info('=== Strategy C: Click tab + re-parse ===')
             try:
-                tab_selectors = [
-                    'a[href*="ongoing"]', 'button[data-tab="ongoing"]',
-                    '.nav-link:has-text("Ongoing")', 'a:has-text("Ongoing")',
-                    '[data-type="ongoing"]', '#ongoing-tab', '.tab-ongoing',
-                ]
-                clicked = False
-                for sel in tab_selectors:
+                for sel in ['a[href*="ongoing"]', 'button[data-tab="ongoing"]',
+                            '.nav-link:has-text("Ongoing")', 'a:has-text("Ongoing")',
+                            '[data-type="ongoing"]', '#ongoing-tab', '.tab-ongoing']:
                     try:
                         el = self.page.query_selector(sel)
                         if el:
-                            el.click()
-                            time.sleep(3)
-                            clicked = True
-                            logger.info(f'  Clicked tab selector: {sel}')
+                            el.click(); time.sleep(3)
+                            page_html = self.page.content()
+                            parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+                            if parsed:
+                                result['ongoing'] = parsed
+                                logger.info(f'  ✔ After tab click [{sel}] → {len(parsed)} courses')
                             break
                     except Exception:
                         pass
-                if clicked:
-                    page_html = self.page.content()
-                    parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
-                    if parsed:
-                        result['ongoing'] = parsed
-                        logger.info(f'  ✔ After tab click → {len(parsed)} ongoing courses')
             except Exception as e:
                 logger.warning(f'  Strategy C error: {e}')
 
-        # ── Strategy D: DOM element scraping ───────────────────────────
+        # ── Strategy D: DOM card scraping ────────────────────────────────
         if not result['ongoing']:
-            logger.info('=== Strategy D: DOM card element scraping ===')
+            logger.info('=== Strategy D: DOM card scraping ===')
             result['ongoing'] = self._scrape_cards_from_page(status='ongoing')
-
         if not result['finished']:
-            logger.info('=== Strategy D: DOM scraping for finished courses ===')
             result['finished'] = self._scrape_cards_from_page(status='finished')
 
         result['all'] = result['ongoing'] + result['finished']
-        logger.info(f'Fetch Summary: Found {len(result["ongoing"])} Ongoing and {len(result["finished"])} Finished courses.')
+        logger.info(f'Fetch Summary: {len(result["ongoing"])} Ongoing, {len(result["finished"])} Finished courses.')
         return result
+
+    # ── Full navigation fetcher (used by automation flow) ────────────────
+
+    def fetch_all_courses(self) -> dict:
+        """
+        Full flow: Steps 3→4→5 then fetch.
+        Used by run_automation(). For scan-only use fetch_from_course_listing().
+        """
+        self.step_3_diksha_courses()
+        self.step_4_explore_courses()
+        self.step_5_my_learning()
+        return self._run_fetch_strategies()
 
     def _scrape_cards_from_page(self, status: str = 'ongoing') -> list:
         """DOM-level card scraping fallback."""
