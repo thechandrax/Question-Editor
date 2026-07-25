@@ -20,14 +20,31 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
 
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Scope parsing to main content container to avoid sidebars/headers
+        main_content = None
+        for selector in ['#region-main', '.main-content', '#maincontent', '#region-main-box', '.col-md-9']:
+            main_content = soup.select_one(selector)
+            if main_content:
+                logger.info(f"  Scoping HTML parse to container: {selector}")
+                break
+        
+        parse_root = main_content if main_content else soup
+
+        # Double safety: Check for explicit "No courses found" message in the main content area
+        main_text = parse_root.get_text().lower()
+        if "no courses found" in main_text or "no enrolled courses" in main_text:
+            logger.info("  'No courses found' message detected in page HTML — returning 0 courses ✓")
+            return []
+
         candidates = []
 
         # Strategy 1: elements with data-href (most common)
-        candidates = soup.find_all(lambda tag: tag.has_attr('data-href'))
+        candidates = parse_root.find_all(lambda tag: tag.has_attr('data-href'))
 
         # Strategy 2: divs / spans with card-related classes
         if not candidates:
-            candidates = soup.find_all(
+            candidates = parse_root.find_all(
                 lambda tag: tag.name in ('div', 'span') and
                 any(kw in ' '.join(tag.get('class', [])) for kw in
                     ['course-library-link', 'library-card', 'new-card', 'course-card', 'card-'])
@@ -35,11 +52,11 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
 
         # Strategy 3: any element containing "Course Title"
         if not candidates:
-            candidates = soup.find_all(lambda tag: 'Course Title' in (tag.get_text() or ''))
+            candidates = parse_root.find_all(lambda tag: 'Course Title' in (tag.get_text() or ''))
 
         # Strategy 4: divs containing links to course.php
         if not candidates:
-            links = soup.find_all('a', href=re.compile(r'course\.php', re.I))
+            links = parse_root.find_all('a', href=re.compile(r'course\.php', re.I))
             for lnk in links:
                 parent = lnk.parent
                 if parent and parent not in candidates:
