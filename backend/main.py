@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import re
 import threading
+import asyncio
 import random
 import logging
 import fitz
@@ -519,7 +520,7 @@ class DikshaRunRequest(BaseModel):
 @app.post("/api/diksha/fetch-courses")
 async def fetch_diksha_courses(req: DikshaFetchRequest):
     try:
-        data = fetch_courses_only(username=req.username, password=req.password, headless=True)
+        data = await asyncio.to_thread(fetch_courses_only, username=req.username, password=req.password, headless=True)
         all_courses = data.get("all", [])
         _diksha["courses"] = all_courses
         return {
@@ -529,6 +530,7 @@ async def fetch_diksha_courses(req: DikshaFetchRequest):
             "finished": data.get("finished", [])
         }
     except Exception as e:
+        logging.error("Failed to fetch courses: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch courses: {str(e)}")
 
 def _run_diksha_task(username: str, password: str, target_course_url: str | None = None) -> None:
