@@ -113,11 +113,77 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
     return courses
 
 
+def _do_ajax_post_in_browser(page: Page, payload: str, label: str) -> tuple[bool, list]:
+    """
+    Runs the AJAX POST INSIDE the browser via page.evaluate().
+    This guarantees all session cookies (PHPSESSID, etc.) are included automatically.
+    """
+    status = 'finished' if 'finish' in payload or 'complet' in payload else 'ongoing'
+    try:
+        # Escape payload for JS string
+        safe_payload = payload.replace("'", "\\'")
+        result = page.evaluate(f"""
+            async () => {{
+                try {{
+                    const resp = await fetch(
+                        'https://learning.diksha.gov.in/diksha/course_listing.php',
+                        {{
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {{
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'Accept': 'application/json, text/html, */*',
+                            }},
+                            body: '{safe_payload}'
+                        }}
+                    );
+                    const text = await resp.text();
+                    return {{ status: resp.status, body: text.substring(0, 8000), ok: resp.ok }};
+                }} catch(e) {{
+                    return {{ status: 0, body: '', ok: false, error: String(e) }};
+                }}
+            }}
+        """)
+        body = result.get('body', '') if result else ''
+        http_status = result.get('status', 0) if result else 0
+        err = result.get('error', '') if result else 'null result'
+        logger.info(f"  AJAX-Browser [{label}] → HTTP {http_status}, len={len(body)}, preview={body[:150].strip()!r}")
+        if err:
+            logger.info(f"  AJAX-Browser error: {err}")
+
+        if not body.strip():
+            return False, []
+
+        # Try JSON
+        try:
+            jdata = json.loads(body)
+            logger.info(f"  JSON keys: {list(jdata.keys()) if isinstance(jdata, dict) else type(jdata).__name__}")
+            if isinstance(jdata, dict):
+                for key in ('coursedata', 'data', 'html', 'content', 'courses'):
+                    fragment = jdata.get(key, '')
+                    if fragment:
+                        parsed = parse_diksha_coursedata_html(str(fragment), status=status)
+                        if parsed:
+                            return True, parsed
+            elif isinstance(jdata, list) and jdata:
+                return True, _parse_json_course_list(jdata, status)
+        except Exception:
+            pass
+
+        # Raw HTML response
+        parsed = parse_diksha_coursedata_html(body, status=status)
+        if parsed:
+            return True, parsed
+
+    except Exception as e:
+        logger.info(f"  AJAX-Browser [{label}] exception: {e}")
+    return False, []
+
+
 def _do_ajax_post(page: Page, payload: str, label: str) -> tuple[bool, list]:
     """
-    Sends a single AJAX POST to course_listing.php.
-    Returns (success, courses_list).
-    Tries JSON → raw-HTML → empty fallback.
+    Fallback: sends AJAX POST via page.request (Playwright context).
     """
     status = 'finished' if 'finish' in payload or 'complet' in payload else 'ongoing'
     try:
@@ -132,34 +198,28 @@ def _do_ajax_post(page: Page, payload: str, label: str) -> tuple[bool, list]:
             data=payload,
         )
         body = resp.text()
-        logger.info(f"  AJAX [{label}] → HTTP {resp.status}, body length={len(body)}, preview={body[:120].strip()!r}")
-
+        logger.info(f"  AJAX-Request [{label}] → HTTP {resp.status}, len={len(body)}, preview={body[:150].strip()!r}")
         if not resp.ok or not body.strip():
             return False, []
-
-        # Try JSON first
         try:
             jdata = resp.json()
-            logger.info(f"  JSON keys: {list(jdata.keys())}")
-            for key in ('coursedata', 'data', 'html', 'content', 'courses'):
-                fragment = jdata.get(key, '')
-                if fragment:
-                    parsed = parse_diksha_coursedata_html(str(fragment), status=status)
-                    if parsed:
-                        return True, parsed
-            # Maybe the whole JSON is a list of course objects
-            if isinstance(jdata, list) and jdata:
+            logger.info(f"  JSON keys: {list(jdata.keys()) if isinstance(jdata, dict) else type(jdata).__name__}")
+            if isinstance(jdata, dict):
+                for key in ('coursedata', 'data', 'html', 'content', 'courses'):
+                    fragment = jdata.get(key, '')
+                    if fragment:
+                        parsed = parse_diksha_coursedata_html(str(fragment), status=status)
+                        if parsed:
+                            return True, parsed
+            elif isinstance(jdata, list) and jdata:
                 return True, _parse_json_course_list(jdata, status)
         except Exception:
             pass
-
-        # Not JSON — treat entire body as HTML
         parsed = parse_diksha_coursedata_html(body, status=status)
         if parsed:
             return True, parsed
-
     except Exception as e:
-        logger.info(f"  AJAX [{label}] exception: {e}")
+        logger.info(f"  AJAX-Request [{label}] exception: {e}")
     return False, []
 
 
@@ -237,11 +297,27 @@ class CourseNavigator:
         logger.info(f'Step 5: Navigating to My Learning Journey: {target}')
         logger.info('==================================================')
         try:
-            self.page.goto(target, wait_until='networkidle', timeout=30000)
-            time.sleep(4)
+            self.page.goto(target, wait_until='networkidle', timeout=35000)
+            time.sleep(3)
             self._check_and_recover_access_denied()
             logger.info(f'  Page URL after load: {self.page.url}')
             logger.info(f'  Page title: {self.page.title()}')
+            # Wait for JS-rendered course cards to appear
+            card_selectors = [
+                'span[data-href]', 'div[data-href]',
+                '.library-card', '.course-card', '[class*="card"]',
+                'h4', 'bdi',  # course title elements
+            ]
+            for sel in card_selectors:
+                try:
+                    self.page.wait_for_selector(sel, timeout=6000)
+                    count = len(self.page.query_selector_all(sel))
+                    logger.info(f'  Found {count} elements matching "{sel}" after page load')
+                    if count > 0:
+                        break
+                except Exception:
+                    pass
+            time.sleep(2)
         except Exception as e:
             logger.warning(f'Note during Step 5: {e}')
 
@@ -258,22 +334,30 @@ class CourseNavigator:
 
         result = {'ongoing': [], 'finished': [], 'all': []}
 
-        # ── Strategy A: AJAX POST with many payload variants ───────────
-        logger.info('=== Strategy A: AJAX POST to course_listing.php ===')
+        # ── Strategy A: In-browser AJAX (uses all session cookies) ───────
+        logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
         ongoing_payloads = [
             ('tab_type=ongoing', 'tab_type=ongoing'),
             ('tab_type=1', 'tab_type=1'),
             ('type=ongoing', 'type=ongoing'),
             ('tab=ongoing', 'tab=ongoing'),
-            ('action=get_courses&tab=ongoing', 'action=get_courses+tab=ongoing'),
             ('', 'empty-body'),
         ]
         for payload, label in ongoing_payloads:
-            ok, courses = _do_ajax_post(self.page, payload, label)
+            ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
             if ok and courses:
                 result['ongoing'] = courses
-                logger.info(f'  ✔ AJAX ongoing SUCCESS with [{label}] → {len(courses)} courses')
+                logger.info(f'  ✔ In-browser AJAX ongoing SUCCESS [{label}] → {len(courses)} courses')
                 break
+
+        if not result['ongoing']:
+            logger.info('=== Strategy A2: page.request AJAX POST fallback ===')
+            for payload, label in ongoing_payloads:
+                ok, courses = _do_ajax_post(self.page, payload, label)
+                if ok and courses:
+                    result['ongoing'] = courses
+                    logger.info(f'  ✔ page.request AJAX ongoing SUCCESS [{label}] → {len(courses)} courses')
+                    break
 
         finished_payloads = [
             ('tab_type=finished', 'tab_type=finished'),
@@ -283,11 +367,19 @@ class CourseNavigator:
             ('tab=finished', 'tab=finished'),
         ]
         for payload, label in finished_payloads:
-            ok, courses = _do_ajax_post(self.page, payload, label)
+            ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
             if ok and courses:
                 result['finished'] = courses
-                logger.info(f'  ✔ AJAX finished SUCCESS with [{label}] → {len(courses)} courses')
+                logger.info(f'  ✔ In-browser AJAX finished SUCCESS [{label}] → {len(courses)} courses')
                 break
+
+        if not result['finished']:
+            for payload, label in finished_payloads:
+                ok, courses = _do_ajax_post(self.page, payload, label)
+                if ok and courses:
+                    result['finished'] = courses
+                    logger.info(f'  ✔ page.request AJAX finished SUCCESS [{label}] → {len(courses)} courses')
+                    break
 
         # ── Strategy B: Parse full rendered page HTML ───────────────────
         if not result['ongoing']:
