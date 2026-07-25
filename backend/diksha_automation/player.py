@@ -177,22 +177,24 @@ class VideoPlayer:
                 if not is_active:
                     logger.info("  Switching to 'Lessons' tab...")
                     lessons_tab.click(force=True)
-                    time.sleep(2)
+                    time.sleep(2.5)
         except Exception as e:
             logger.debug(f"Lessons tab check note: {e}")
 
-        # 2. Find the module trigger element by ID/attributes
+        # 2. Find the module trigger element by ID/attributes (prefer #nav-modules pane first)
         target_el = None
         for sel in [
-            f"#section-{mod_id}",
-            f"[data-sectionid='{mod_id}']",
-            f"[data-section-id='{mod_id}']",
+            f"#nav-modules [data-id='{mod_id}']",
+            f"#nav-modules [id*='{mod_id}']",
+            f"#nav-modules #section-{mod_id}",
+            f"#nav-modules [data-sectionid='{mod_id}']",
+            f"#nav-modules [data-section-id='{mod_id}']",
+            f"#nav-modules #accordion-item-{mod_id}",
+            f"#nav-modules .section:has-text('{mod_name}')",
+            f"#nav-modules .card:has-text('{mod_name}')",
+            f"#nav-modules li:has-text('{mod_name}')",
             f"[data-id='{mod_id}']",
-            f"#accordion-item-{mod_id}",
             f"[id*='{mod_id}']",
-            f".section:has-text('{mod_name}')",
-            f".card:has-text('{mod_name}')",
-            f"li:has-text('{mod_name}')",
         ]:
             try:
                 el = self.page.query_selector(sel)
@@ -208,7 +210,7 @@ class VideoPlayer:
                         if is_collapsed:
                             logger.info("  Module is collapsed. Clicking header to expand...")
                             el.click(force=True)
-                            time.sleep(2.5)
+                            time.sleep(3)
                     except Exception as ex:
                         logger.debug(f"Expand check note: {ex}")
                     break
@@ -217,7 +219,7 @@ class VideoPlayer:
 
         if target_el:
             try:
-                # Find parent section/card wrapper that contains the activities
+                # Find parent section/card/panel wrapper that contains the activities
                 parent = target_el.evaluate_handle("""(node) => {
                     let p = node;
                     while (p && p.tagName !== 'BODY') {
@@ -225,7 +227,10 @@ class VideoPlayer:
                             p.classList.contains('card') || 
                             p.tagName === 'LI' || 
                             p.classList.contains('course-section') ||
-                            p.classList.contains('accordion-item')) {
+                            p.classList.contains('accordion-item') ||
+                            p.classList.contains('panel') ||
+                            p.classList.contains('panel-default') ||
+                            p.classList.contains('modules_full_accordian_div')) {
                             return p;
                         }
                         p = p.parentElement;
@@ -303,9 +308,10 @@ class VideoPlayer:
                 logger.info("  No visible activities found. Module might be collapsed. Toggling accordion...")
                 try:
                     trigger = (
+                        self.page.query_selector(f"#nav-modules [data-id='{mod_id}']") or
+                        self.page.query_selector(f"#nav-modules [id*='{mod_id}']") or
                         self.page.query_selector(f"[data-id='{mod_id}']") or
-                        self.page.query_selector(f"[id*='{mod_id}']") or
-                        self.page.query_selector(f"#section-{mod_id}")
+                        self.page.query_selector(f"[id*='{mod_id}']")
                     )
                     if trigger:
                         trigger.click(force=True)
@@ -330,16 +336,34 @@ class VideoPlayer:
                         continue
 
                     parent = (
-                        btn.query_selector("xpath=ancestor::div[position()=1]") or btn
+                        btn.query_selector("xpath=ancestor::div[contains(@class, 'courses_modules_desc')]") or
+                        btn.query_selector("xpath=ancestor::div[contains(@class, 'draggable-item')]") or
+                        btn.query_selector("xpath=ancestor::div[position()=1]") or
+                        btn
                     )
                     parent_text = parent.inner_text().strip() if parent else ""
                     clean_text  = parent_text.split("\n")[0].strip()
 
-                    if (
-                        "✔" in parent_text
-                        or "Completed" in parent_text
-                        or clean_text in completed_titles
-                    ):
+                    # Check for completion via checkmark icons, 100% progress, or text status
+                    is_completed = False
+                    if parent:
+                        checkmark = parent.query_selector(".fa-check, .fa-check-circle, .micon-check_circle, .check-icon")
+                        if checkmark:
+                            is_completed = True
+                        else:
+                            p100 = parent.query_selector(".p100, [title='100%'], [data-original-title='100%']")
+                            if p100:
+                                is_completed = True
+
+                    if not is_completed:
+                        if (
+                            "✔" in parent_text
+                            or "Completed" in parent_text
+                            or clean_text in completed_titles
+                        ):
+                            is_completed = True
+
+                    if is_completed:
                         logger.info(f"  Already done: '{clean_text[:35]}' — skipping.")
                         continue
 
@@ -386,16 +410,35 @@ class VideoPlayer:
         current_url = self.page.url
         logger.info(f"  Activity URL: {current_url[:80]}")
 
-        # ── 1. Video ──────────────────────────────────────────────────────
-        video = self.page.query_selector("video")
-        if video:
-            logger.info("  Video detected — running 16x for up to 15s real-time...")
+        # ── 1. Video (check main page and all frames) ──────────────────────
+        video_element = None
+        video_frame = None
+        try:
+            if self.page.query_selector("video"):
+                video_element = self.page.query_selector("video")
+                video_frame = self.page
+        except Exception:
+            pass
+
+        if not video_element:
+            for frame in self.page.frames:
+                try:
+                    if frame.query_selector("video"):
+                        video_element = frame.query_selector("video")
+                        video_frame = frame
+                        break
+                except Exception:
+                    pass
+
+        if video_element:
+            logger.info("  Video detected — running 16x speed (up to 120s real-time)...")
             start = time.time()
-            while (time.time() - start) < 15:
+            while (time.time() - start) < 120:
                 self._simulate_mouse()
                 time.sleep(2)
+                self._inject_speed_override() # keep applying speed override
                 try:
-                    ended = self.page.evaluate(
+                    ended = video_frame.evaluate(
                         'document.querySelector("video")'
                         ' ? document.querySelector("video").ended : false'
                     )
