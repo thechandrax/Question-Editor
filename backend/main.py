@@ -19,7 +19,7 @@ import cloudscraper
 from fastapi import BackgroundTasks
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "diksha_automation"))
-from orchestrator import run_automation, fetch_courses_only
+from orchestrator import run_automation, fetch_courses_only, fetch_course_details_only
 import cloudscraper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -631,6 +631,28 @@ async def fetch_diksha_courses(req: DikshaFetchRequest):
     except Exception as e:
         logging.error("Failed to fetch courses: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch courses: {str(e)}")
+
+
+class DikshaCourseDetailsRequest(BaseModel):
+    username: str
+    password: str
+    course_url: str
+
+@app.post("/api/diksha/course-details")
+async def get_course_details(req: DikshaCourseDetailsRequest):
+    try:
+        details = await asyncio.to_thread(
+            fetch_course_details_only,
+            username=req.username,
+            password=req.password,
+            course_url=req.course_url,
+            headless=True
+        )
+        return details
+    except Exception as e:
+        logging.error("Failed to fetch course details: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch course details: {str(e)}")
+
 
 
 def _debug_page_sync(username: str, password: str) -> dict:

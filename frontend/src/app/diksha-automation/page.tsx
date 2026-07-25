@@ -113,6 +113,12 @@ export default function DikshaAutomationPage() {
   const [automatingCourseUrl, setAutomatingCourseUrl] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
 
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [courseDetails, setCourseDetails] = useState<any | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -247,6 +253,30 @@ export default function DikshaAutomationPage() {
     setActionLoading(true);
     try { await fetch("/api/diksha/stop", { method: "POST" }); } catch { /* silent */ }
     finally { setActionLoading(false); }
+  };
+
+  const handleViewCourseDetails = async (course: Course) => {
+    setSelectedCourse(course);
+    setCourseDetails(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+    setShowDetailsModal(true);
+
+    try {
+      const res = await fetch("/api/diksha/course-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, course_url: course.url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to load course details.");
+      if (data.success === false) throw new Error(data.error || "Failed to scrape course details.");
+      setCourseDetails(data);
+    } catch (err: unknown) {
+      setDetailsError(err instanceof Error ? err.message : "Error fetching course details.");
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
   /* ─── LOGIN PAGE ──────────────────────────────────────────────────────── */
@@ -803,14 +833,19 @@ export default function DikshaAutomationPage() {
 
                       {/* Footer actions */}
                       <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',gap:'8px',background:'rgba(2,6,23,0.4)'}}>
-                        <a
-                          href={c.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{flex:1,padding:'8px',borderRadius:'9px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.9)',fontSize:'11px',fontWeight:'600',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',textDecoration:'none',transition:'all 0.2s'}}
+                        <button
+                          onClick={() => handleViewCourseDetails(c)}
+                          style={{
+                            flex:1,padding:'8px',borderRadius:'9px',
+                            background:'rgba(255,255,255,0.04)',
+                            border:'1px solid rgba(255,255,255,0.08)',
+                            color:'rgba(148,163,184,0.9)',fontSize:'11px',fontWeight:'600',
+                            display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+                            cursor:'pointer',transition:'all 0.2s'
+                          }}
                         >
                           <IconExternal/> View Course
-                        </a>
+                        </button>
 
                         <button
                           onClick={() => handleStartAutomation(c.url)}
@@ -926,6 +961,166 @@ export default function DikshaAutomationPage() {
 
         </div>
       </div>
+
+      {/* ─── COURSE DETAILS MODAL ─── */}
+      {showDetailsModal && (
+        <div style={{
+          position:'fixed',inset:0,zIndex:9999,
+          background:'rgba(2,6,23,0.75)',backdropFilter:'blur(12px)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'
+        }}>
+          <div className="glass fade-in-up" style={{
+            width:'100%',maxWidth:'800px',borderRadius:'24px',overflow:'hidden',
+            display:'flex',flexDirection:'column',maxHeight:'85vh',
+            boxShadow:'0 25px 50px -12px rgba(0,0,0,0.5), 0 0 40px rgba(249,115,22,0.05)',
+            border:'1px solid rgba(255,255,255,0.08)'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding:'20px 24px',borderBottom:'1px solid rgba(255,255,255,0.07)',
+              display:'flex',alignItems:'center',justifyContent:'space-between',
+              background:'rgba(15,23,42,0.4)'
+            }}>
+              <div>
+                <span style={{fontSize:'10px',fontWeight:'800',color:'#ea580c',textTransform:'uppercase',letterSpacing:'0.05em'}}>DIKSHA Course Details</span>
+                <h2 style={{margin:'4px 0 0',fontSize:'16px',fontWeight:'700',color:'white'}}>{selectedCourse?.title}</h2>
+              </div>
+              <button 
+                onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
+                style={{
+                  background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',
+                  color:'rgba(148,163,184,0.8)',borderRadius:'50%',width:'32px',height:'32px',
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
+                  cursor:'pointer',fontWeight:'700',transition:'all 0.2s'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div style={{padding:'24px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+              {detailsLoading ? (
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 0',gap:'16px'}}>
+                  <IconSpinner />
+                  <p style={{margin:0,fontSize:'13px',color:'rgba(148,163,184,0.8)',fontWeight:'500'}}>Fetching course content & details from DIKSHA portal...</p>
+                </div>
+              ) : detailsError ? (
+                <div style={{textAlign:'center',padding:'40px 0'}}>
+                  <div style={{fontSize:'36px',marginBottom:'12px'}}>⚠️</div>
+                  <h3 style={{color:'white',margin:'0 0 8px',fontSize:'15px'}}>{detailsError}</h3>
+                  <p style={{color:'rgba(148,163,184,0.6)',fontSize:'12px',maxWidth:'450px',margin:'0 auto'}}>
+                    Please make sure the bot has completed initial scanning and that your session is still active.
+                  </p>
+                </div>
+              ) : courseDetails ? (
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'24px',alignItems:'start'}}>
+                  
+                  {/* Left Column: Info & Description */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+                    <div>
+                      <h4 style={{margin:'0 0 8px',fontSize:'12px',fontWeight:'700',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.04em'}}>About this Course</h4>
+                      <p style={{
+                        margin:0,fontSize:'13px',color:'rgba(148,163,184,0.85)',
+                        lineHeight:'1.6',whiteSpace:'pre-wrap',background:'rgba(255,255,255,0.02)',
+                        padding:'14px',borderRadius:'12px',border:'1px solid rgba(255,255,255,0.04)',
+                        maxHeight:'320px',overflowY:'auto'
+                      }}>
+                        {courseDetails.description || "No description provided by the DIKSHA portal."}
+                      </p>
+                    </div>
+
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(249,115,22,0.04)',border:'1px solid rgba(249,115,22,0.1)',borderRadius:'12px',padding:'12px 16px'}}>
+                      <div>
+                        <p style={{margin:0,fontSize:'10px',color:'rgba(249,115,22,0.7)',fontWeight:'700',textTransform:'uppercase'}}>Course Status</p>
+                        <p style={{margin:0,fontSize:'14px',color:'white',fontWeight:'700'}}>{selectedCourse?.progress}% Complete</p>
+                      </div>
+                      <button
+                        onClick={() => { setShowDetailsModal(false); handleStartAutomation(selectedCourse?.url); }}
+                        disabled={isRunning || actionLoading || selectedCourse?.progress === 100}
+                        style={{
+                          background:'linear-gradient(135deg,#ea580c,#f59e0b)',
+                          color:'white',border:'none',padding:'8px 16px',borderRadius:'8px',
+                          fontSize:'11px',fontWeight:'700',cursor:'pointer',
+                          opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
+                        }}
+                      >
+                        ⚡ Start Automation
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Lessons / Modules */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                    <h4 style={{margin:'0 0 4px',fontSize:'12px',fontWeight:'700',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.04em'}}>Course Lessons & Modules</h4>
+                    <div style={{
+                      display:'flex',flexDirection:'column',gap:'10px',
+                      maxHeight:'400px',overflowY:'auto',paddingRight:'4px'
+                    }}>
+                      {courseDetails.modules && courseDetails.modules.length > 0 ? (
+                        courseDetails.modules.map((m: any, idx: number) => {
+                          const pct = m.progress ?? 0;
+                          const isDone = m.iscompleted || pct === 100;
+                          return (
+                            <div key={idx} style={{
+                              background:'rgba(2,6,23,0.4)',border:'1px solid rgba(255,255,255,0.04)',
+                              borderRadius:'12px',padding:'12px 14px',display:'flex',alignItems:'center',
+                              justifyContent:'space-between',gap:'12px'
+                            }}>
+                              <div style={{flex:1,minWidth:0}}>
+                                <p style={{margin:'0 0 6px',fontSize:'12px',fontWeight:'600',color:'white',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
+                                  {m.name}
+                                </p>
+                                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                  <div style={{flex:1,background:'rgba(255,255,255,0.03)',height:'4px',borderRadius:'10px',overflow:'hidden'}}>
+                                    <div style={{width:`${pct}%`,height:'100%',background: isDone ? '#10b981' : '#f97316'}} />
+                                  </div>
+                                  <span style={{fontSize:'10px',fontWeight:'700',color: isDone ? '#10b981' : 'rgba(148,163,184,0.6)'}}>{pct}%</span>
+                                </div>
+                              </div>
+                              <span style={{
+                                width:'22px',height:'22px',borderRadius:'50%',
+                                background: isDone ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)',
+                                border:`1px solid ${isDone ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                display:'flex',alignItems:'center',justifyContent:'center',
+                                color: isDone ? '#34d399' : 'rgba(148,163,184,0.3)',fontSize:'10px',fontWeight:'bold'
+                              }}>
+                                {isDone ? '✓' : idx + 1}
+                              </span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{textAlign:'center',padding:'30px 0',color:'rgba(148,163,184,0.5)',fontSize:'12px',fontStyle:'italic'}}>
+                          No modules returned from Moodle API.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ) : null}
+            </div>
+            
+            {/* Footer */}
+            <div style={{
+              padding:'14px 24px',borderTop:'1px solid rgba(255,255,255,0.07)',
+              display:'flex',justifyContent:'flex-end',background:'rgba(15,23,42,0.2)'
+            }}>
+              <button 
+                onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
+                style={{
+                  background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',
+                  color:'white',borderRadius:'8px',padding:'6px 14px',fontSize:'11px',
+                  fontWeight:'600',cursor:'pointer'
+                }}
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

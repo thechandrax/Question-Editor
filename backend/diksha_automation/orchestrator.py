@@ -133,5 +133,111 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         auth.close()
 
 
+def fetch_course_details_only(username=None, password=None, course_url=None, headless=True):
+    """
+    Logs in to DIKSHA, navigates to the specific course page, captures the
+    API payload for module progress, and scrapes description + lesson details.
+    """
+    logger.info(f"=== Fetching Course Details: {course_url} ===")
+    auth = DikshaAuthenticator(headless=headless, username=username, password=password)
+    try:
+        # Step 1: Login
+        page = auth.login()
+
+        # Extract IDs
+        qs = parse_qs(urlparse(course_url).query)
+        course_id  = qs.get("id",      ["1186"])[0]
+        section_id = qs.get("section", ["2486"])[0]
+
+        # Setup interception
+        api = DikshaAPIClient(auth.context)
+        api.setup_interception(page, course_id, section_id)
+
+        # Navigate to course page
+        logger.info(f"Navigating to course page: {course_url}")
+        page.goto(course_url, wait_until="domcontentloaded", timeout=30000)
+        time.sleep(3)
+
+        # Click About Course tab to make sure description is loaded
+        try:
+            about_tab = (
+                page.query_selector('a:has-text("About the Course")') or
+                page.query_selector('button:has-text("About the Course")') or
+                page.query_selector('text="About the Course"')
+            )
+            if about_tab and about_tab.is_visible():
+                about_tab.click(force=True)
+                time.sleep(1.5)
+        except Exception:
+            pass
+
+        # Scrape Description
+        description = ""
+        selectors = [
+            '.no-overflow', 
+            '#region-main', 
+            '.tab-pane.active', 
+            '.course-description', 
+            '#course-info',
+            '.box.generalbox'
+        ]
+        for sel in selectors:
+            try:
+                el = page.query_selector(sel)
+                if el:
+                    txt = el.inner_text().strip()
+                    if len(txt) > 20:
+                        description = txt
+                        break
+            except Exception:
+                pass
+
+        # If description is still empty, grab first paragraph or block content
+        if not description:
+            try:
+                region = page.query_selector('#region-main')
+                if region:
+                    description = region.inner_text().strip()
+            except Exception:
+                pass
+
+        # Refresh cookies and get modules
+        api.refresh_cookies(auth.context)
+        modules = api.get_module_progress(course_id, section_id)
+
+        title = page.title() or "DIKSHA Course"
+        try:
+            title_el = (
+                page.query_selector('h2') or
+                page.query_selector('h1') or
+                page.query_selector('.page-header-headings')
+            )
+            if title_el:
+                title = title_el.inner_text().strip()
+        except Exception:
+            pass
+
+        logger.info(f"Successfully scraped details for: {title}")
+        return {
+            'title': title,
+            'description': description,
+            'modules': modules or [],
+            'success': True
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching course details: {e}", exc_info=True)
+        return {
+            'title': 'Error Loading Course',
+            'description': f'Failed to retrieve details: {e}',
+            'modules': [],
+            'success': False,
+            'error': str(e)
+        }
+    finally:
+        auth.close()
+
+
 if __name__ == "__main__":
     run_automation()
+
