@@ -468,14 +468,51 @@ class CourseNavigator:
 
         # ── Strategy D: DOM card scraping ────────────────────────────────
         if not result['ongoing']:
-            logger.info('=== Strategy D: DOM card scraping ===')
+            logger.info('=== Strategy D: DOM scraping for ONGOING ===')
             result['ongoing'] = self._scrape_cards_from_page(status='ongoing')
+
         if not result['finished']:
-            result['finished'] = self._scrape_cards_from_page(status='finished')
+            logger.info('=== Strategy D: DOM scraping for FINISHED (clicking tab first) ===')
+            # Click the Finished tab so the DOM shows finished courses, not ongoing ones
+            finished_tab_clicked = False
+            for sel in [
+                'a[href*="finished"]', 'button[data-tab="finished"]',
+                'a:has-text("Finished")', 'li:has-text("Finished") a',
+                '[data-type="finished"]', '#finished-tab', '.tab-finished',
+                'a[onclick*="finished"]', '[data-target*="finished"]',
+            ]:
+                try:
+                    el = self.page.query_selector(sel)
+                    if el:
+                        el.click()
+                        time.sleep(3)
+                        finished_tab_clicked = True
+                        logger.info(f'  Clicked Finished tab: {sel}')
+                        break
+                except Exception:
+                    pass
+
+            if not finished_tab_clicked:
+                logger.info('  No Finished tab found — skipping DOM scrape for finished')
+            else:
+                result['finished'] = self._scrape_cards_from_page(status='finished')
+
+        # ── Deduplication: remove finished entries that duplicate ongoing ─
+        # Happens when DOM scraping runs on the same page (ongoing view) for both tabs
+        ongoing_titles = {c.get('title', '').strip().lower() for c in result['ongoing'] if c.get('title')}
+        before = len(result['finished'])
+        result['finished'] = [
+            c for c in result['finished']
+            if c.get('title', '').strip().lower() not in ongoing_titles
+        ]
+        removed = before - len(result['finished'])
+        if removed:
+            logger.info(f'  Deduplication removed {removed} duplicate(s) from finished list')
 
         result['all'] = result['ongoing'] + result['finished']
         logger.info(f'Fetch Summary: {len(result["ongoing"])} Ongoing, {len(result["finished"])} Finished courses.')
         return result
+
 
     # ── Full navigation fetcher (used by automation flow) ────────────────
 

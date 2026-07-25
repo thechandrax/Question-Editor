@@ -467,8 +467,9 @@ export default function DikshaAutomationPage() {
   const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
   const logsList = status?.logs || [];
 
-  const ongoingCourses = courses.filter((c) => c.status === "ongoing" || (c.pct ?? c.progress ?? 0) < 100);
-  const finishedCourses = courses.filter((c) => c.status === "finished" || (c.pct ?? c.progress ?? 0) === 100);
+  // Use status field ONLY — deduplication is handled on the backend
+  const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
+  const finishedCourses = courses.filter((c) => c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
 
   const statusColor = isDone ? "#10b981" : isPaused ? "#f59e0b" : isStopped ? "#64748b" : isError ? "#ef4444" : "#f97316";
@@ -728,7 +729,7 @@ export default function DikshaAutomationPage() {
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:'16px'}}>
                 {displayedCourses.map((c, idx) => {
                   const pct = c.pct ?? c.progress ?? 0;
-                  const isFinished = pct === 100 || c.status === "finished";
+                  const isFinished = pct === 100;  // Only 100% = truly completed
                   const isCurrent = c.current;
                   return (
                     <div
