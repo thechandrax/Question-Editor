@@ -465,9 +465,11 @@ class VideoPlayer:
                             current_val = info["currentTime"]
                             if current_val == last_time and not info["paused"]:
                                 stuck_count += 1
-                                if stuck_count == 2:  # Stuck for 20 seconds — Try rewinding to 90% to unfreeze buffer
-                                    target_rewind = info["duration"] * 0.90 if info["duration"] else current_val - 60
-                                    logger.warning(f"  [WARNING] Video stuck at {int(current_val)}s. Rewinding to 90% ({int(target_rewind)}s) to unfreeze buffer...")
+                                if stuck_count == 2:  # Stuck for 20 seconds — Rewind 4% back from current position
+                                    rewind_sec = (info["duration"] * 0.04) if info["duration"] else 60
+                                    target_rewind = max(0.0, current_val - rewind_sec)
+                                    target_pct = int((target_rewind / info["duration"]) * 100) if info["duration"] else 0
+                                    logger.warning(f"  [WARNING] Video stuck at {int(current_val)}s ({pct}%). Rewinding 4% back to {int(target_rewind)}s ({target_pct}%) to unfreeze buffer...")
                                     video_frame.evaluate(f"""() => {{
                                         let v = document.querySelector("video");
                                         if (v) {{
