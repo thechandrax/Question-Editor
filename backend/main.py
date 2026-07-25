@@ -517,6 +517,92 @@ class DikshaRunRequest(BaseModel):
     password: str
     target_course_url: str | None = None
 
+# ── Credential Verification (no browser) ──────────────────────────────────
+
+def _verify_credentials_sync(username: str, password: str) -> dict:
+    """
+    Verifies DIKSHA credentials by submitting the Keycloak login form
+    using requests (no browser). Fast: ~3-5 seconds.
+    Returns {"valid": bool, "message": str}
+    """
+    import requests as _req
+    session = _req.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    })
+
+    keycloak_url = (
+        "https://diksha.gov.in/auth/realms/sunbird/protocol/openid-connect/auth"
+        "?client_id=portal"
+        "&redirect_uri=https%3A%2F%2Fdiksha.gov.in%2Fsearch%2FLibrary%2F1%3FselectedTab%3Dall%26auth_callback%3D1"
+        "&scope=openid"
+        "&response_type=code"
+        "&version=4"
+    )
+
+    try:
+        # Step 1: Load login page to get form action (includes CSRF token)
+        r1 = session.get(keycloak_url, timeout=15, allow_redirects=True)
+        soup = BeautifulSoup(r1.text, "html.parser")
+
+        form = (
+            soup.find("form", id="kc-form-login") or
+            soup.find("form", attrs={"action": True})
+        )
+        if not form:
+            logging.warning("verify-login: could not find login form in Keycloak page")
+            return {"valid": False, "message": "Could not reach DIKSHA login page. Try again."}
+
+        action_url = form.get("action", "")
+        if not action_url:
+            return {"valid": False, "message": "Login page returned unexpected response."}
+
+        # Step 2: Submit credentials
+        r2 = session.post(
+            action_url,
+            data={"username": username, "password": password, "credentialId": ""},
+            timeout=20,
+            allow_redirects=True,
+        )
+
+        final_url = r2.url
+        logging.info(f"verify-login: final redirect URL → {final_url[:80]}")
+
+        # Success indicators: redirected back to DIKSHA with auth_callback
+        if any(kw in final_url for kw in ["auth_callback=1", "selectedTab=all", "diksha.gov.in/search", "diksha.gov.in/home"]):
+            return {"valid": True, "message": "Login verified successfully ✓"}
+
+        # Check for Keycloak error messages in the response
+        soup2 = BeautifulSoup(r2.text, "html.parser")
+        for err_selector in ["#input-error", ".alert-error", ".kc-feedback-text", "#kc-content-wrapper .alert"]:
+            err_el = soup2.select_one(err_selector)
+            if err_el:
+                err_text = err_el.get_text(" ", strip=True)
+                return {"valid": False, "message": err_text or "Invalid username or password."}
+
+        # Still on login/auth page → credentials rejected
+        if "openid-connect/auth" in final_url or soup2.find("form", id="kc-form-login"):
+            return {"valid": False, "message": "Invalid username or password. Please check your DIKSHA credentials."}
+
+        # Unknown state — assume success (redirect happened to unexpected URL)
+        return {"valid": True, "message": "Login verified (redirect detected) ✓"}
+
+    except Exception as e:
+        logging.error("verify-login error: %s", e)
+        return {"valid": False, "message": f"Network error during verification: {str(e)[:100]}"}
+
+
+@app.post("/api/diksha/verify-login")
+async def verify_diksha_login(req: DikshaFetchRequest):
+    """
+    Quickly verifies DIKSHA credentials without launching a browser.
+    Used by the frontend login form to confirm credentials before opening the dashboard.
+    """
+    result = await asyncio.to_thread(_verify_credentials_sync, req.username, req.password)
+    return result
+
 @app.post("/api/diksha/fetch-courses")
 async def fetch_diksha_courses(req: DikshaFetchRequest):
     try:

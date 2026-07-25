@@ -97,6 +97,8 @@ export default function DikshaAutomationPage() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginVerified, setLoginVerified] = useState(false);
 
   const [scanning, setScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
@@ -143,15 +145,39 @@ export default function DikshaAutomationPage() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
 
-  const handleSimpleLogin = (e: React.FormEvent) => {
+  const handleSimpleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
     if (!username || !password) {
       setLoginError("Please enter your DIKSHA username and password.");
       return;
     }
-    setStage("dashboard");
-    setElapsed(0);
+    setLoginLoading(true);
+    setLoginVerified(false);
+    try {
+      const res = await fetch("/api/diksha/verify-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setLoginVerified(true);
+        // Brief success flash before opening dashboard
+        setTimeout(() => {
+          setLoginLoading(false);
+          setLoginVerified(false);
+          setStage("dashboard");
+          setElapsed(0);
+        }, 900);
+      } else {
+        setLoginError(data.message || "Invalid credentials. Please try again.");
+        setLoginLoading(false);
+      }
+    } catch {
+      setLoginError("Could not reach the server. Please check your internet connection.");
+      setLoginLoading(false);
+    }
   };
 
   const handleScanCourses = async () => {
@@ -333,10 +359,66 @@ export default function DikshaAutomationPage() {
                   </div>
                 </div>
 
-                <button type="submit" className="btn-primary" style={{marginTop:'4px'}}>
-                  <IconLogin/>
-                  Login to Dashboard
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={loginLoading}
+                  style={{
+                    marginTop: '4px',
+                    background: loginVerified
+                      ? 'linear-gradient(135deg,#22c55e,#16a34a)'
+                      : loginLoading
+                      ? 'linear-gradient(135deg,rgba(251,146,60,0.6),rgba(245,101,46,0.6))'
+                      : undefined,
+                    cursor: loginLoading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  {loginVerified ? (
+                    <>
+                      <span style={{fontSize:'18px'}}>✅</span>
+                      Verified! Opening Dashboard…
+                    </>
+                  ) : loginLoading ? (
+                    <>
+                      <span style={{
+                        display:'inline-block',
+                        width:'16px', height:'16px',
+                        border:'2px solid rgba(255,255,255,0.3)',
+                        borderTop:'2px solid #fff',
+                        borderRadius:'50%',
+                        animation:'spin 0.8s linear infinite',
+                        flexShrink:0,
+                      }}/>
+                      Verifying credentials…
+                    </>
+                  ) : (
+                    <>
+                      <IconLogin/>
+                      Login to Dashboard
+                    </>
+                  )}
                 </button>
+
+                {/* Error message */}
+                {loginError && (
+                  <div style={{
+                    marginTop:'12px',
+                    padding:'10px 14px',
+                    background:'rgba(239,68,68,0.12)',
+                    border:'1px solid rgba(239,68,68,0.3)',
+                    borderRadius:'10px',
+                    color:'#fca5a5',
+                    fontSize:'13px',
+                    lineHeight:'1.5',
+                    display:'flex',
+                    alignItems:'flex-start',
+                    gap:'8px',
+                  }}>
+                    <span style={{flexShrink:0,marginTop:'1px'}}>⚠️</span>
+                    <span>{loginError}</span>
+                  </div>
+                )}
               </form>
 
               {/* Security note */}
