@@ -124,7 +124,7 @@ class VideoPlayer:
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
             # Process all activities inside this module
-            self._process_all_activities_in_module(module_url)
+            self._process_all_activities_in_module(module_url, mod_id, mod_name)
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
@@ -155,7 +155,48 @@ class VideoPlayer:
     #  Per-module activity processor
     # ------------------------------------------------------------------ #
 
-    def _process_all_activities_in_module(self, module_url: str):
+    def _get_active_module_container(self, mod_id: str, mod_name: str):
+        """Finds the DOM element representing the active module container."""
+        # Try finding by ID / attributes first
+        for sel in [
+            f"#section-{mod_id}",
+            f"[data-sectionid='{mod_id}']",
+            f"[data-section-id='{mod_id}']",
+            f"[data-id='{mod_id}']",
+            f"#accordion-item-{mod_id}",
+            f"[id*='{mod_id}']",
+            f".section:has-text('{mod_name}')",
+            f".card:has-text('{mod_name}')",
+            f"li:has-text('{mod_name}')",
+        ]:
+            try:
+                el = self.page.query_selector(sel)
+                if el and el.is_visible():
+                    logger.info(f"  Scoped module container found: {sel}")
+                    return el
+            except Exception:
+                pass
+                
+        # Try finding the currently expanded/visible section container
+        for sel in [
+            '.section.show',
+            '.section.active',
+            '.collapse.show',
+            '.panel-collapse.in',
+            '.content:visible',
+        ]:
+            try:
+                el = self.page.query_selector(sel)
+                if el and el.is_visible():
+                    logger.info(f"  Scoped module container found (fallback): {sel}")
+                    return el
+            except Exception:
+                pass
+        
+        logger.info("  No module container found — searching full page.")
+        return self.page
+
+    def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str):
         """
         Finds and processes every activity inside a module section.
         After each activity, reloads the module URL to close any overlay
@@ -171,8 +212,11 @@ class VideoPlayer:
                 self.page.goto(module_url, wait_until="domcontentloaded", timeout=20000)
                 time.sleep(3)
 
-            # Find ALL possible action buttons (View / Start / Resume / Open)
-            view_buttons = self.page.query_selector_all(
+            # Find active module container to scope the buttons search
+            scope = self._get_active_module_container(mod_id, mod_name)
+
+            # Find action buttons ONLY inside the active module container
+            view_buttons = scope.query_selector_all(
                 'button:has-text("View"),   a:has-text("View"), '
                 'button:has-text("Start"),  a:has-text("Start"), '
                 'button:has-text("Resume"), a:has-text("Resume"), '
