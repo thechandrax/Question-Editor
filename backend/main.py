@@ -533,6 +533,74 @@ async def fetch_diksha_courses(req: DikshaFetchRequest):
         logging.error("Failed to fetch courses: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch courses: {str(e)}")
 
+
+def _debug_page_sync(username: str, password: str) -> dict:
+    """Login and return raw page HTML + AJAX responses for debugging."""
+    from auth import DikshaAuthenticator
+    auth = DikshaAuthenticator(headless=True, username=username, password=password)
+    try:
+        page = auth.login()
+
+        # Step 4 + 5
+        try:
+            page.goto("https://learning.diksha.gov.in/diksha/course_library.php",
+                      wait_until="domcontentloaded", timeout=20000)
+            import time as _t; _t.sleep(2)
+        except Exception:
+            pass
+
+        page.goto("https://learning.diksha.gov.in/diksha/course_listing.php",
+                  wait_until="networkidle", timeout=30000)
+        import time as _t; _t.sleep(4)
+
+        page_html = page.content()
+        page_url  = page.url
+        page_title = page.title()
+
+        # Try AJAX payloads and collect raw responses
+        ajax_results = []
+        for payload in ["tab_type=ongoing", "type=ongoing", "tab=ongoing", "", "tab_type=finished"]:
+            try:
+                resp = page.request.post(
+                    "https://learning.diksha.gov.in/diksha/course_listing.php",
+                    headers={
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "Referer": "https://learning.diksha.gov.in/diksha/course_listing.php",
+                    },
+                    data=payload,
+                )
+                body = resp.text()
+                ajax_results.append({
+                    "payload": payload or "(empty)",
+                    "status": resp.status,
+                    "body_length": len(body),
+                    "body_preview": body[:800],
+                })
+            except Exception as ex:
+                ajax_results.append({"payload": payload or "(empty)", "error": str(ex)})
+
+        return {
+            "page_url": page_url,
+            "page_title": page_title,
+            "page_html_length": len(page_html),
+            "page_html_preview": page_html[:2000],
+            "ajax_results": ajax_results,
+        }
+    finally:
+        auth.close()
+
+
+@app.post("/api/diksha/debug-page")
+async def debug_diksha_page(req: DikshaFetchRequest):
+    """Debug endpoint: returns raw page HTML + AJAX responses from course_listing.php."""
+    try:
+        result = await asyncio.to_thread(_debug_page_sync, req.username, req.password)
+        return result
+    except Exception as e:
+        logging.error("debug-page error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 def _run_diksha_task(username: str, password: str, target_course_url: str | None = None) -> None:
     """Wrapper that tracks global state around run_automation."""
     _pause_event.set()
