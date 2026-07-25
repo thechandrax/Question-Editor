@@ -79,21 +79,23 @@ class _DikshaLogCapture(logging.Handler):
                 _diksha["step"] = "Module completed!"
                 _diksha["progress"] = min(_diksha["progress"] + 5, 95)
 
-            # ── Course name extraction from log lines ────────────────────
-            # Pattern: [INFO] → Opening: 'Course Title'
-            title_match = re.search(r"opening[:\s→]+['\"](.+?)['\"]\s*$", raw, re.IGNORECASE)
+            # ── Course name extraction from orchestrator log lines ────────
+            # Pattern: [INFO] Targeting: 'Course Title'
+            title_match = re.search(r"Targeting:\s*['\"](.+?)['\"]", raw, re.IGNORECASE)
             if title_match:
                 title = title_match.group(1).strip()
                 courses = _diksha["courses"]
-                existing_titles = [c["title"] for c in courses]
-                if title and title not in existing_titles:
-                    courses.append({"title": title, "progress": 0, "status": "pending", "current": False})
-                # Mark as running
                 _diksha["current_course"] = title
+                # Update status of matching course in list
+                matched = False
                 for c in courses:
-                    c["current"] = c["title"] == title
-                    if c["title"] == title:
+                    is_match = c.get("title", "").strip().lower() == title.lower()
+                    c["current"] = is_match
+                    if is_match:
                         c["status"] = "running"
+                        matched = True
+                if not matched:
+                    courses.append({"title": title, "progress": 0, "status": "running", "current": True})
 
             # Update progress of current running course
             if _diksha["current_course"]:
@@ -620,13 +622,14 @@ async def verify_diksha_login(req: DikshaFetchRequest):
 async def fetch_diksha_courses(req: DikshaFetchRequest):
     try:
         data = await asyncio.to_thread(fetch_courses_only, username=req.username, password=req.password, headless=True)
-        all_courses = data.get("all", [])
-        _diksha["courses"] = all_courses
+        ongoing_courses = data.get("ongoing", [])
+        finished_courses = data.get("finished", [])
+        _diksha["courses"] = ongoing_courses
         return {
             "status": "success",
-            "courses": all_courses,
-            "ongoing": data.get("ongoing", []),
-            "finished": data.get("finished", [])
+            "courses": ongoing_courses,
+            "ongoing": ongoing_courses,
+            "finished": finished_courses
         }
     except Exception as e:
         logging.error("Failed to fetch courses: %s", e, exc_info=True)
