@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-type Stage = "form" | "dashboard";
+type Stage = "login" | "dashboard";
 
 interface Course {
   title: string;
@@ -53,13 +53,15 @@ function formatTime(seconds: number): string {
 }
 
 export default function DikshaAutomationPage() {
-  const [stage, setStage] = useState<Stage>("form");
+  const [stage, setStage] = useState<Stage>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [fetching, setFetching] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [loginError, setLoginError] = useState("");
 
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [hasScanned, setHasScanned] = useState(false);
   const [activeTab, setActiveTab] = useState<"ongoing" | "finished">("ongoing");
 
   const [status, setStatus] = useState<StatusType | null>(null);
@@ -77,7 +79,7 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  // Polling for live status when dashboard is active
+  // Polling for status when dashboard is active
   useEffect(() => {
     if (stage !== "dashboard") return;
 
@@ -92,6 +94,7 @@ export default function DikshaAutomationPage() {
         setCurrentStepIdx(inferStep(data.logs || []));
         if (data.courses && data.courses.length > 0) {
           setCourses(data.courses);
+          setHasScanned(true);
         }
       } catch {
         /* silent polling error */
@@ -106,15 +109,22 @@ export default function DikshaAutomationPage() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
 
-  // Step 1: Login & Fetch Enrolled Courses
-  const handleFetchCourses = async (e: React.FormEvent) => {
+  // Step 1: Simple Login -> Opens Dashboard
+  const handleSimpleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError("");
+    setLoginError("");
     if (!username || !password) {
-      setFormError("Please enter your DIKSHA username and password.");
+      setLoginError("Please enter your DIKSHA username and password.");
       return;
     }
-    setFetching(true);
+    setStage("dashboard");
+    setElapsed(0);
+  };
+
+  // Step 2: Click "Scan Enrolled Courses" on Dashboard
+  const handleScanCourses = async () => {
+    setScanning(true);
+    setScanMessage("Authenticating & scanning DIKSHA account for courses...");
     try {
       const res = await fetch("/api/diksha/fetch-courses", {
         method: "POST",
@@ -122,20 +132,20 @@ export default function DikshaAutomationPage() {
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to fetch enrolled courses.");
+      if (!res.ok) throw new Error(data.detail || "Failed to scan enrolled courses.");
 
       const fetchedList: Course[] = data.courses || [];
       setCourses(fetchedList);
-      setStage("dashboard");
-      setElapsed(0);
+      setHasScanned(true);
+      setScanMessage(`Scan complete! Found ${fetchedList.length} course(s).`);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Connection failed to backend server.");
+      setScanMessage(err instanceof Error ? err.message : "Error scanning courses.");
     } finally {
-      setFetching(false);
+      setScanning(false);
     }
   };
 
-  // Step 2: Start Automation (All courses or specific target_course_url)
+  // Step 3: Start Automation (All courses or specific target_course_url)
   const handleStartAutomation = async (targetUrl?: string) => {
     setActionLoading(true);
     setAutomatingCourseUrl(targetUrl || "all");
@@ -182,16 +192,16 @@ export default function DikshaAutomationPage() {
     }
   };
 
-  /* ── 1. LOGIN / CREDENTIALS FORM VIEW ──────────────────────────────── */
-  if (stage === "form") {
+  /* ── 1. SIMPLE LOGIN VIEW ───────────────────────────────────────────── */
+  if (stage === "login") {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans text-slate-100">
-        {/* Decorative blur elements */}
+        {/* Glow backdrop */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-72 h-72 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header Branding */}
+          {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-600 via-amber-500 to-yellow-400 p-0.5 shadow-xl shadow-orange-500/20 mb-3">
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
@@ -199,35 +209,34 @@ export default function DikshaAutomationPage() {
               </div>
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              DIKSHA Learning Portal
+              DIKSHA Automation Portal
             </h1>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Login to fetch your enrolled courses &amp; manage automation
+              Login to access your dashboard &amp; scan enrolled courses
             </p>
           </div>
 
           {/* Form Card */}
           <div className="bg-slate-900/90 border border-slate-800 backdrop-blur-xl rounded-2xl p-6 shadow-2xl shadow-black/50">
-            {formError && (
+            {loginError && (
               <div className="mb-5 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex gap-2.5 items-start">
                 <span className="text-red-400 text-sm mt-0.5">⚠️</span>
-                <p className="text-red-300 text-xs leading-relaxed">{formError}</p>
+                <p className="text-red-300 text-xs leading-relaxed">{loginError}</p>
               </div>
             )}
 
-            <form onSubmit={handleFetchCourses} className="space-y-4">
+            <form onSubmit={handleSimpleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  DIKSHA Username / Mobile Number
+                  DIKSHA Username / Mobile
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. borkej@smanthaai.online or Mobile"
+                  placeholder="e.g. borkej@smanthaai.online"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  disabled={fetching}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 disabled:opacity-50 transition-all"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 transition-all"
                 />
               </div>
 
@@ -241,49 +250,36 @@ export default function DikshaAutomationPage() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={fetching}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 disabled:opacity-50 transition-all"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/80 transition-all"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={fetching}
-                className="w-full mt-2 flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/25 disabled:opacity-50 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                className="w-full mt-2 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/25 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
               >
-                {fetching ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    <span>Logging in &amp; Fetching Enrolled Courses...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    <span>Login &amp; Fetch Courses</span>
-                  </>
-                )}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <span>Login to Dashboard</span>
               </button>
             </form>
           </div>
 
           <div className="mt-5 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-            <span>🔒 Keycloak SSO Authenticated</span>
-            <span>•</span>
-            <span>Cloud Playwright Bot</span>
+            <span>🔒 Secure Keycloak Authentication</span>
           </div>
         </div>
       </div>
     );
   }
 
-  /* ── 2. DASHBOARD VIEW (MY LEARNING JOURNEY + COURSE SELECTION) ──────── */
+  /* ── 2. DASHBOARD VIEW (SCAN ENROLLED COURSES + COURSES LIST) ────────── */
   const isRunning = status?.running ?? false;
   const isPaused = status?.paused ?? false;
   const isDone = status?.status === "done";
   const isStopped = status?.status === "stopped";
   const isError = status?.status === "error";
   const overallProgress = status?.progress ?? 0;
-  const currentStepMsg = status?.step || "Idle - Select a course to automate";
+  const currentStepMsg = status?.step || "Idle - Click 'Scan Enrolled Courses' to discover your courses";
   const logsList = status?.logs || [];
 
   const ongoingCourses = courses.filter((c) => (c.status === "ongoing" || (c.pct ?? c.progress ?? 0) < 100));
@@ -295,7 +291,7 @@ export default function DikshaAutomationPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 py-6 px-4 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
 
-        {/* ── Top Header Navigation Bar ──────────────────────────────── */}
+        {/* Top Header Navigation Bar */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md shadow-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 p-0.5 shadow-md shadow-orange-500/20">
@@ -305,7 +301,7 @@ export default function DikshaAutomationPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-white">DIKSHA Courses Portal</h1>
+                <h1 className="text-base font-bold text-white">DIKSHA Courses Dashboard</h1>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono">
                   {username || "User Account"}
                 </span>
@@ -341,15 +337,7 @@ export default function DikshaAutomationPage() {
             )}
 
             <button
-              onClick={(e) => handleFetchCourses(e as unknown as React.FormEvent)}
-              disabled={fetching || isRunning}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all disabled:opacity-40"
-            >
-              🔄 Refresh Courses
-            </button>
-
-            <button
-              onClick={() => setStage("form")}
+              onClick={() => { setStage("login"); setCourses([]); setHasScanned(false); }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
             >
               🚪 Logout
@@ -357,7 +345,7 @@ export default function DikshaAutomationPage() {
           </div>
         </div>
 
-        {/* ── Status Banner (When Automation is Active or Finished) ──── */}
+        {/* Status Banner (When Automation is Active or Finished) */}
         {isRunning || isDone || isStopped || isError ? (
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -396,10 +384,10 @@ export default function DikshaAutomationPage() {
           </div>
         ) : null}
 
-        {/* ── Main Section: My Learning Journey ──────────────────────── */}
+        {/* Main Section: My Learning Journey */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
 
-          {/* Section Header */}
+          {/* Section Header with "Scan Enrolled Courses" Button */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">My Learning Journey</h2>
@@ -408,22 +396,58 @@ export default function DikshaAutomationPage() {
               </p>
             </div>
 
-            {/* Global Start All Automation Button */}
-            <button
-              onClick={() => handleStartAutomation()}
-              disabled={isRunning || actionLoading || ongoingCourses.length === 0}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/20 disabled:opacity-40 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              {actionLoading && automatingCourseUrl === "all" ? (
-                <span>Starting All Automation...</span>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  <span>Start All Ongoing Automation ({ongoingCourses.length})</span>
-                </>
+            {/* Action Buttons: Scan Enrolled Courses & Start All Automation */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={handleScanCourses}
+                disabled={scanning || isRunning}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-indigo-500/20 disabled:opacity-40 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                {scanning ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    <span>Scanning Courses...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>🔍 Scan Enrolled Courses</span>
+                  </>
+                )}
+              </button>
+
+              {hasScanned && (
+                <button
+                  onClick={() => handleStartAutomation()}
+                  disabled={isRunning || actionLoading || ongoingCourses.length === 0}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 hover:from-orange-700 hover:to-amber-600 shadow-lg shadow-orange-500/20 disabled:opacity-40 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  {actionLoading && automatingCourseUrl === "all" ? (
+                    <span>Starting All...</span>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      <span>🚀 Start All Automation ({ongoingCourses.length})</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           </div>
+
+          {/* Scan Status Toast Message */}
+          {scanMessage && (
+            <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+              scanning
+                ? "bg-blue-500/10 border-blue-500/30 text-blue-300"
+                : scanMessage.includes("Error")
+                ? "bg-red-500/10 border-red-500/30 text-red-300"
+                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+            }`}>
+              <span>{scanning ? "⚙️" : scanMessage.includes("Error") ? "❌" : "✅"}</span>
+              <p className="font-medium">{scanMessage}</p>
+            </div>
+          )}
 
           {/* DIKSHA Style Tab Buttons: Ongoing Courses vs Finished Courses */}
           <div className="flex items-center gap-3">
@@ -451,12 +475,28 @@ export default function DikshaAutomationPage() {
           </div>
 
           {/* Course Cards Grid */}
-          {displayedCourses.length === 0 ? (
+          {!hasScanned && !scanning ? (
+            <div className="py-14 text-center text-slate-500 text-xs space-y-3 bg-slate-950/50 rounded-2xl border border-slate-800/60 p-6">
+              <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-2xl">
+                🔍
+              </div>
+              <p className="text-sm font-bold text-white">Click &quot;Scan Enrolled Courses&quot; to fetch your courses</p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                The bot will log in to DIKSHA and extract your enrolled courses under Ongoing and Finished tabs.
+              </p>
+              <button
+                onClick={handleScanCourses}
+                className="mt-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all inline-flex items-center gap-2 cursor-pointer"
+              >
+                <span>🔍 Scan Enrolled Courses Now</span>
+              </button>
+            </div>
+          ) : displayedCourses.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-xs space-y-2 bg-slate-950/50 rounded-2xl border border-slate-800/60">
               <p className="text-3xl">📚</p>
               <p className="font-semibold text-slate-300">No {activeTab} courses found in this category.</p>
               <p className="text-[11px] text-slate-500">
-                Click &quot;Refresh Courses&quot; to rescan your DIKSHA profile.
+                Click &quot;Scan Enrolled Courses&quot; above to re-scan.
               </p>
             </div>
           ) : (
@@ -476,7 +516,7 @@ export default function DikshaAutomationPage() {
                         : "border-slate-800 hover:border-amber-500/40"
                     }`}
                   >
-                    {/* Top Image Preview Banner */}
+                    {/* Image Preview Banner */}
                     <div className="w-full h-36 bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4 relative border-b border-slate-800/80 overflow-hidden">
                       {c.image_url ? (
                         /* eslint-disable-next-html-element-for-img */
@@ -581,7 +621,7 @@ export default function DikshaAutomationPage() {
           )}
         </div>
 
-        {/* ── Bot Workflow Steps & Server Log Console ──────────────── */}
+        {/* Bot Workflow Steps & Server Log Console */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Left: Workflow Steps */}
