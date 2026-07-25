@@ -431,9 +431,9 @@ class VideoPlayer:
                     pass
 
         if video_element:
-            logger.info("  Video detected — running 16x speed (up to 120s real-time)...")
+            logger.info("  Video detected — running 16x speed (up to 600s real-time)...")
             start = time.time()
-            while (time.time() - start) < 120:
+            while (time.time() - start) < 600:
                 self._simulate_mouse()
                 time.sleep(2)
                 self._inject_speed_override() # keep applying speed override
