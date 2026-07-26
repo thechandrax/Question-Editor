@@ -613,67 +613,67 @@ export default function DikshaAutomationPage() {
           {/* Grid pattern overlay */}
           <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
 
-          <div style={{width:'100%',maxWidth:'460px',position:'relative',zIndex:10}}>
+          <div style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div style={{textAlign:'center',marginBottom:'18px'}}>
+            <div style={{textAlign:'center',marginBottom:'14px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
-                width:'84px',height:'84px',borderRadius:'26px',
+                width:'68px',height:'68px',borderRadius:'20px',
                 background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                padding:'12px',
+                padding:'10px',
                 border:'1.5px solid rgba(99,102,241,0.25)',
-                boxShadow:'0 16px 36px -10px rgba(79,70,229,0.25), 0 0 20px rgba(99,102,241,0.12)',
-                marginBottom:'14px'
+                boxShadow:'0 12px 28px -8px rgba(79,70,229,0.22), 0 0 16px rgba(99,102,241,0.10)',
+                marginBottom:'10px'
               }}>
                 <img
                   src="/diksha-logo.png"
                   alt="DIKSHA Official Logo"
-                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 4px 10px rgba(79,70,229,0.15))'}}
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 3px 8px rgba(79,70,229,0.15))'}}
                 />
               </div>
-              <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 3px',letterSpacing:'-0.5px'}}>
+              <h1 style={{fontSize:'24px',fontWeight:'800',color:'#0f172a',margin:'0 0 2px',letterSpacing:'-0.4px'}}>
                 DIKSHA COURSES
               </h1>
-              <p style={{color:'#64748b',fontSize:'14px',margin:0,lineHeight:'1.4',fontWeight:'600'}}>
+              <p style={{color:'#64748b',fontSize:'13px',margin:0,lineHeight:'1.3',fontWeight:'600'}}>
                 Complete your courses automatically
               </p>
             </div>
 
             {/* Glass Card */}
-            <div className="glass-card" style={{borderRadius:'28px',padding:'38px'}}>
+            <div className="glass-card" style={{borderRadius:'24px',padding:'24px 28px'}}>
               {loginError && (
                 <div style={{
-                  marginBottom: '22px',
+                  marginBottom: '16px',
                   background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
                   border: '1px solid #fecdd3',
-                  borderRadius: '16px',
-                  padding: '12px 16px',
+                  borderRadius: '14px',
+                  padding: '10px 14px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
                   boxShadow: '0 4px 12px rgba(225,29,72,0.08)'
                 }}>
                   <div style={{
-                    width: '28px', height: '28px', borderRadius: '10px',
+                    width: '26px', height: '26px', borderRadius: '8px',
                     background: '#ffe4e6', border: '1px solid #fda4af',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
                       <line x1="12" y1="9" x2="12" y2="13"/>
                       <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                   </div>
-                  <p style={{ color: '#e11d48', fontSize: '13px', margin: 0, fontWeight: '700', lineHeight: '1.4' }}>
+                  <p style={{ color: '#e11d48', fontSize: '12.5px', margin: 0, fontWeight: '700', lineHeight: '1.4' }}>
                     {loginError}
                   </p>
                 </div>
               )}
 
-              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'22px'}}>
+              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'16px'}}>
                 <div>
-                  <label style={{display:'block',fontSize:'12px',fontWeight:'800',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
+                  <label style={{display:'block',fontSize:'11.5px',fontWeight:'800',color:'#475569',marginBottom:'5px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
                     DIKSHA Username / Mobile
                   </label>
                   <input
