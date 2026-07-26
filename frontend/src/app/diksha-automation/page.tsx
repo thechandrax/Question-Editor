@@ -109,13 +109,13 @@ export default function DikshaAutomationPage() {
 
   const [status, setStatus] = useState<StatusType | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const [, setCurrentStepIdx] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
   const [automatingCourseUrl, setAutomatingCourseUrl] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [courseDetails, setCourseDetails] = useState<any | null>(null);
+  const [courseDetails, setCourseDetails] = useState<Record<string, unknown> | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsError, setDetailsError] = useState("");
