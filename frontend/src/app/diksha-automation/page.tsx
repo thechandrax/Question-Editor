@@ -834,42 +834,47 @@ export default function DikshaAutomationPage() {
 
           {/* ── TOP NAVBAR ─────────────────────────────────────────────── */}
           <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',width:'100%'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'12px',maxWidth:'100%',width:'100%'}}>
-              <div style={{
-                width:'48px',height:'48px',borderRadius:'16px',
-                background:'#ffffff',padding:'6px',
-                border:'1.5px solid rgba(99,102,241,0.22)',
-                boxShadow:'0 8px 22px rgba(79,70,229,0.18)',
-                flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
-                overflow:'hidden'
-              }}>
-                <img
-                  src="/diksha-logo.png"
-                  alt="DIKSHA Official Logo"
-                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 6px rgba(79,70,229,0.12))'}}
-                />
-              </div>
-              <div style={{minWidth:0,flex:1}}>
-                <h1 style={{margin:0,fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px',lineHeight:'1.2'}}>DIKSHA COURSES</h1>
-                <p style={{margin:'2px 0 6px',fontSize:'12px',color:'#64748b',fontWeight:'600',lineHeight:'1.3'}}>My Learning Journey & Course Automation</p>
-                <div className="mobile-email-wrapper" style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <span className="mobile-email-pill" style={{
-                    fontSize:'11px',
-                    fontWeight:'700',
-                    color:'#4f46e5',
-                    background:'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.12) 100%)',
-                    border:'1px solid rgba(99,102,241,0.25)',
-                    borderRadius:'20px',
-                    padding:'5px 14px',
-                    display:'inline-flex',
-                    alignItems:'center',
-                    gap:'6px',
-                    boxShadow:'0 2px 6px rgba(79,70,229,0.06)'
-                  }}>
-                    <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#22c55e',display:'inline-block',boxShadow:'0 0 6px #22c55e',flexShrink:0}}/>
-                    <span className="mobile-email-text">{username || "User"}</span>
-                  </span>
+            <div className="mobile-brand-block" style={{display:'flex',flexDirection:'column',gap:'10px',minWidth:0,flex:1}}>
+              {/* Row 1: Logo emblem on left middle + Titles on right */}
+              <div style={{display:'flex',alignItems:'center',gap:'12px',width:'100%'}}>
+                <div style={{
+                  width:'48px',height:'48px',borderRadius:'16px',
+                  background:'#ffffff',padding:'6px',
+                  border:'1.5px solid rgba(99,102,241,0.22)',
+                  boxShadow:'0 8px 22px rgba(79,70,229,0.18)',
+                  flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                  overflow:'hidden'
+                }}>
+                  <img
+                    src="/diksha-logo.png"
+                    alt="DIKSHA Official Logo"
+                    style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 6px rgba(79,70,229,0.12))'}}
+                  />
                 </div>
+                <div style={{minWidth:0,flex:1}}>
+                  <h1 style={{margin:0,fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px',lineHeight:'1.2'}}>DIKSHA COURSES</h1>
+                  <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'600',lineHeight:'1.3'}}>My Learning Journey & Course Automation</p>
+                </div>
+              </div>
+
+              {/* Row 2: Email Badge Pill (Below BOTH Logo & Titles!) */}
+              <div className="mobile-email-wrapper" style={{display:'flex',alignItems:'center',gap:'6px',width:'100%'}}>
+                <span className="mobile-email-pill" style={{
+                  fontSize:'11px',
+                  fontWeight:'700',
+                  color:'#4f46e5',
+                  background:'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.12) 100%)',
+                  border:'1px solid rgba(99,102,241,0.25)',
+                  borderRadius:'20px',
+                  padding:'5px 14px',
+                  display:'inline-flex',
+                  alignItems:'center',
+                  gap:'6px',
+                  boxShadow:'0 2px 6px rgba(79,70,229,0.06)'
+                }}>
+                  <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#22c55e',display:'inline-block',boxShadow:'0 0 6px #22c55e',flexShrink:0}}/>
+                  <span className="mobile-email-text">{username || "User"}</span>
+                </span>
               </div>
             </div>
 
