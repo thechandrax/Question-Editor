@@ -137,6 +137,132 @@ const IconCheck = () => (
 );
 
 /* ─── Main Component ───────────────────────────────────────────────────── */
+interface ModalConfig {
+  open: boolean;
+  title: string;
+  subtitle: string;
+  confirmText: string;
+  cancelText?: string;
+  variant: "danger" | "warning" | "info";
+  icon: string;
+  onConfirm: () => void | Promise<void>;
+}
+
+interface ConfirmModalProps {
+  modal: ModalConfig;
+  onClose: () => void;
+  actionLoading: boolean;
+}
+
+function ConfirmModalDialog({ modal, onClose, actionLoading }: ConfirmModalProps) {
+  const isDanger = modal.variant === "danger";
+  const isWarning = modal.variant === "warning";
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 10000,
+      background: 'rgba(15, 23, 42, 0.65)',
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '20px',
+      animation: 'fadein 0.2s ease-out'
+    }}>
+      <div style={{
+        width: '100%', maxWidth: '440px',
+        background: '#ffffff',
+        borderRadius: '26px',
+        padding: '32px 28px',
+        border: isDanger
+          ? '1.5px solid rgba(244, 63, 94, 0.3)'
+          : isWarning
+          ? '1.5px solid rgba(245, 158, 11, 0.3)'
+          : '1.5px solid rgba(99, 102, 241, 0.3)',
+        boxShadow: isDanger
+          ? '0 25px 60px -15px rgba(225, 29, 72, 0.25), 0 10px 25px -5px rgba(0, 0, 0, 0.08)'
+          : isWarning
+          ? '0 25px 60px -15px rgba(245, 158, 11, 0.22), 0 10px 25px -5px rgba(0, 0, 0, 0.08)'
+          : '0 25px 60px -15px rgba(79, 70, 229, 0.22), 0 10px 25px -5px rgba(0, 0, 0, 0.08)',
+        position: 'relative',
+        textAlign: 'center'
+      }}>
+        {/* Icon Badge */}
+        <div style={{
+          width: '68px', height: '68px', borderRadius: '22px',
+          background: isDanger
+            ? 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)'
+            : isWarning
+            ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+            : 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+          border: `1.5px solid ${isDanger ? '#fecdd3' : isWarning ? '#fcd34d' : '#818cf8'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '30px',
+          margin: '0 auto 20px',
+          boxShadow: `0 10px 24px ${isDanger ? 'rgba(225,29,72,0.18)' : isWarning ? 'rgba(245,158,11,0.18)' : 'rgba(99,102,241,0.18)'}`
+        }}>
+          {modal.icon}
+        </div>
+
+        {/* Text Content */}
+        <div style={{ marginBottom: '26px' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>
+            {modal.title}
+          </h3>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', fontWeight: '500', lineHeight: '1.5' }}>
+            {modal.subtitle}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={onClose}
+            className="btn"
+            style={{
+              flex: 1, padding: '13px',
+              borderRadius: '14px',
+              border: '1.5px solid #cbd5e1',
+              background: '#f8fafc',
+              color: '#475569',
+              fontSize: '14px', fontWeight: '700',
+              cursor: 'pointer'
+            }}
+          >
+            {modal.cancelText || "Cancel"}
+          </button>
+
+          <button
+            onClick={() => modal.onConfirm()}
+            disabled={actionLoading}
+            className="btn"
+            style={{
+              flex: 1, padding: '13px',
+              borderRadius: '14px',
+              border: 'none',
+              background: isDanger
+                ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)'
+                : isWarning
+                ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
+                : 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+              color: '#ffffff',
+              fontSize: '14px', fontWeight: '800',
+              cursor: 'pointer',
+              boxShadow: isDanger
+                ? '0 8px 20px rgba(225, 29, 72, 0.32)'
+                : isWarning
+                ? '0 8px 20px rgba(217, 119, 6, 0.32)'
+                : '0 8px 20px rgba(79, 70, 229, 0.32)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+            }}
+          >
+            {actionLoading ? <IconSpinner /> : modal.confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DikshaAutomationPage() {
   const [stage, setStage] = useState<Stage>("login");
   const [username, setUsername] = useState("");
@@ -166,7 +292,7 @@ export default function DikshaAutomationPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const [expandedModuleIdxs, setExpandedModuleIdxs] = useState<Record<number, boolean>>({});
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<ModalConfig | null>(null);
   const [copiedLogs, setCopiedLogs] = useState(false);
 
   const handleCopyLogs = () => {
@@ -248,49 +374,40 @@ export default function DikshaAutomationPage() {
           setLoginVerified(false);
           setStage("dashboard");
           setElapsed(0);
-        }, 900);
+        }, 600);
       } else {
-        setLoginError(data.message || "Invalid credentials. Please try again.");
         setLoginLoading(false);
+        setLoginError("❌ Account verification failed. Please check credentials.");
       }
     } catch {
-      setLoginError("Could not reach the server. Please check your internet connection.");
       setLoginLoading(false);
+      setLoginError("❌ Connection error. Check server status.");
     }
   };
 
   const handleScanCourses = async () => {
     setScanning(true);
-    setScanMessage("Authenticating & scanning DIKSHA account... (may take 60-90 seconds)");
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 150000); // 150s timeout
+    setScanMessage("Starting course discovery...");
     try {
       const res = await fetch("/api/diksha/fetch-courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        signal: controller.signal,
       });
-      clearTimeout(timeout);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to scan enrolled courses.");
-      const ongoing: Course[] = (data.ongoing || []).map((c: Course) => ({ ...c, status: "ongoing" }));
-      const finished: Course[] = (data.finished || []).map((c: Course) => ({ ...c, status: "finished" }));
-      const fetchedList: Course[] = [...ongoing, ...finished];
-      setCourses(fetchedList);
-      setHasScanned(true);
-      if (fetchedList.length === 0) {
-        setScanMessage("⚠️ Scan complete but no courses found. Check Railway logs for details.");
+      if (!res.ok) throw new Error(data.detail || "Scan request failed.");
+
+      if (Array.isArray(data) && data.length > 0) {
+        setCourses(data);
+        setHasScanned(true);
+        setScanMessage(`✔ Successfully scanned ${data.length} course(s).`);
       } else {
-        setScanMessage(`Scan complete! Found ${ongoing.length} ongoing + ${finished.length} finished course(s).`);
+        setCourses([]);
+        setHasScanned(true);
+        setScanMessage(data.message || "Scan finished: No enrolled courses found on this account.");
       }
     } catch (err: unknown) {
-      clearTimeout(timeout);
-      if (err instanceof Error && err.name === "AbortError") {
-        setScanMessage("⏱️ Scan timed out after 150s. Railway may be starting up — try again in 30 seconds.");
-      } else {
-        setScanMessage(err instanceof Error ? `❌ ${err.message}` : "❌ Error scanning courses.");
-      }
+      setScanMessage(err instanceof Error ? err.message : "Error scanning courses.");
     } finally {
       setScanning(false);
     }
@@ -315,17 +432,63 @@ export default function DikshaAutomationPage() {
     }
   };
 
-  const handlePauseToggle = async () => {
-    setActionLoading(true);
-    try { await fetch("/api/diksha/pause", { method: "POST" }); } catch { /* silent */ }
-    finally { setActionLoading(false); }
+  const handlePauseToggle = () => {
+    const isCurrentlyPaused = status?.paused;
+    setConfirmModal({
+      open: true,
+      title: isCurrentlyPaused ? "Resume Automation?" : "Pause Automation?",
+      subtitle: isCurrentlyPaused
+        ? "Do you want to resume the active DIKSHA course automation process now?"
+        : "Are you sure you want to temporarily pause the current automation process?",
+      confirmText: isCurrentlyPaused ? "▶ Resume" : "⏸ Pause",
+      cancelText: "Cancel",
+      variant: "warning",
+      icon: isCurrentlyPaused ? "▶️" : "⏸️",
+      onConfirm: async () => {
+        setActionLoading(true);
+        setConfirmModal(null);
+        try { await fetch("/api/diksha/pause", { method: "POST" }); } catch { /* silent */ }
+        finally { setActionLoading(false); }
+      }
+    });
   };
 
-  const handleStop = async () => {
-    if (!confirm("Stop the current automation?")) return;
-    setActionLoading(true);
-    try { await fetch("/api/diksha/stop", { method: "POST" }); } catch { /* silent */ }
-    finally { setActionLoading(false); }
+  const handleStop = () => {
+    setConfirmModal({
+      open: true,
+      title: "Stop Automation?",
+      subtitle: "Are you sure you want to stop the active automation? Progress completed so far will be saved on the server.",
+      confirmText: "Yes, Stop Automation",
+      cancelText: "Cancel",
+      variant: "danger",
+      icon: "🛑",
+      onConfirm: async () => {
+        setActionLoading(true);
+        setConfirmModal(null);
+        try { await fetch("/api/diksha/stop", { method: "POST" }); } catch { /* silent */ }
+        finally { setActionLoading(false); }
+      }
+    });
+  };
+
+  const handleLogoutClick = () => {
+    setConfirmModal({
+      open: true,
+      title: "Confirm Logout",
+      subtitle: "Are you sure you want to log out of DIKSHA Courses? Any unsaved session will end.",
+      confirmText: "Yes, Logout",
+      cancelText: "Cancel",
+      variant: "danger",
+      icon: "🚪",
+      onConfirm: () => {
+        setConfirmModal(null);
+        setStage("login");
+        setCourses([]);
+        setHasScanned(false);
+        setStatus(null);
+        stopPolling();
+      }
+    });
   };
 
   const handleViewCourseDetails = async (course: Course) => {
@@ -681,7 +844,7 @@ export default function DikshaAutomationPage() {
               )}
 
               <button
-                onClick={() => setShowLogoutConfirm(true)}
+                onClick={handleLogoutClick}
                 className="btn"
                 style={{
                   padding:'8px 18px',fontSize:'12px',fontWeight:'800',
@@ -1039,7 +1202,7 @@ export default function DikshaAutomationPage() {
       </div>
 
       {/* ─── COURSE DETAILS MODAL ─── */}
-      {showDetailsModal && (
+      {showDetailsModal ? (
         <div style={{
           position:'fixed',inset:0,zIndex:9999,
           background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
@@ -1176,8 +1339,8 @@ export default function DikshaAutomationPage() {
                     <div style={{
                       display:'flex',flexDirection:'column',gap:'14px'
                     }}>
-                      {courseDetails.modules && courseDetails.modules.length > 0 ? (
-                        courseDetails.modules.map((m: any, idx: number) => {
+                      {Array.isArray(courseDetails.modules) && (courseDetails.modules as any[]).length > 0 ? (
+                        (courseDetails.modules as any[]).map((m: any, idx: number) => {
                           const isCourseComplete = selectedCourse?.progress === 100;
                           const rawPct = m.progress ?? (isCourseComplete || m.iscompleted ? 100 : 0);
                           const isDone = isCourseComplete || m.iscompleted || rawPct === 100;
@@ -1364,74 +1527,16 @@ export default function DikshaAutomationPage() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* ─── LOGOUT CONFIRMATION MODAL ─── */}
-      {showLogoutConfirm && (
-        <div style={{
-          position:'fixed',inset:0,zIndex:99999,
-          background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
-          display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
-        }}>
-          <div className="glass-card-light fade-in-up" style={{
-            width:'100%',maxWidth:'440px',borderRadius:'24px',overflow:'hidden',
-            padding:'32px 28px',textAlign:'center',
-            boxShadow:'0 25px 60px -15px rgba(0,0,0,0.25)',
-            border:'1px solid #e2e8f0',background:'#ffffff'
-          }}>
-            {/* Door/Warning Icon Badge */}
-            <div style={{
-              width:'68px',height:'68px',borderRadius:'22px',
-              background:'linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)',
-              border:'1.5px solid #fecdd3',color:'#e11d48',
-              display:'flex',alignItems:'center',justifyContent:'center',
-              margin:'0 auto 20px',boxShadow:'0 10px 24px rgba(225,29,72,0.12)'
-            }}>
-              <IconLogout />
-            </div>
-
-            <h3 style={{margin:'0 0 8px',fontSize:'20px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>
-              Confirm Logout
-            </h3>
-            <p style={{margin:'0 0 28px',fontSize:'14px',color:'#64748b',lineHeight:'1.5',fontWeight:'500'}}>
-              Are you sure you want to log out of DIKSHA Courses? Any unsaved session will end.
-            </p>
-
-            <div style={{display:'flex',gap:'12px'}}>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="btn"
-                style={{
-                  flex:1,padding:'12px 18px',fontSize:'13px',fontWeight:'800',
-                  background:'#f8fafc',border:'1.5px solid #cbd5e1',color:'#475569',
-                  borderRadius:'12px'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowLogoutConfirm(false);
-                  setStage("login");
-                  setCourses([]);
-                  setHasScanned(false);
-                  setStatus(null);
-                  stopPolling();
-                }}
-                className="btn"
-                style={{
-                  flex:1,padding:'12px 18px',fontSize:'13px',fontWeight:'800',
-                  background:'linear-gradient(135deg,#e11d48,#be123c)',color:'#ffffff',
-                  border:'none',borderRadius:'12px',
-                  boxShadow:'0 6px 20px rgba(225,29,72,0.25)'
-                }}
-              >
-                Yes, Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ─── PREMIUM CUSTOM CONFIRMATION DIALOG MODAL ─── */}
+      {confirmModal?.open ? (
+        <ConfirmModalDialog
+          modal={confirmModal}
+          onClose={() => setConfirmModal(null)}
+          actionLoading={actionLoading}
+        />
+      ) : null}
     </>
   );
 }
