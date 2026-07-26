@@ -467,10 +467,7 @@ export default function DikshaAutomationPage() {
                   }}
                 >
                   {loginVerified ? (
-                    <>
-                      <span style={{fontSize:'18px'}}>✅</span>
-                      Verified! Opening Dashboard…
-                    </>
+                    <>Verified! Opening Dashboard…</>
                   ) : loginLoading ? (
                     <>
                       <span style={{
