@@ -169,6 +169,8 @@
     let apiBase = localStorage.getItem("railway_api_url") || "";
     let evtSource = null;
     let statusTimer = null;
+    let hasNotifiedDone = false;
+    let audioCtx = null;
 
     // Restore saved URL
     if (apiBase) {
@@ -176,11 +178,53 @@
       connectStatus();
     }
 
+    // Request desktop notification permissions on first interaction
+    document.addEventListener("click", () => {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }, { once: true });
+
+    function playChimeSound(isSuccess = true) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const notes = isSuccess ? [523.25, 659.25, 783.99, 1046.50] : [440, 349.23];
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = isSuccess ? "sine" : "triangle";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.15, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 0.45);
+        });
+      } catch(e) {}
+    }
+
+    function triggerNotification(title, body, isSuccess = true) {
+      playChimeSound(isSuccess);
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification(title, {
+            body: body,
+            requireInteraction: true
+          });
+        } catch(e) {}
+      }
+    }
+
     async function connect() {
       apiBase = document.getElementById("api-url").value.replace(/\/$/, "");
       const courseUrl = document.getElementById("course-url").value.trim();
       if (!apiBase) { alert("Enter your Railway URL first."); return; }
       localStorage.setItem("railway_api_url", apiBase);
+      hasNotifiedDone = false;
 
       try {
         const r = await fetch(apiBase + "/api/run", {
@@ -252,6 +296,14 @@
       document.getElementById("pct-txt").textContent = pct + "% complete";
       if (d.current_module) document.getElementById("current-mod").textContent = "▶ " + d.current_module;
       document.getElementById("btn-stop").disabled = !d.running;
+
+      if (d.status === "done" && !hasNotifiedDone) {
+        hasNotifiedDone = true;
+        document.title = "🎉 (100% COMPLETE) DIKSHA Automation";
+        triggerNotification("🎉 Course Automation Complete!", "All modules and activities finished 100%!", true);
+      } else if (d.status === "running") {
+        document.title = `⚡ (${pct}%) DIKSHA Automation`;
+      }
     }
 
     function addLog(msg, cls = "info") {
@@ -262,6 +314,12 @@
       term.appendChild(line);
       while (term.children.length > 1500) term.removeChild(term.firstChild);
       term.scrollTop = term.scrollHeight;
+
+      if ((msg.includes("Course Completion Engine Finished") || msg.includes("All modules done")) && !hasNotifiedDone) {
+        hasNotifiedDone = true;
+        document.title = "🎉 (100% COMPLETE) DIKSHA Automation";
+        triggerNotification("🎓 DIKSHA Course Complete!", "All course modules have been completed successfully!", true);
+      }
     }
 
     function classifyLog(msg) {
