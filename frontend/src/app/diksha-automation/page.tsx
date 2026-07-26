@@ -834,8 +834,9 @@ export default function DikshaAutomationPage() {
           .mobile-email-wrapper { width: 100% !important; display: flex !important; margin-top: 0 !important; margin-bottom: 0 !important; }
           .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 40px !important; min-height: 40px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-email-text { max-width: 85% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
-          .mobile-btn-group { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-top: 0 !important; }
-          .mobile-btn { width: 100% !important; flex: 1 1 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 14px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-btn-group { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 0 !important; }
+          .mobile-btn, .mobile-status-badge { width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-full-grid { grid-column: 1 / -1 !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
           .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
@@ -906,7 +907,7 @@ export default function DikshaAutomationPage() {
             <div className="mobile-btn-group" style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
               {/* Status pill (Only shown when active/running/paused/done/error) */}
               {statusLabel !== "Idle" && (
-                <div style={{
+                <div className="mobile-status-badge" style={{
                   display:'inline-flex',alignItems:'center',gap:'8px',
                   padding:'8px 16px',fontSize:'12px',fontWeight:'800',
                   background:'#ffffff',border:`1.5px solid ${statusColor}40`,
@@ -955,7 +956,7 @@ export default function DikshaAutomationPage() {
 
               <button
                 onClick={handleLogoutClick}
-                className="btn mobile-btn"
+                className={`btn mobile-btn ${!isRunning && statusLabel === "Idle" ? "mobile-full-grid" : ""}`}
                 style={{
                   padding:'8px 18px',fontSize:'12px',fontWeight:'800',
                   background:'#ffffff',
@@ -979,7 +980,7 @@ export default function DikshaAutomationPage() {
                     {isDone ? '🎉' : isPaused ? '⏸' : isError ? '⚠️' : isStopped ? '⏹' : '⚙️'}
                   </div>
                   <div style={{minWidth:0}}>
-                    <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Bot Status</p>
+                    <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Automation Status</p>
                     <p style={{margin:'4px 0 0',fontSize:'14px',fontWeight:'700',color:'#0f172a',wordBreak:'break-word'}}>{currentStepMsg}</p>
                   </div>
                 </div>
