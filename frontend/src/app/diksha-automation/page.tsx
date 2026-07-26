@@ -862,8 +862,9 @@ export default function DikshaAutomationPage() {
         }
 
         @media (max-width: 640px) {
-          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px 12px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
+          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px 8px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
           .mobile-login-box { margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+          .diksha-root .glass-card { padding: 24px 20px !important; border-radius: 20px !important; width: 100% !important; max-width: 100% !important; }
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; gap: 10px !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
