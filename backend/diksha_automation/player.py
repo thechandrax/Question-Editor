@@ -647,7 +647,7 @@ class VideoPlayer:
                 window.__speedOverrideActive = true;
                 setInterval(() => {
                     document.querySelectorAll('video').forEach(v => {
-                        if (v.duration && (v.duration - v.currentTime <= 5)) {
+                        if (v.duration && (v.duration - v.currentTime <= 10)) {
                             v.playbackRate = 1.0;
                             v.defaultPlaybackRate = 1.0;
                         } else if (v.playbackRate !== 6.0) {
