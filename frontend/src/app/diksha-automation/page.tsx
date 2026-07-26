@@ -144,7 +144,7 @@ interface ModalConfig {
   confirmText: string;
   cancelText?: string;
   variant: "danger" | "warning" | "info";
-  icon: string;
+  icon: React.ReactNode;
   onConfirm: () => void | Promise<void>;
 }
 
@@ -462,7 +462,16 @@ export default function DikshaAutomationPage() {
       confirmText: isCurrentlyPaused ? "▶ Resume" : "⏸ Pause",
       cancelText: "Cancel",
       variant: "warning",
-      icon: isCurrentlyPaused ? "▶️" : "⏸️",
+      icon: isCurrentlyPaused ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" color="#b45309">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" color="#b45309">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      ),
       onConfirm: async () => {
         setActionLoading(true);
         setConfirmModal(null);
@@ -480,7 +489,11 @@ export default function DikshaAutomationPage() {
       confirmText: "Yes, Stop Automation",
       cancelText: "Cancel",
       variant: "danger",
-      icon: "🛑",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="currentColor" color="#e11d48">
+          <rect x="4" y="4" width="16" height="16" rx="3"/>
+        </svg>
+      ),
       onConfirm: async () => {
         setActionLoading(true);
         setConfirmModal(null);
@@ -498,7 +511,13 @@ export default function DikshaAutomationPage() {
       confirmText: "Yes, Logout",
       cancelText: "Cancel",
       variant: "danger",
-      icon: "🚪",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      ),
       onConfirm: async () => {
         setConfirmModal(null);
         try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
