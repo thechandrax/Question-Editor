@@ -48,8 +48,8 @@ class _DikshaLogCapture(logging.Handler):
         try:
             msg = f"[{record.levelname}] {record.getMessage()}"
             _diksha["logs"].append(msg)
-            if len(_diksha["logs"]) > 400:
-                _diksha["logs"] = _diksha["logs"][-300:]
+            if len(_diksha["logs"]) > 1000:
+                _diksha["logs"] = _diksha["logs"][-750:]
             lo = msg.lower()
             raw = record.getMessage()
 
@@ -784,7 +784,7 @@ async def get_diksha_status():
         "started_at": _diksha["started_at"],
         "courses": _diksha.get("courses", []),
         "current_course": _diksha.get("current_course"),
-        "logs": _diksha["logs"][-60:],
+        "logs": _diksha["logs"][-500:],
     }
 
 if __name__ == "__main__":
