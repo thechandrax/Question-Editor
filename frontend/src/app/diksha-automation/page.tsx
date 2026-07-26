@@ -1070,21 +1070,20 @@ export default function DikshaAutomationPage() {
                   </p>
                 </div>
               ) : courseDetails ? (
-                <div style={{display:'grid',gridTemplateColumns:'420px 1fr',gap:'32px',alignItems:'start'}}>
+                <div style={{display:'grid',gridTemplateColumns:'360px 1fr',gap:'28px',alignItems:'start'}}>
                   
                   {/* Left Column: Info & Description */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'20px',position:'sticky',top:0}}>
                     <div>
                       <h4 style={{margin:'0 0 10px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>About this Course</h4>
                       <div style={{
-                        background:'#f8fafc',padding:'20px',borderRadius:'16px',border:'1px solid #e2e8f0',
-                        maxHeight:'440px',overflowY:'auto'
+                        background:'#f8fafc',padding:'20px',borderRadius:'16px',border:'1px solid #e2e8f0'
                       }}>
                         <p style={{
                           margin:0,fontSize:'13px',color:'#334155',
-                          lineHeight:'1.8',whiteSpace:'pre-wrap',fontWeight:'500'
+                          lineHeight:'1.7',fontWeight:'500'
                         }}>
-                          {courseDetails.description || "No description provided by the DIKSHA portal."}
+                          {(courseDetails.description as string)?.split(/View more|Lesson Details|Course Overview/i)[0]?.trim() || "No description provided by the DIKSHA portal."}
                         </p>
                       </div>
                     </div>
@@ -1120,8 +1119,7 @@ export default function DikshaAutomationPage() {
                     </div>
                     
                     <div style={{
-                      display:'flex',flexDirection:'column',gap:'12px',
-                      maxHeight:'520px',overflowY:'auto',paddingRight:'6px'
+                      display:'flex',flexDirection:'column',gap:'14px'
                     }}>
                       {courseDetails.modules && courseDetails.modules.length > 0 ? (
                         courseDetails.modules.map((m: any, idx: number) => {
@@ -1198,8 +1196,8 @@ export default function DikshaAutomationPage() {
                               {/* EXPANDABLE MODULE CONTENTS (PDF & VIDEO DETAILS) */}
                               {isExpanded && (
                                 <div style={{
-                                  padding:'16px 20px',borderTop:'1px solid #e2e8f0',
-                                  background:'#f8fafc',display:'flex',flexDirection:'column',gap:'10px'
+                                  padding:'16px 20px',borderTop:'1.5px solid #e2e8f0',
+                                  background:'#f8fafc',display:'flex',flexDirection:'column',gap:'12px'
                                 }}>
                                   <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>
                                     Module Resources & Content Breakdown
