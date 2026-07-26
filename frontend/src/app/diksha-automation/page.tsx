@@ -618,17 +618,17 @@ export default function DikshaAutomationPage() {
             <div style={{textAlign:'center',marginBottom:'18px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
-                width:'78px',height:'78px',borderRadius:'24px',
-                background:'#ffffff',
-                padding:'10px',
-                border:'1.5px solid rgba(99,102,241,0.22)',
+                width:'84px',height:'84px',borderRadius:'26px',
+                background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                padding:'12px',
+                border:'1.5px solid rgba(99,102,241,0.25)',
                 boxShadow:'0 16px 36px -10px rgba(79,70,229,0.25), 0 0 20px rgba(99,102,241,0.12)',
                 marginBottom:'14px'
               }}>
                 <img
                   src="/diksha-logo.png"
                   alt="DIKSHA Official Logo"
-                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.06))'}}
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 4px 10px rgba(79,70,229,0.15))'}}
                 />
               </div>
               <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 3px',letterSpacing:'-0.5px'}}>
@@ -838,12 +838,13 @@ export default function DikshaAutomationPage() {
                 background:'#ffffff',padding:'6px',
                 border:'1.5px solid rgba(99,102,241,0.22)',
                 boxShadow:'0 8px 22px rgba(79,70,229,0.18)',
-                flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'
+                flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                overflow:'hidden'
               }}>
                 <img
                   src="/diksha-logo.png"
                   alt="DIKSHA Official Logo"
-                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.06))'}}
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 6px rgba(79,70,229,0.12))'}}
                 />
               </div>
               <div style={{minWidth:0,flex:1}}>
