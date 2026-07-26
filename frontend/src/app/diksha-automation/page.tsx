@@ -95,6 +95,7 @@ export default function DikshaAutomationPage() {
   const [stage, setStage] = useState<Stage>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -154,8 +155,12 @@ export default function DikshaAutomationPage() {
   const handleSimpleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
-    if (!username || !password) {
-      setLoginError("Please enter your DIKSHA username and password.");
+    if (!username || !password || !pin) {
+      setLoginError("Please enter your username, password, and 6-digit Admin Security PIN.");
+      return;
+    }
+    if (pin.trim() !== "452389") {
+      setLoginError("❌ Invalid Admin Security PIN. Access Denied.");
       return;
     }
     setLoginLoading(true);
@@ -164,7 +169,7 @@ export default function DikshaAutomationPage() {
       const res = await fetch("/api/diksha/verify-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, pin }),
       });
       const data = await res.json();
       if (data.valid) {
@@ -398,6 +403,22 @@ export default function DikshaAutomationPage() {
                       {showPass ? '🙈' : '👁️'}
                     </button>
                   </div>
+                </div>
+
+                <div>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'800',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
+                    🔑 Admin Security PIN (6 Digits)
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    required
+                    placeholder="Enter 6-Digit PIN (e.g. 452389)"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    className="input-field"
+                    style={{letterSpacing:'0.25em',fontFamily:'JetBrains Mono, monospace',fontWeight:'700',fontSize:'16px'}}
+                  />
                 </div>
 
                 <button
