@@ -81,6 +81,22 @@ const IconLogout = () => (
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 );
+const IconBook = ({ size = 16 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+    <path d="M6.5 6H20"/>
+  </svg>
+);
+const IconTrophy = ({ size = 16 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/>
+    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+  </svg>
+);
 const IconScan = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -733,13 +749,14 @@ export default function DikshaAutomationPage() {
                       background: isActive ? '' : '#f8fafc',
                       border:`1px solid ${isActive ? '' : '#e2e8f0'}`,
                       color: isActive ? '' : '#475569',
-                      borderRadius:'12px'
+                      borderRadius:'12px',
+                      display:'inline-flex',alignItems:'center',gap:'8px'
                     }}
                   >
-                    <span style={{marginRight:'6px'}}>{tab === 'ongoing' ? '📚' : '🏆'}</span>
-                    {tab === 'ongoing' ? 'Ongoing' : 'Finished'} Courses
+                    {tab === 'ongoing' ? <IconBook size={16}/> : <IconTrophy size={16}/>}
+                    <span>{tab === 'ongoing' ? 'Ongoing' : 'Finished'} Courses</span>
                     <span style={{
-                      marginLeft:'8px',fontSize:'11px',fontWeight:'800',padding:'2px 8px',borderRadius:'20px',
+                      marginLeft:'4px',fontSize:'11px',fontWeight:'800',padding:'2px 8px',borderRadius:'20px',
                       background: isActive ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
                       color: isActive ? '#ffffff' : '#64748b'
                     }}>{count}</span>
@@ -750,21 +767,32 @@ export default function DikshaAutomationPage() {
 
             {/* Course Cards */}
             {!hasScanned && !scanning ? (
-              <div style={{padding:'56px 24px',textAlign:'center',background:'#f8fafc',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
-                <div style={{width:'80px',height:'80px',borderRadius:'24px',background:'linear-gradient(135deg,#e0e7ff,#c7d2fe)',border:'1px solid #a5b4fc',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',fontSize:'36px'}}>
-                  🔍
+              <div style={{padding:'52px 24px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0',boxShadow:'0 4px 20px rgba(15,23,42,0.03)'}}>
+                <div style={{
+                  width:'76px',height:'76px',borderRadius:'24px',
+                  background:'linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%)',
+                  border:'1px solid #a5b4fc',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  margin:'0 auto 18px',color:'#4f46e5',
+                  boxShadow:'0 10px 25px -5px rgba(79,70,229,0.2)'
+                }}>
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
                 </div>
-                <h3 style={{margin:'0 0 8px',fontSize:'18px',fontWeight:'800',color:'#0f172a'}}>Scan Your Enrolled Courses</h3>
-                <p style={{margin:'0 0 24px',fontSize:'14px',color:'#64748b',maxWidth:'400px',lineHeight:'1.6',marginLeft:'auto',marginRight:'auto',fontWeight:'500'}}>
-                  The bot will login to DIKSHA and fetch all your ongoing and finished enrolled courses.
+                <h3 style={{margin:'0 0 8px',fontSize:'20px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>Scan Your Enrolled Courses</h3>
+                <p style={{margin:'0 0 24px',fontSize:'14px',color:'#64748b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontWeight:'600',lineHeight:'1.4'}}>
+                  Automatically scan your DIKSHA account to discover all active and completed enrolled courses.
                 </p>
-                <button onClick={handleScanCourses} className="btn" style={{padding:'12px 28px',fontSize:'14px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
+                <button onClick={handleScanCourses} className="btn" style={{padding:'13px 30px',fontSize:'14px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
                   <IconScan/> Scan Enrolled Courses Now
                 </button>
               </div>
             ) : displayedCourses.length === 0 ? (
-              <div style={{padding:'48px 24px',textAlign:'center',background:'#f8fafc',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
-                <div style={{fontSize:'44px',marginBottom:'12px'}}>{activeTab === 'ongoing' ? '📚' : '🏆'}</div>
+              <div style={{padding:'48px 24px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
+                <div style={{display:'flex',justifyContent:'center',marginBottom:'12px',color:'#6366f1'}}>
+                  {activeTab === 'ongoing' ? <IconBook size={40}/> : <IconTrophy size={40}/>}
+                </div>
                 <h3 style={{margin:'0 0 6px',fontSize:'16px',fontWeight:'800',color:'#475569'}}>No {activeTab} courses found</h3>
                 <p style={{margin:0,fontSize:'13px',color:'#94a3b8'}}>Try scanning again or switch tabs.</p>
               </div>
