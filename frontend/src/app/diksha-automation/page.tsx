@@ -264,6 +264,7 @@ function ConfirmModalDialog({ modal, onClose, actionLoading }: ConfirmModalProps
 }
 
 export default function DikshaAutomationPage() {
+  const [isInitializing, setIsInitializing] = useState(true);
   const [stage, setStage] = useState<Stage>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -313,7 +314,7 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  // Restore session from localStorage on page refresh (F5 / reload)
+  // Restore session from localStorage on page refresh (F5 / reload) without flashing login screen
   useEffect(() => {
     try {
       const saved = localStorage.getItem("diksha_session");
@@ -326,7 +327,9 @@ export default function DikshaAutomationPage() {
           setStage("dashboard");
         }
       }
-    } catch {}
+    } catch {} finally {
+      setIsInitializing(false);
+    }
   }, []);
 
   // Auto clear scan toast message after 30 seconds
@@ -572,6 +575,24 @@ export default function DikshaAutomationPage() {
       setDetailsLoading(false);
     }
   };
+
+  /* ─── INITIALIZING AMBIENT SPLASH (Zero Flash on Refresh) ─────────────── */
+  if (isInitializing) {
+    return (
+      <div style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{
+          width:'64px',height:'64px',borderRadius:'20px',
+          background:'#ffffff',padding:'8px',
+          border:'1.5px solid rgba(99,102,241,0.25)',
+          boxShadow:'0 12px 28px -8px rgba(79,70,229,0.22)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          opacity:0.9
+        }}>
+          <img src="/diksha-logo.png" alt="DIKSHA Official Logo" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+        </div>
+      </div>
+    );
+  }
 
   /* ─── LOGIN PAGE ──────────────────────────────────────────────────────── */
   if (stage === "login") {
