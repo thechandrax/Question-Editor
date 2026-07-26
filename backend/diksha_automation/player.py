@@ -173,55 +173,84 @@ class VideoPlayer:
         return COURSE_1186_MODULES
 
     def _parse_module_list_from_dom(self) -> list:
+        """
+        Dynamically extracts all course module/section accordion items from page DOM.
+        Works across all languages (English, Hindi, Bengali, Assamese).
+        """
         try:
             modules = []
-            for item in COURSE_1186_MODULES:
-                mod_id = item["id"]
-                mod_name = item["name"]
-                is_done = False
-                
-                for sel in [
-                    f"#nav-modules [data-id='{mod_id}']",
-                    f"#nav-modules [id*='{mod_id}']",
-                    f"[data-id='{mod_id}']",
-                ]:
-                    try:
-                        el = self.page.query_selector(sel)
-                        if el:
-                            parent = el.evaluate_handle("""(node) => {
-                                let p = node;
-                                while (p && p.tagName !== 'BODY') {
-                                    if (p.classList.contains('panel') || 
-                                        p.classList.contains('card') || 
-                                        p.classList.contains('section')) return p;
-                                    p = p.parentElement;
-                                }
-                                return node;
-                            }""").as_element()
-                            if parent:
-                                checkmark = parent.query_selector(
-                                    ".fa-check, .fa-check-circle, .micon-check_circle, "
-                                    ".check-icon, .p100, [title='100%'], [class*='check'], [class*='complete']"
-                                )
-                                if checkmark and checkmark.is_visible():
-                                    is_done = True
-                                    break
-                    except Exception:
-                        pass
-                
-                modules.append({
-                    "id": mod_id,
-                    "name": mod_name,
-                    "progress": 100 if is_done else 0,
-                    "iscompleted": is_done,
-                })
-            
-            completed_count = sum(1 for m in modules if m["iscompleted"])
-            logger.info(f"DOM parse found {completed_count} completed module(s) on page.")
-            return modules
+            seen_ids = set()
+
+            # Find all section triggers on the page with data-id or section id
+            triggers = self.page.query_selector_all(
+                "#nav-modules [data-id], #nav-modules [id*='section'], "
+                "#nav-modules .section, #nav-modules .accordion-item, "
+                "[data-id], .section-title, .accordion-header, "
+                "a[href*='modeActive='], button[data-id]"
+            )
+
+            for tr in triggers:
+                try:
+                    mod_id = (
+                        tr.get_attribute("data-id") or
+                        tr.get_attribute("data-sectionid") or
+                        tr.get_attribute("id") or ""
+                    )
+                    href = tr.get_attribute("href") or ""
+                    if "modeActive=" in href:
+                        mod_id = href.split("modeActive=")[1].split("&")[0]
+
+                    mod_id = mod_id.replace("section-", "").replace("accordion-item-", "").strip()
+
+                    if not mod_id or not mod_id.isdigit() or mod_id in seen_ids:
+                        continue
+
+                    mod_name = tr.inner_text().strip().split("\n")[0]
+                    if not mod_name:
+                        continue
+
+                    seen_ids.add(mod_id)
+
+                    # Check checkmark completion status
+                    is_done = False
+                    parent = tr.evaluate_handle("""(node) => {
+                        let p = node;
+                        while (p && p.tagName !== 'BODY') {
+                            if (p.classList.contains('panel') || 
+                                p.classList.contains('card') || 
+                                p.classList.contains('section') ||
+                                p.classList.contains('accordion-item')) return p;
+                            p = p.parentElement;
+                        }
+                        return node;
+                    }""").as_element()
+
+                    if parent:
+                        checkmark = parent.query_selector(
+                            ".fa-check, .fa-check-circle, .micon-check_circle, "
+                            ".check-icon, .p100, [title='100%'], [class*='check'], [class*='complete']"
+                        )
+                        if checkmark and checkmark.is_visible():
+                            is_done = True
+
+                    modules.append({
+                        "id": mod_id,
+                        "name": mod_name,
+                        "progress": 100 if is_done else 0,
+                        "iscompleted": is_done,
+                    })
+                except Exception:
+                    pass
+
+            if modules:
+                completed_count = sum(1 for m in modules if m["iscompleted"])
+                logger.info(f"Dynamic DOM parse found {len(modules)} module(s) ({completed_count} completed).")
+                return modules
         except Exception as e:
             logger.warning(f"DOM module list parse note: {e}")
-            return COURSE_1186_MODULES
+
+        # Fallback to hardcoded list if dynamic parse returns empty
+        return COURSE_1186_MODULES
 
     def _build_module_url(self, course_url: str, module_id: str) -> str:
         """Build the direct URL for a module section."""
