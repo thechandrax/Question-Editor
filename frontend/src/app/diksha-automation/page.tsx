@@ -939,12 +939,14 @@ export default function DikshaAutomationPage() {
                 <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'12px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>{logsList.length} lines</span>
+                <span style={{fontSize:'12px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>
+                  {logsList.length} lines (max 500)
+                </span>
                 <button
                   onClick={() => setShowLogs(!showLogs)}
                   style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}
                 >
-                  {showLogs ? 'Collapse' : 'Expand'}
+                  {showLogs ? 'Collapse' : 'Expand (500px)'}
                 </button>
               </div>
             </div>
@@ -953,7 +955,7 @@ export default function DikshaAutomationPage() {
               ref={logRef}
               style={{
                 background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'16px',
-                height: showLogs ? '420px' : '260px',
+                height: showLogs ? '500px' : '280px',
                 overflowY:'auto',
                 transition:'height 0.3s ease'
               }}
@@ -963,7 +965,7 @@ export default function DikshaAutomationPage() {
                   Waiting for live log stream from Railway automation backend...
                 </p>
               ) : (
-                logsList.map((line, i) => {
+                logsList.slice(-500).map((line, i) => {
                   const isErr = line.includes('[ERROR]') || line.includes('[CRITICAL]') || line.includes('❌');
                   const isWarn = line.includes('[WARNING]');
                   const isInfo = line.includes('[INFO]') || line.includes('✔') || line.includes('100%');
