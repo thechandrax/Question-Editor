@@ -788,7 +788,7 @@ export default function DikshaAutomationPage() {
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
-          .mobile-email-pill { max-width: 150px !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: inline-block !important; }
+          .mobile-email-pill { max-width: 240px !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; }
           .mobile-btn-group { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
           .mobile-btn { flex: 1 1 auto !important; min-width: 100px !important; padding: 10px 12px !important; font-size: 11px !important; justify-content: center !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
@@ -823,13 +823,26 @@ export default function DikshaAutomationPage() {
                 </div>
               </div>
               <div style={{minWidth:0,flex:1}}>
-                <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
-                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px',whiteSpace:'nowrap'}}>DIKSHA COURSES</h1>
-                  <span className="mobile-email-pill" style={{fontSize:'11px',fontWeight:'700',color:'#4f46e5',background:'rgba(99,102,241,0.1)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'20px',padding:'3px 10px'}}>
-                    {username || "User"}
+                <h1 style={{margin:0,fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px',lineHeight:'1.2'}}>DIKSHA COURSES</h1>
+                <p style={{margin:'2px 0 6px',fontSize:'12px',color:'#64748b',fontWeight:'600',lineHeight:'1.3'}}>My Learning Journey & Course Automation</p>
+                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                  <span className="mobile-email-pill" style={{
+                    fontSize:'11px',
+                    fontWeight:'700',
+                    color:'#4f46e5',
+                    background:'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.12) 100%)',
+                    border:'1px solid rgba(99,102,241,0.25)',
+                    borderRadius:'20px',
+                    padding:'4px 12px',
+                    display:'inline-flex',
+                    alignItems:'center',
+                    gap:'6px',
+                    boxShadow:'0 2px 6px rgba(79,70,229,0.06)'
+                  }}>
+                    <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#22c55e',display:'inline-block',boxShadow:'0 0 6px #22c55e',flexShrink:0}}/>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{username || "User"}</span>
                   </span>
                 </div>
-                <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'500',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>My Learning Journey & Course Automation</p>
               </div>
             </div>
 
