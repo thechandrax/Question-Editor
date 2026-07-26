@@ -267,7 +267,6 @@ export default function DikshaAutomationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, course_url: course.url }),
-      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to load course details.");
       if (data.success === false) throw new Error(data.error || "Failed to scrape course details.");
@@ -284,90 +283,88 @@ export default function DikshaAutomationPage() {
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-          .diksha-root * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-          @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-          @keyframes glow-pulse { 0%,100%{opacity:0.15} 50%{opacity:0.35} }
-          @keyframes spin-slow { to{transform:rotate(360deg)} }
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+          .diksha-root * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+          @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+          @keyframes glow-pulse { 0%,100%{opacity:0.25} 50%{opacity:0.55} }
           .float-anim { animation: float 6s ease-in-out infinite; }
           .glow-orb { animation: glow-pulse 4s ease-in-out infinite; }
-          .spin-ring { animation: spin-slow 8s linear infinite; }
           .glass-card {
-            background: rgba(15,23,42,0.80);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 20px 50px -10px rgba(79, 70, 229, 0.08), 0 10px 20px -5px rgba(0, 0, 0, 0.04);
           }
           .input-field {
-            background: rgba(2,6,23,0.70);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: white;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            color: #0f172a;
             width: 100%;
-            padding: 12px 16px;
+            padding: 13px 16px;
             border-radius: 12px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
           }
-          .input-field:focus { border-color: rgba(249,115,22,0.6); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
-          .input-field::placeholder { color: rgba(148,163,184,0.5); }
+          .input-field:focus { border-color: #6366f1; background: #ffffff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
+          .input-field::placeholder { color: #94a3b8; }
           .btn-primary {
             width: 100%;
-            padding: 13px;
+            padding: 14px;
             border-radius: 12px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 15px;
             color: white;
-            background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%);
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.2s;
-            box-shadow: 0 8px 24px rgba(234,88,12,0.3);
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
           }
-          .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(234,88,12,0.4); }
+          .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(79, 70, 229, 0.4); }
           .btn-primary:active { transform: translateY(0); }
         `}</style>
-        <div className="diksha-root" style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',position:'relative',overflow:'hidden'}}>
-          {/* Animated background orbs */}
-          <div className="glow-orb" style={{position:'absolute',top:'10%',left:'20%',width:'500px',height:'500px',background:'radial-gradient(circle,rgba(234,88,12,0.2) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none'}}/>
-          <div className="glow-orb" style={{position:'absolute',bottom:'10%',right:'15%',width:'400px',height:'400px',background:'radial-gradient(circle,rgba(245,158,11,0.15) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none',animationDelay:'2s'}}/>
-          <div className="glow-orb" style={{position:'absolute',top:'50%',right:'25%',width:'300px',height:'300px',background:'radial-gradient(circle,rgba(139,92,246,0.1) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none',animationDelay:'1s'}}/>
+        <div className="diksha-root" style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',position:'relative',overflow:'hidden'}}>
+          {/* Animated background glowing gradient orbs */}
+          <div className="glow-orb" style={{position:'absolute',top:'5%',left:'15%',width:'550px',height:'550px',background:'radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none'}}/>
+          <div className="glow-orb" style={{position:'absolute',bottom:'5%',right:'10%',width:'450px',height:'450px',background:'radial-gradient(circle,rgba(234,88,12,0.12) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none',animationDelay:'2s'}}/>
 
           {/* Grid pattern overlay */}
-          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
+          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
 
-          <div style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
+          <div style={{width:'100%',maxWidth:'450px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
             <div className="float-anim" style={{textAlign:'center',marginBottom:'32px'}}>
-              <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'72px',height:'72px',borderRadius:'20px',background:'linear-gradient(135deg,#ea580c,#f59e0b)',padding:'2px',boxShadow:'0 16px 48px rgba(234,88,12,0.4)',marginBottom:'20px'}}>
-                <div style={{width:'100%',height:'100%',background:'#030712',borderRadius:'18px',display:'flex',alignItems:'center',justifyContent:'center',color:'#f97316'}}>
+              <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'76px',height:'76px',borderRadius:'22px',background:'linear-gradient(135deg,#4f46e5,#6366f1)',padding:'3px',boxShadow:'0 16px 40px rgba(79,70,229,0.3)',marginBottom:'20px'}}>
+                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'19px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
                   <IconGraduate/>
                 </div>
               </div>
-              <h1 style={{fontSize:'28px',fontWeight:'900',color:'white',margin:'0 0 8px',letterSpacing:'-0.5px',background:'linear-gradient(135deg,#ffffff 30%,rgba(255,255,255,0.6))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+              <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 8px',letterSpacing:'-0.5px'}}>
                 DIKSHA Automation
               </h1>
-              <p style={{color:'rgba(148,163,184,0.8)',fontSize:'13px',margin:0,lineHeight:'1.6'}}>
-                Complete your courses automatically — fast, reliable & secure
+              <p style={{color:'#64748b',fontSize:'14px',margin:0,lineHeight:'1.6',fontWeight:'500'}}>
+                Ultra Pro Course Automation Platform
               </p>
             </div>
 
             {/* Glass Card */}
-            <div className="glass-card" style={{borderRadius:'24px',padding:'32px',boxShadow:'0 24px 80px rgba(0,0,0,0.6)'}}>
+            <div className="glass-card" style={{borderRadius:'24px',padding:'36px'}}>
               {loginError && (
-                <div style={{marginBottom:'20px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:'12px',padding:'12px 16px',display:'flex',gap:'10px',alignItems:'flex-start'}}>
+                <div style={{marginBottom:'20px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'12px',padding:'12px 16px',display:'flex',gap:'10px',alignItems:'flex-start'}}>
                   <span style={{fontSize:'16px'}}>⚠️</span>
-                  <p style={{color:'#fca5a5',fontSize:'12px',margin:0,lineHeight:'1.5'}}>{loginError}</p>
+                  <p style={{color:'#dc2626',fontSize:'13px',margin:0,lineHeight:'1.5',fontWeight:'600'}}>{loginError}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'18px'}}>
+              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'20px'}}>
                 <div>
-                  <label style={{display:'block',fontSize:'11px',fontWeight:'600',color:'rgba(148,163,184,0.9)',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.08em'}}>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'700',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
                     DIKSHA Username / Mobile
                   </label>
                   <input
@@ -381,7 +378,7 @@ export default function DikshaAutomationPage() {
                 </div>
 
                 <div>
-                  <label style={{display:'block',fontSize:'11px',fontWeight:'600',color:'rgba(148,163,184,0.9)',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.08em'}}>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'700',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
                     Password
                   </label>
                   <div style={{position:'relative'}}>
@@ -397,7 +394,7 @@ export default function DikshaAutomationPage() {
                     <button
                       type="button"
                       onClick={() => setShowPass(!showPass)}
-                      style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'rgba(148,163,184,0.6)',cursor:'pointer',fontSize:'16px',padding:'4px'}}
+                      style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'18px',padding:'4px'}}
                     >
                       {showPass ? '🙈' : '👁️'}
                     </button>
@@ -409,14 +406,13 @@ export default function DikshaAutomationPage() {
                   className="btn-primary"
                   disabled={loginLoading}
                   style={{
-                    marginTop: '4px',
+                    marginTop: '6px',
                     background: loginVerified
-                      ? 'linear-gradient(135deg,#22c55e,#16a34a)'
+                      ? 'linear-gradient(135deg,#10b981,#059669)'
                       : loginLoading
-                      ? 'linear-gradient(135deg,rgba(251,146,60,0.6),rgba(245,101,46,0.6))'
+                      ? 'linear-gradient(135deg,#818cf8,#6366f1)'
                       : undefined,
                     cursor: loginLoading ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s ease',
                   }}
                 >
                   {loginVerified ? (
@@ -428,7 +424,7 @@ export default function DikshaAutomationPage() {
                     <>
                       <span style={{
                         display:'inline-block',
-                        width:'16px', height:'16px',
+                        width:'18px', height:'18px',
                         border:'2px solid rgba(255,255,255,0.3)',
                         borderTop:'2px solid #fff',
                         borderRadius:'50%',
@@ -444,39 +440,19 @@ export default function DikshaAutomationPage() {
                     </>
                   )}
                 </button>
-
-                {/* Error message */}
-                {loginError && (
-                  <div style={{
-                    marginTop:'12px',
-                    padding:'10px 14px',
-                    background:'rgba(239,68,68,0.12)',
-                    border:'1px solid rgba(239,68,68,0.3)',
-                    borderRadius:'10px',
-                    color:'#fca5a5',
-                    fontSize:'13px',
-                    lineHeight:'1.5',
-                    display:'flex',
-                    alignItems:'flex-start',
-                    gap:'8px',
-                  }}>
-                    <span style={{flexShrink:0,marginTop:'1px'}}>⚠️</span>
-                    <span>{loginError}</span>
-                  </div>
-                )}
               </form>
 
               {/* Security note */}
-              <div style={{marginTop:'20px',paddingTop:'20px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
-                <span style={{fontSize:'12px'}}>🔒</span>
-                <span style={{fontSize:'11px',color:'rgba(100,116,139,0.8)'}}>Secured via Keycloak SSO · DIKSHA Portal</span>
+              <div style={{marginTop:'24px',paddingTop:'20px',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+                <span style={{fontSize:'13px'}}>🔒</span>
+                <span style={{fontSize:'12px',color:'#64748b',fontWeight:'500'}}>Secured via Keycloak SSO · DIKSHA Portal</span>
               </div>
             </div>
 
             {/* Feature pills */}
-            <div style={{display:'flex',justifyContent:'center',gap:'8px',marginTop:'20px',flexWrap:'wrap'}}>
+            <div style={{display:'flex',justifyContent:'center',gap:'8px',marginTop:'24px',flexWrap:'wrap'}}>
               {['Auto-Login','Course Scan','Progress Track','Pause & Stop'].map((f) => (
-                <span key={f} style={{fontSize:'10px',fontWeight:'600',color:'rgba(148,163,184,0.6)',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',padding:'4px 10px'}}>
+                <span key={f} style={{fontSize:'11px',fontWeight:'600',color:'#4f46e5',background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.18)',borderRadius:'20px',padding:'5px 12px'}}>
                   {f}
                 </span>
               ))}
@@ -497,81 +473,79 @@ export default function DikshaAutomationPage() {
   const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
   const logsList = status?.logs || [];
 
-  // Use status field ONLY — deduplication is handled on the backend
   const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
   const finishedCourses = courses.filter((c) => c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
 
-  const statusColor = isDone ? "#10b981" : isPaused ? "#f59e0b" : isStopped ? "#64748b" : isError ? "#ef4444" : "#f97316";
+  const statusColor = isDone ? "#10b981" : isPaused ? "#f59e0b" : isStopped ? "#64748b" : isError ? "#ef4444" : "#6366f1";
   const statusLabel = isDone ? "Completed" : isPaused ? "Paused" : isStopped ? "Stopped" : isError ? "Error" : isRunning ? "Running" : "Idle";
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        .dash-root * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        .dash-root * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
         @keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.7} }
         @keyframes progress-shine { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @keyframes fade-in-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes ping { 0%{transform:scale(1);opacity:1} 75%,100%{transform:scale(2);opacity:0} }
-        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-        .fade-in-up { animation: fade-in-up 0.4s ease both; }
-        .ping-anim::after { content:''; position:absolute; inset:0; border-radius:50%; background:inherit; animation: ping 1.2s cubic-bezier(0,0,0.2,1) infinite; }
-        .glass { background:rgba(15,23,42,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.07); }
-        .glass-dark { background:rgba(2,6,23,0.70); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.05); }
-        .card-hover { transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+        @keyframes fade-in-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        .fade-in-up { animation: fade-in-up 0.35s ease both; }
+        .glass-card-light {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+        }
+        .card-hover { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 16px 36px -8px rgba(79, 70, 229, 0.12); }
         .progress-bar-animated {
           background-size: 200% 100%;
-          background-image: linear-gradient(90deg, #ea580c 0%, #f59e0b 40%, #ea580c 80%, #f59e0b 100%);
+          background-image: linear-gradient(90deg, #4f46e5 0%, #8b5cf6 40%, #4f46e5 80%, #8b5cf6 100%);
           animation: progress-shine 2s linear infinite;
         }
-        .btn { border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:600; border-radius:10px; transition:all 0.2s; font-family:'Inter',sans-serif; }
-        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn { border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:700; border-radius:10px; transition:all 0.2s ease; font-family:'Plus Jakarta Sans',sans-serif; }
+        .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
-        .btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; filter:none; }
-        .tab-active { background: linear-gradient(135deg,rgba(234,88,12,0.2),rgba(245,158,11,0.15)) !important; border-color: rgba(249,115,22,0.5) !important; color: #fdba74 !important; }
-        .log-line { padding: 2px 0; border-radius:4px; font-size:11px; line-height:1.6; font-family:'Courier New',monospace; }
-        ::-webkit-scrollbar { width:4px; height:4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius:4px; }
-        input[type=text],input[type=password] { font-family:'Inter',sans-serif; }
+        .btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; filter:none; }
+        .tab-active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(79,70,229,0.3) !important; }
+        .log-line { padding: 3px 0; font-size:12px; line-height:1.6; font-family:'JetBrains Mono',monospace; }
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius:4px; }
       `}</style>
 
-      <div className="dash-root" style={{minHeight:'100vh',background:'#020617',color:'white',padding:'20px 16px',position:'relative'}}>
-        {/* Subtle BG grid */}
-        <div style={{position:'fixed',inset:0,backgroundImage:'linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none',zIndex:0}}/>
-        {/* Orange glow top */}
-        <div style={{position:'fixed',top:'-100px',left:'50%',transform:'translateX(-50%)',width:'700px',height:'300px',background:'radial-gradient(ellipse,rgba(234,88,12,0.12) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
+      <div className="dash-root" style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',color:'#0f172a',padding:'24px 16px',position:'relative'}}>
+        {/* Subtle grid background */}
+        <div style={{position:'fixed',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none',zIndex:0}}/>
+        {/* Top ambient blur */}
+        <div style={{position:'fixed',top:'-100px',left:'50%',transform:'translateX(-50%)',width:'800px',height:'300px',background:'radial-gradient(ellipse,rgba(99,102,241,0.10) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
 
         <div style={{maxWidth:'1200px',margin:'0 auto',position:'relative',zIndex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
 
           {/* ── TOP NAVBAR ─────────────────────────────────────────────── */}
-          <div className="glass" style={{borderRadius:'18px',padding:'14px 20px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-              <div style={{width:'40px',height:'40px',borderRadius:'12px',background:'linear-gradient(135deg,#ea580c,#f59e0b)',padding:'2px',boxShadow:'0 6px 20px rgba(234,88,12,0.35)',flexShrink:0}}>
-                <div style={{width:'100%',height:'100%',background:'#030712',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',color:'#f97316'}}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="glass-card-light" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+              <div style={{width:'44px',height:'44px',borderRadius:'14px',background:'linear-gradient(135deg,#4f46e5,#6366f1)',padding:'2px',boxShadow:'0 6px 20px rgba(79,70,229,0.3)',flexShrink:0}}>
+                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
                   </svg>
                 </div>
               </div>
               <div>
-                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                  <h1 style={{margin:0,fontSize:'15px',fontWeight:'800',color:'white',letterSpacing:'-0.3px'}}>DIKSHA Automation Portal</h1>
-                  <span style={{fontSize:'10px',fontWeight:'700',color:'#fb923c',background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.25)',borderRadius:'20px',padding:'2px 8px',letterSpacing:'0.05em'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>DIKSHA Automation Portal</h1>
+                  <span style={{fontSize:'11px',fontWeight:'700',color:'#4f46e5',background:'rgba(99,102,241,0.1)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'20px',padding:'3px 10px'}}>
                     {username || "User"}
                   </span>
                 </div>
-                <p style={{margin:0,fontSize:'11px',color:'rgba(100,116,139,0.9)'}}>My Learning Journey & Course Automation</p>
+                <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'500'}}>My Learning Journey & Course Automation</p>
               </div>
             </div>
 
-            <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
               {/* Status pill */}
-              <div style={{display:'flex',alignItems:'center',gap:'6px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',padding:'5px 12px'}}>
-                <div className={isRunning && !isPaused ? 'ping-anim' : ''} style={{width:'7px',height:'7px',borderRadius:'50%',background:statusColor,position:'relative',flexShrink:0}}/>
-                <span style={{fontSize:'11px',fontWeight:'600',color:statusColor}}>{statusLabel}</span>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'20px',padding:'6px 14px'}}>
+                <div style={{width:'8px',height:'8px',borderRadius:'50%',background:statusColor,position:'relative',flexShrink:0}}/>
+                <span style={{fontSize:'12px',fontWeight:'700',color:statusColor}}>{statusLabel}</span>
               </div>
 
               {isRunning && (
@@ -580,7 +554,7 @@ export default function DikshaAutomationPage() {
                     onClick={handlePauseToggle}
                     disabled={actionLoading}
                     className="btn"
-                    style={{padding:'7px 14px',fontSize:'12px',background: isPaused ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)',border:`1px solid ${isPaused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.1)'}`,color: isPaused ? '#fcd34d' : '#cbd5e1'}}
+                    style={{padding:'8px 16px',fontSize:'12px',background: isPaused ? '#fef3c7' : '#f1f5f9',border:`1px solid ${isPaused ? '#fcd34d' : '#cbd5e1'}`,color: isPaused ? '#b45309' : '#334155'}}
                   >
                     {isPaused ? '▶ Resume' : '⏸ Pause'}
                   </button>
@@ -588,7 +562,7 @@ export default function DikshaAutomationPage() {
                     onClick={handleStop}
                     disabled={actionLoading}
                     className="btn"
-                    style={{padding:'7px 14px',fontSize:'12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',color:'#fca5a5'}}
+                    style={{padding:'8px 16px',fontSize:'12px',background:'#fef2f2',border:'1px solid #fecaca',color:'#dc2626'}}
                   >
                     ⏹ Stop
                   </button>
@@ -598,7 +572,7 @@ export default function DikshaAutomationPage() {
               <button
                 onClick={() => { setStage("login"); setCourses([]); setHasScanned(false); setStatus(null); stopPolling(); }}
                 className="btn"
-                style={{padding:'7px 14px',fontSize:'12px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.8)'}}
+                style={{padding:'8px 16px',fontSize:'12px',background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#475569'}}
               >
                 🚪 Logout
               </button>
@@ -607,32 +581,32 @@ export default function DikshaAutomationPage() {
 
           {/* ── AUTOMATION STATUS BANNER ──────────────────────────────── */}
           {(isRunning || isDone || isStopped || isError) && (
-            <div className="glass fade-in-up" style={{borderRadius:'18px',padding:'20px 24px',border:`1px solid ${statusColor}22`}}>
-              <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'14px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-                  <div style={{width:'38px',height:'38px',borderRadius:'10px',background:`${statusColor}15`,border:`1px solid ${statusColor}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0}}>
+            <div className="glass-card-light fade-in-up" style={{borderRadius:'20px',padding:'24px',border:`1px solid ${statusColor}40`}}>
+              <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'16px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+                  <div style={{width:'42px',height:'42px',borderRadius:'12px',background:`${statusColor}15`,border:`1px solid ${statusColor}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
                     {isDone ? '🎉' : isPaused ? '⏸' : isError ? '⚠️' : isStopped ? '⏹' : '⚙️'}
                   </div>
                   <div>
-                    <p style={{margin:0,fontSize:'10px',fontWeight:'700',color:'rgba(100,116,139,0.9)',textTransform:'uppercase',letterSpacing:'0.08em'}}>Bot Status</p>
-                    <p style={{margin:'3px 0 0',fontSize:'13px',fontWeight:'700',color:'white'}}>{currentStepMsg}</p>
+                    <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Bot Status</p>
+                    <p style={{margin:'4px 0 0',fontSize:'14px',fontWeight:'700',color:'#0f172a'}}>{currentStepMsg}</p>
                   </div>
                 </div>
 
-                <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'20px'}}>
                   <div style={{textAlign:'right'}}>
-                    <p style={{margin:0,fontSize:'10px',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.05em'}}>Elapsed</p>
-                    <p style={{margin:0,fontSize:'16px',fontWeight:'800',color:'white',fontFamily:'monospace'}}>{formatTime(elapsed)}</p>
+                    <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Elapsed</p>
+                    <p style={{margin:'2px 0 0',fontSize:'18px',fontWeight:'800',color:'#0f172a',fontFamily:'JetBrains Mono, monospace'}}>{formatTime(elapsed)}</p>
                   </div>
                   <div style={{textAlign:'right'}}>
-                    <p style={{margin:0,fontSize:'10px',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.05em'}}>Progress</p>
-                    <p style={{margin:0,fontSize:'26px',fontWeight:'900',color:statusColor,lineHeight:1}}>{overallProgress}%</p>
+                    <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Progress</p>
+                    <p style={{margin:'2px 0 0',fontSize:'28px',fontWeight:'800',color:statusColor,lineHeight:1}}>{overallProgress}%</p>
                   </div>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div style={{background:'rgba(2,6,23,0.7)',borderRadius:'100px',height:'10px',border:'1px solid rgba(255,255,255,0.06)',overflow:'hidden'}}>
+              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'12px',overflow:'hidden'}}>
                 <div
                   className={isRunning && !isPaused ? 'progress-bar-animated' : ''}
                   style={{
@@ -641,7 +615,7 @@ export default function DikshaAutomationPage() {
                     borderRadius:'100px',
                     transition:'width 0.7s ease',
                     background: !isRunning || isPaused
-                      ? isDone ? 'linear-gradient(90deg,#10b981,#34d399)'
+                      ? isDone ? 'linear-gradient(90deg,#10b981,#059669)'
                         : isPaused ? '#f59e0b'
                         : isError ? '#ef4444'
                         : '#64748b'
@@ -649,31 +623,24 @@ export default function DikshaAutomationPage() {
                   }}
                 />
               </div>
-
-              {/* Step indicator dots */}
-              <div style={{display:'flex',gap:'4px',marginTop:'10px',alignItems:'center'}}>
-                {STEP_KEYWORDS.map((_, i) => (
-                  <div key={i} style={{flex:1,height:'3px',borderRadius:'2px',background: i <= currentStepIdx ? statusColor : 'rgba(255,255,255,0.07)',transition:'background 0.5s',opacity: i <= currentStepIdx ? 1 : 0.4}}/>
-                ))}
-              </div>
             </div>
           )}
 
           {/* ── COURSES SECTION ───────────────────────────────────────── */}
-          <div className="glass" style={{borderRadius:'18px',padding:'24px'}}>
+          <div className="glass-card-light" style={{borderRadius:'20px',padding:'28px'}}>
             {/* Header */}
-            <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'20px',paddingBottom:'20px',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+            <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'20px',paddingBottom:'20px',borderBottom:'1px solid #e2e8f0'}}>
               <div>
-                <h2 style={{margin:'0 0 4px',fontSize:'20px',fontWeight:'800',color:'white',letterSpacing:'-0.3px'}}>My Learning Journey</h2>
-                <p style={{margin:0,fontSize:'12px',color:'rgba(100,116,139,0.8)'}}>Enrolled courses · Progress tracking · Automation</p>
+                <h2 style={{margin:'0 0 4px',fontSize:'22px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px'}}>My Learning Journey</h2>
+                <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'500'}}>Enrolled courses · Progress tracking · Automation</p>
               </div>
 
-              <div style={{display:'flex',gap:'10px',flexWrap:'wrap'}}>
+              <div style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
                 <button
                   onClick={handleScanCourses}
                   disabled={scanning || isRunning}
                   className="btn"
-                  style={{padding:'10px 18px',fontSize:'12px',color:'white',background:'linear-gradient(135deg,#3b82f6,#6366f1)',boxShadow:'0 6px 20px rgba(99,102,241,0.25)'}}
+                  style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 6px 20px rgba(79,70,229,0.25)'}}
                 >
                   {scanning ? <><IconSpinner/> Scanning...</> : <><IconScan/> Scan Enrolled Courses</>}
                 </button>
@@ -683,9 +650,9 @@ export default function DikshaAutomationPage() {
                     onClick={() => handleStartAutomation()}
                     disabled={isRunning || actionLoading}
                     className="btn"
-                    style={{padding:'10px 18px',fontSize:'12px',color:'white',background:'linear-gradient(135deg,#ea580c,#f59e0b)',boxShadow:'0 6px 20px rgba(234,88,12,0.25)'}}
+                    style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#ea580c,#f59e0b)',boxShadow:'0 6px 20px rgba(234,88,12,0.25)'}}
                   >
-                    {actionLoading && automatingCourseUrl === 'all' ? <><IconSpinner/> Starting...</> : <><IconPlay size={13}/> Start All Automation ({ongoingCourses.length})</>}
+                    {actionLoading && automatingCourseUrl === 'all' ? <><IconSpinner/> Starting...</> : <><IconPlay size={14}/> Start All Automation ({ongoingCourses.length})</>}
                   </button>
                 )}
               </div>
@@ -694,11 +661,11 @@ export default function DikshaAutomationPage() {
             {/* Scan status toast */}
             {scanMessage && (
               <div style={{
-                marginBottom:'16px',padding:'10px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',
-                display:'flex',alignItems:'center',gap:'8px',
-                background: scanning ? 'rgba(59,130,246,0.08)' : scanMessage.includes('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)',
-                border: `1px solid ${scanning ? 'rgba(59,130,246,0.25)' : scanMessage.includes('Error') ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)'}`,
-                color: scanning ? '#93c5fd' : scanMessage.includes('Error') ? '#fca5a5' : '#6ee7b7'
+                marginBottom:'20px',padding:'12px 16px',borderRadius:'12px',fontSize:'13px',fontWeight:'600',
+                display:'flex',alignItems:'center',gap:'10px',
+                background: scanning ? '#eff6ff' : scanMessage.includes('Error') ? '#fef2f2' : '#ecfdf5',
+                border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecaca' : '#a7f3d0'}`,
+                color: scanning ? '#1d4ed8' : scanMessage.includes('Error') ? '#dc2626' : '#047857'
               }}>
                 <span>{scanning ? '⚙️' : scanMessage.includes('Error') ? '❌' : '✅'}</span>
                 {scanMessage}
@@ -706,7 +673,7 @@ export default function DikshaAutomationPage() {
             )}
 
             {/* Tabs */}
-            <div style={{display:'flex',gap:'8px',marginBottom:'20px'}}>
+            <div style={{display:'flex',gap:'10px',marginBottom:'24px'}}>
               {(['ongoing','finished'] as const).map((tab) => {
                 const count = tab === 'ongoing' ? ongoingCourses.length : finishedCourses.length;
                 const isActive = activeTab === tab;
@@ -716,19 +683,19 @@ export default function DikshaAutomationPage() {
                     onClick={() => setActiveTab(tab)}
                     className={`btn ${isActive ? 'tab-active' : ''}`}
                     style={{
-                      padding:'8px 16px',fontSize:'12px',fontWeight:'700',
-                      background: isActive ? '' : 'rgba(255,255,255,0.03)',
-                      border:`1px solid ${isActive ? '' : 'rgba(255,255,255,0.07)'}`,
-                      color: isActive ? '' : 'rgba(100,116,139,0.9)',
-                      borderRadius:'10px'
+                      padding:'10px 20px',fontSize:'13px',fontWeight:'700',
+                      background: isActive ? '' : '#f8fafc',
+                      border:`1px solid ${isActive ? '' : '#e2e8f0'}`,
+                      color: isActive ? '' : '#475569',
+                      borderRadius:'12px'
                     }}
                   >
                     <span style={{marginRight:'6px'}}>{tab === 'ongoing' ? '📚' : '🏆'}</span>
                     {tab === 'ongoing' ? 'Ongoing' : 'Finished'} Courses
                     <span style={{
-                      marginLeft:'6px',fontSize:'10px',fontWeight:'800',padding:'1px 7px',borderRadius:'20px',
-                      background: isActive ? 'rgba(249,115,22,0.2)' : 'rgba(255,255,255,0.06)',
-                      color: isActive ? '#fb923c' : 'rgba(148,163,184,0.7)'
+                      marginLeft:'8px',fontSize:'11px',fontWeight:'800',padding:'2px 8px',borderRadius:'20px',
+                      background: isActive ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                      color: isActive ? '#ffffff' : '#64748b'
                     }}>{count}</span>
                   </button>
                 );
@@ -737,110 +704,106 @@ export default function DikshaAutomationPage() {
 
             {/* Course Cards */}
             {!hasScanned && !scanning ? (
-              <div style={{padding:'48px 24px',textAlign:'center',background:'rgba(2,6,23,0.5)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.05)'}}>
-                <div style={{width:'72px',height:'72px',borderRadius:'20px',background:'linear-gradient(135deg,rgba(59,130,246,0.15),rgba(99,102,241,0.1))',border:'1px solid rgba(99,102,241,0.2)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:'32px'}}>
+              <div style={{padding:'56px 24px',textAlign:'center',background:'#f8fafc',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
+                <div style={{width:'80px',height:'80px',borderRadius:'24px',background:'linear-gradient(135deg,#e0e7ff,#c7d2fe)',border:'1px solid #a5b4fc',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',fontSize:'36px'}}>
                   🔍
                 </div>
-                <h3 style={{margin:'0 0 8px',fontSize:'16px',fontWeight:'700',color:'white'}}>Scan Your Enrolled Courses</h3>
-                <p style={{margin:'0 0 20px',fontSize:'13px',color:'rgba(100,116,139,0.8)',maxWidth:'380px',lineHeight:'1.7',marginLeft:'auto',marginRight:'auto'}}>
+                <h3 style={{margin:'0 0 8px',fontSize:'18px',fontWeight:'800',color:'#0f172a'}}>Scan Your Enrolled Courses</h3>
+                <p style={{margin:'0 0 24px',fontSize:'14px',color:'#64748b',maxWidth:'400px',lineHeight:'1.6',marginLeft:'auto',marginRight:'auto',fontWeight:'500'}}>
                   The bot will login to DIKSHA and fetch all your ongoing and finished enrolled courses.
                 </p>
-                <button onClick={handleScanCourses} className="btn" style={{padding:'11px 24px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#3b82f6,#6366f1)',boxShadow:'0 8px 24px rgba(99,102,241,0.3)'}}>
+                <button onClick={handleScanCourses} className="btn" style={{padding:'12px 28px',fontSize:'14px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
                   <IconScan/> Scan Enrolled Courses Now
                 </button>
               </div>
             ) : displayedCourses.length === 0 ? (
-              <div style={{padding:'40px 24px',textAlign:'center',background:'rgba(2,6,23,0.5)',borderRadius:'16px',border:'1px solid rgba(255,255,255,0.05)'}}>
-                <div style={{fontSize:'40px',marginBottom:'12px'}}>{activeTab === 'ongoing' ? '📚' : '🏆'}</div>
-                <h3 style={{margin:'0 0 6px',fontSize:'15px',fontWeight:'700',color:'rgba(148,163,184,0.8)'}}>No {activeTab} courses found</h3>
-                <p style={{margin:0,fontSize:'12px',color:'rgba(100,116,139,0.7)'}}>Try scanning again or switch tabs.</p>
+              <div style={{padding:'48px 24px',textAlign:'center',background:'#f8fafc',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
+                <div style={{fontSize:'44px',marginBottom:'12px'}}>{activeTab === 'ongoing' ? '📚' : '🏆'}</div>
+                <h3 style={{margin:'0 0 6px',fontSize:'16px',fontWeight:'800',color:'#475569'}}>No {activeTab} courses found</h3>
+                <p style={{margin:0,fontSize:'13px',color:'#94a3b8'}}>Try scanning again or switch tabs.</p>
               </div>
             ) : (
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:'16px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:'20px'}}>
                 {displayedCourses.map((c, idx) => {
                   const pct = c.pct ?? c.progress ?? 0;
-                  const isFinished = pct === 100;  // Only 100% = truly completed
+                  const isFinished = pct === 100;
                   const isCurrent = c.current;
                   return (
                     <div
                       key={idx}
-                      className="card-hover fade-in-up glass-dark"
+                      className="card-hover fade-in-up"
                       style={{
-                        borderRadius:'16px',
+                        background:'#ffffff',
+                        borderRadius:'20px',
                         overflow:'hidden',
                         display:'flex',flexDirection:'column',
-                        border: isCurrent ? '1px solid rgba(249,115,22,0.4)' : isFinished ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(255,255,255,0.05)',
-                        boxShadow: isCurrent ? '0 0 30px rgba(249,115,22,0.1),inset 0 0 30px rgba(249,115,22,0.03)' : 'none',
+                        border: isCurrent ? '2px solid #6366f1' : isFinished ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
+                        boxShadow: isCurrent ? '0 12px 30px rgba(99,102,241,0.15)' : '0 4px 16px rgba(15,23,42,0.04)',
                         animationDelay:`${idx * 0.06}s`
                       }}
                     >
-                      {/* Course image / banner */}
-                      <div style={{height:'120px',background: isCurrent ? 'linear-gradient(135deg,rgba(234,88,12,0.15),rgba(245,158,11,0.08))' : isFinished ? 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.05))' : 'linear-gradient(135deg,rgba(15,23,42,0.9),rgba(2,6,23,0.95))',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+                      {/* Course banner */}
+                      <div style={{height:'130px',background: isCurrent ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : isFinished ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',borderBottom:'1px solid #e2e8f0'}}>
                         {c.image_url ? (
-                          <img src={c.image_url} alt={c.title} style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.85}}/>
+                          <img src={c.image_url} alt={c.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         ) : (
                           <div style={{textAlign:'center'}}>
-                            <div style={{width:'48px',height:'48px',borderRadius:'14px',background: isFinished ? 'rgba(16,185,129,0.15)' : 'rgba(249,115,22,0.1)',border:`1px solid ${isFinished ? 'rgba(16,185,129,0.25)' : 'rgba(249,115,22,0.2)'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 6px',fontSize:'22px'}}>
+                            <div style={{width:'52px',height:'52px',borderRadius:'16px',background: isFinished ? '#ecfdf5' : '#e0e7ff',border:`1px solid ${isFinished ? '#6ee7b7' : '#a5b4fc'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 6px',fontSize:'24px'}}>
                               {isFinished ? '🏆' : isCurrent ? '▶️' : '🎓'}
                             </div>
-                            <p style={{margin:0,fontSize:'9px',color:'rgba(100,116,139,0.7)',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.05em'}}>DIKSHA Digital Learning</p>
+                            <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.05em'}}>DIKSHA Digital Learning</p>
                           </div>
                         )}
 
                         {/* Status badge */}
-                        <div style={{position:'absolute',top:'10px',right:'10px'}}>
+                        <div style={{position:'absolute',top:'12px',right:'12px'}}>
                           <span style={{
-                            fontSize:'10px',fontWeight:'700',padding:'3px 9px',borderRadius:'20px',
-                            background: isFinished ? 'rgba(16,185,129,0.2)' : isCurrent ? 'rgba(249,115,22,0.3)' : 'rgba(245,158,11,0.15)',
-                            border: `1px solid ${isFinished ? 'rgba(16,185,129,0.35)' : isCurrent ? 'rgba(249,115,22,0.5)' : 'rgba(245,158,11,0.3)'}`,
-                            color: isFinished ? '#6ee7b7' : isCurrent ? '#fdba74' : '#fcd34d',
+                            fontSize:'11px',fontWeight:'800',padding:'4px 12px',borderRadius:'20px',
+                            background: isFinished ? '#d1fae5' : isCurrent ? '#e0e7ff' : '#fef3c7',
+                            border: `1px solid ${isFinished ? '#6ee7b7' : isCurrent ? '#818cf8' : '#fcd34d'}`,
+                            color: isFinished ? '#047857' : isCurrent ? '#4338ca' : '#b45309',
                             display:'flex',alignItems:'center',gap:'4px'
                           }}>
-                            {isFinished ? <><IconCheck/> 100% Done</> : isCurrent ? '⚡ Automating' : `${pct}%`}
+                            {isFinished ? <><IconCheck/> 100% Done</> : isCurrent ? '⚡ Automating' : `${pct}% In Progress`}
                           </span>
                         </div>
-
-                        {/* Currently automating pulse ring */}
-                        {isCurrent && (
-                          <div className="pulse-dot" style={{position:'absolute',bottom:'10px',left:'10px',width:'8px',height:'8px',borderRadius:'50%',background:'#f97316',boxShadow:'0 0 8px rgba(249,115,22,0.6)'}}/>
-                        )}
                       </div>
 
                       {/* Body */}
-                      <div style={{padding:'16px',flex:1,display:'flex',flexDirection:'column',gap:'12px'}}>
+                      <div style={{padding:'20px',flex:1,display:'flex',flexDirection:'column',gap:'14px'}}>
                         <div>
-                          <h3 style={{margin:'0 0 4px',fontSize:'13px',fontWeight:'700',color:'white',lineHeight:'1.5',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+                          <h3 style={{margin:'0 0 6px',fontSize:'15px',fontWeight:'800',color:'#0f172a',lineHeight:'1.5',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
                             {c.title}
                           </h3>
                           {c.ends_on && (
-                            <p style={{margin:0,fontSize:'11px',color:'rgba(100,116,139,0.8)',fontWeight:'500'}}>
-                              📅 Ends: <span style={{color:'rgba(148,163,184,0.9)'}}>{c.ends_on}</span>
+                            <p style={{margin:0,fontSize:'12px',color:'#64748b',fontWeight:'600'}}>
+                              📅 Ends: <span style={{color:'#334155'}}>{c.ends_on}</span>
                             </p>
                           )}
                         </div>
 
                         {/* Progress bar */}
                         <div>
-                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
-                            <span style={{fontSize:'10px',color:'rgba(100,116,139,0.8)',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.04em'}}>Progress</span>
-                            <span style={{fontSize:'11px',fontWeight:'800',color: isFinished ? '#10b981' : '#f97316'}}>{pct}%</span>
+                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'8px'}}>
+                            <span style={{fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.04em'}}>Progress</span>
+                            <span style={{fontSize:'12px',fontWeight:'800',color: isFinished ? '#10b981' : '#4f46e5'}}>{pct}%</span>
                           </div>
-                          <div style={{background:'rgba(2,6,23,0.8)',borderRadius:'100px',height:'6px',border:'1px solid rgba(255,255,255,0.06)',overflow:'hidden'}}>
-                            <div style={{height:'100%',width:`${pct}%`,borderRadius:'100px',background: isFinished ? 'linear-gradient(90deg,#10b981,#34d399)' : isCurrent ? 'linear-gradient(90deg,#ea580c,#f59e0b)' : 'linear-gradient(90deg,#3b82f6,#6366f1)',transition:'width 0.6s ease'}}/>
+                          <div style={{background:'#e2e8f0',borderRadius:'100px',height:'8px',overflow:'hidden'}}>
+                            <div style={{height:'100%',width:`${pct}%`,borderRadius:'100px',background: isFinished ? 'linear-gradient(90deg,#10b981,#059669)' : isCurrent ? 'linear-gradient(90deg,#ea580c,#f59e0b)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',transition:'width 0.6s ease'}}/>
                           </div>
                         </div>
                       </div>
 
                       {/* Footer actions */}
-                      <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',gap:'8px',background:'rgba(2,6,23,0.4)'}}>
+                      <div style={{padding:'14px 20px',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',background:'#f8fafc'}}>
                         <button
                           onClick={() => handleViewCourseDetails(c)}
                           style={{
-                            flex:1,padding:'8px',borderRadius:'9px',
-                            background:'rgba(255,255,255,0.04)',
-                            border:'1px solid rgba(255,255,255,0.08)',
-                            color:'rgba(148,163,184,0.9)',fontSize:'11px',fontWeight:'600',
-                            display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+                            flex:1,padding:'10px',borderRadius:'10px',
+                            background:'#ffffff',
+                            border:'1px solid #cbd5e1',
+                            color:'#334155',fontSize:'12px',fontWeight:'700',
+                            display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                             cursor:'pointer',transition:'all 0.2s'
                           }}
                         >
@@ -852,10 +815,10 @@ export default function DikshaAutomationPage() {
                           disabled={isRunning || actionLoading || isFinished}
                           className="btn"
                           style={{
-                            flex:1,padding:'8px',fontSize:'11px',
-                            color: isFinished ? 'rgba(100,116,139,0.6)' : 'white',
-                            background: isFinished ? 'rgba(255,255,255,0.03)' : 'linear-gradient(135deg,#ea580c,#f59e0b)',
-                            border: isFinished ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                            flex:1,padding:'10px',fontSize:'12px',
+                            color: isFinished ? '#94a3b8' : 'white',
+                            background: isFinished ? '#f1f5f9' : 'linear-gradient(135deg,#ea580c,#f59e0b)',
+                            border: isFinished ? '1px solid #e2e8f0' : 'none',
                             boxShadow: isFinished ? 'none' : '0 4px 14px rgba(234,88,12,0.25)'
                           }}
                         >
@@ -864,7 +827,7 @@ export default function DikshaAutomationPage() {
                           ) : isFinished ? (
                             <><IconCheck/> Completed</>
                           ) : (
-                            <><IconPlay size={11}/> Start Automation</>
+                            <><IconPlay size={12}/> Start Automation</>
                           )}
                         </button>
                       </div>
@@ -875,68 +838,220 @@ export default function DikshaAutomationPage() {
             )}
           </div>
 
-          {/* ── BOTTOM: Steps + Logs ──────────────────────────────────── */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
-
-            {/* Bot Execution Steps */}
-            <div className="glass" style={{borderRadius:'18px',padding:'20px'}}>
-              <h3 style={{margin:'0 0 14px',fontSize:'11px',fontWeight:'700',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.08em'}}>
-                ⚙️ Bot Execution Steps
+          {/* ── FULL WIDTH LIVE LOGS (REMOVED BOT EXECUTION STEPS PANEL PER USER DIRECTIVE) ── */}
+          <div className="glass-card-light" style={{borderRadius:'20px',padding:'24px',display:'flex',flexDirection:'column',gap:'14px'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'8px'}}>
+                💻 Live Server Output Logs
+                <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
-              <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
-                {STEP_KEYWORDS.map((s, i) => {
-                  const done = isDone ? true : i < currentStepIdx;
-                  const active = isRunning && i === currentStepIdx;
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',borderRadius:'10px',fontSize:'12px',
-                        background: active ? 'rgba(249,115,22,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${active ? 'rgba(249,115,22,0.25)' : done ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'}`,
-                        color: active ? '#fdba74' : done ? 'rgba(52,211,153,0.9)' : 'rgba(100,116,139,0.7)',
-                        transition:'all 0.3s'
-                      }}
-                    >
-                      <span style={{fontSize:'14px',flexShrink:0}}>
-                        {done ? '✅' : active ? '⚙️' : '⏳'}
-                      </span>
-                      <span style={{flex:1,fontWeight: active ? '600' : '500'}}>{s.icon} {s.label}</span>
-                      {active && <div className="pulse-dot" style={{width:'6px',height:'6px',borderRadius:'50%',background:'#f97316',flexShrink:0}}/>}
-                    </div>
-                  );
-                })}
+              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'12px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>{logsList.length} lines</span>
+                <button
+                  onClick={() => setShowLogs(!showLogs)}
+                  style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}
+                >
+                  {showLogs ? 'Collapse' : 'Expand'}
+                </button>
               </div>
             </div>
 
-            {/* Live Logs */}
-            <div className="glass" style={{borderRadius:'18px',padding:'20px',display:'flex',flexDirection:'column',gap:'12px'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <h3 style={{margin:0,fontSize:'11px',fontWeight:'700',color:'rgba(100,116,139,0.8)',textTransform:'uppercase',letterSpacing:'0.08em',display:'flex',alignItems:'center',gap:'6px'}}>
-                  💻 Live Server Logs
-                  <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 6px rgba(16,185,129,0.6)'}}/>
-                </h3>
-                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                  <span style={{fontSize:'10px',color:'rgba(100,116,139,0.6)',fontFamily:'monospace'}}>{logsList.length} lines</span>
-                  <button
-                    onClick={() => setShowLogs(!showLogs)}
-                    style={{fontSize:'10px',fontWeight:'600',color:'rgba(100,116,139,0.7)',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'6px',padding:'3px 8px',cursor:'pointer'}}
-                  >
-                    {showLogs ? 'Collapse' : 'Expand'}
-                  </button>
-                </div>
-              </div>
+            <div
+              ref={logRef}
+              style={{
+                background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'16px',
+                height: showLogs ? '420px' : '260px',
+                overflowY:'auto',
+                transition:'height 0.3s ease'
+              }}
+            >
+              {logsList.length === 0 ? (
+                <p style={{margin:0,color:'#64748b',fontSize:'12px',fontStyle:'italic',fontFamily:'JetBrains Mono, monospace'}}>
+                  Waiting for live log stream from Railway automation backend...
+                </p>
+              ) : (
+                logsList.map((line, i) => {
+                  const isErr = line.includes('[ERROR]') || line.includes('[CRITICAL]') || line.includes('❌');
+                  const isWarn = line.includes('[WARNING]');
+                  const isInfo = line.includes('[INFO]') || line.includes('✔') || line.includes('100%');
+                  return (
+                    <p key={i} className="log-line" style={{
+                      margin:0,
+                      color: isErr ? '#f87171' : isWarn ? '#fbbf24' : isInfo ? '#34d399' : '#cbd5e1'
+                    }}>
+                      {line}
+                    </p>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-              <div
-                ref={logRef}
+        </div>
+      </div>
+
+      {/* ─── COURSE DETAILS MODAL ─── */}
+      {showDetailsModal && (
+        <div style={{
+          position:'fixed',inset:0,zIndex:9999,
+          background:'rgba(15,23,42,0.6)',backdropFilter:'blur(10px)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'
+        }}>
+          <div className="glass-card-light fade-in-up" style={{
+            width:'100%',maxWidth:'820px',borderRadius:'24px',overflow:'hidden',
+            display:'flex',flexDirection:'column',maxHeight:'85vh',
+            boxShadow:'0 25px 50px -12px rgba(0,0,0,0.15)',
+            border:'1px solid #e2e8f0'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding:'20px 24px',borderBottom:'1px solid #e2e8f0',
+              display:'flex',alignItems:'center',justifyContent:'space-between',
+              background:'#f8fafc'
+            }}>
+              <div>
+                <span style={{fontSize:'11px',fontWeight:'800',color:'#4f46e5',textTransform:'uppercase',letterSpacing:'0.06em'}}>DIKSHA Course Details</span>
+                <h2 style={{margin:'4px 0 0',fontSize:'18px',fontWeight:'800',color:'#0f172a'}}>{selectedCourse?.title}</h2>
+              </div>
+              <button 
+                onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
                 style={{
-                  background:'rgba(2,6,23,0.8)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:'10px',padding:'12px',
-                  height: showLogs ? '320px' : '220px',
-                  overflowY:'auto',
-                  transition:'height 0.3s ease'
+                  background:'#ffffff',border:'1px solid #cbd5e1',
+                  color:'#475569',borderRadius:'50%',width:'34px',height:'34px',
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
+                  cursor:'pointer',fontWeight:'700',transition:'all 0.2s'
                 }}
               >
-                {logsList.length === 0 ? (
+                ✕
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div style={{padding:'24px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+              {detailsLoading ? (
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 0',gap:'16px'}}>
+                  <IconSpinner />
+                  <p style={{margin:0,fontSize:'14px',color:'#64748b',fontWeight:'600'}}>Fetching course content & details from DIKSHA portal...</p>
+                </div>
+              ) : detailsError ? (
+                <div style={{textAlign:'center',padding:'40px 0'}}>
+                  <div style={{fontSize:'36px',marginBottom:'12px'}}>⚠️</div>
+                  <h3 style={{color:'#0f172a',margin:'0 0 8px',fontSize:'16px'}}>{detailsError}</h3>
+                  <p style={{color:'#64748b',fontSize:'13px',maxWidth:'450px',margin:'0 auto'}}>
+                    Please make sure the bot has completed initial scanning and that your session is still active.
+                  </p>
+                </div>
+              ) : courseDetails ? (
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'24px',alignItems:'start'}}>
+                  
+                  {/* Left Column: Info & Description */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+                    <div>
+                      <h4 style={{margin:'0 0 8px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>About this Course</h4>
+                      <p style={{
+                        margin:0,fontSize:'13px',color:'#334155',
+                        lineHeight:'1.6',whiteSpace:'pre-wrap',background:'#f8fafc',
+                        padding:'16px',borderRadius:'14px',border:'1px solid #e2e8f0',
+                        maxHeight:'320px',overflowY:'auto',fontWeight:'500'
+                      }}>
+                        {courseDetails.description || "No description provided by the DIKSHA portal."}
+                      </p>
+                    </div>
+
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'14px',padding:'14px 18px'}}>
+                      <div>
+                        <p style={{margin:0,fontSize:'11px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase'}}>Course Status</p>
+                        <p style={{margin:0,fontSize:'15px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
+                      </div>
+                      <button
+                        onClick={() => { setShowDetailsModal(false); handleStartAutomation(selectedCourse?.url); }}
+                        disabled={isRunning || actionLoading || selectedCourse?.progress === 100}
+                        style={{
+                          background:'linear-gradient(135deg,#ea580c,#f59e0b)',
+                          color:'white',border:'none',padding:'10px 18px',borderRadius:'10px',
+                          fontSize:'12px',fontWeight:'800',cursor:'pointer',
+                          opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
+                        }}
+                      >
+                        ⚡ Start Automation
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Lessons / Modules */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                    <h4 style={{margin:'0 0 4px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>Course Lessons & Modules</h4>
+                    <div style={{
+                      display:'flex',flexDirection:'column',gap:'10px',
+                      maxHeight:'400px',overflowY:'auto',paddingRight:'4px'
+                    }}>
+                      {courseDetails.modules && courseDetails.modules.length > 0 ? (
+                        courseDetails.modules.map((m: any, idx: number) => {
+                          const pct = m.progress ?? 0;
+                          const isDone = m.iscompleted || pct === 100;
+                          return (
+                            <div key={idx} style={{
+                              background:'#f8fafc',border:'1px solid #e2e8f0',
+                              borderRadius:'12px',padding:'12px 16px',display:'flex',alignItems:'center',
+                              justifyContent:'space-between',gap:'12px'
+                            }}>
+                              <div style={{flex:1,minWidth:0}}>
+                                <p style={{margin:'0 0 6px',fontSize:'13px',fontWeight:'700',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
+                                  {m.name}
+                                </p>
+                                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                  <div style={{flex:1,background:'#e2e8f0',height:'5px',borderRadius:'10px',overflow:'hidden'}}>
+                                    <div style={{width:`${pct}%`,height:'100%',background: isDone ? '#10b981' : '#4f46e5'}} />
+                                  </div>
+                                  <span style={{fontSize:'11px',fontWeight:'800',color: isDone ? '#10b981' : '#64748b'}}>{pct}%</span>
+                                </div>
+                              </div>
+                              <span style={{
+                                width:'24px',height:'24px',borderRadius:'50%',
+                                background: isDone ? '#d1fae5' : '#e2e8f0',
+                                border:`1px solid ${isDone ? '#6ee7b7' : '#cbd5e1'}`,
+                                display:'flex',alignItems:'center',justifyContent:'center',
+                                color: isDone ? '#047857' : '#64748b',fontSize:'11px',fontWeight:'bold'
+                              }}>
+                                {isDone ? '✓' : idx + 1}
+                              </span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{textAlign:'center',padding:'30px 0',color:'#94a3b8',fontSize:'13px',fontStyle:'italic'}}>
+                          No modules returned from DIKSHA API.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ) : null}
+            </div>
+            
+            {/* Footer */}
+            <div style={{
+              padding:'16px 24px',borderTop:'1px solid #e2e8f0',
+              display:'flex',justifyContent:'flex-end',background:'#f8fafc'
+            }}>
+              <button 
+                onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
+                style={{
+                  background:'#ffffff',border:'1px solid #cbd5e1',
+                  color:'#334155',borderRadius:'10px',padding:'8px 18px',fontSize:'12px',
+                  fontWeight:'700',cursor:'pointer'
+                }}
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}    {logsList.length === 0 ? (
                   <p style={{margin:0,color:'rgba(100,116,139,0.5)',fontSize:'11px',fontStyle:'italic',fontFamily:'monospace'}}>
                     Waiting for bot output from Railway backend...
                   </p>
