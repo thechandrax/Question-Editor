@@ -387,6 +387,51 @@ export default function DikshaAutomationPage() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
 
+  const isRunning = status?.running ?? false;
+  const isPaused = status?.paused ?? false;
+  const isDone = status?.status === "done";
+  const isStopped = status?.status === "stopped";
+  const isError = status?.status === "error";
+  const overallProgress = status?.progress ?? 0;
+  const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
+  const logsList = status?.logs || [];
+
+  const activeModule = useMemo(() => {
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      if (line.includes("Module:") || line.includes("Processing Module")) {
+        const match = line.match(/Module:\s*'([^']+)'/) || line.match(/Module\s*\d+[^:']*/);
+        if (match) return match[1] || match[0];
+      }
+    }
+    return status?.current_module || "";
+  }, [logsList, status]);
+
+  const activeTopic = useMemo(() => {
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      if (line.includes("→ Opening:") || line.includes("Opening:")) {
+        const match = line.match(/Opening:\s*'([^']+)'/);
+        if (match) return match[1];
+      }
+    }
+    return "";
+  }, [logsList]);
+
+  const topicProgress = useMemo(() => {
+    if (isDone) return 100;
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      const vidMatch = line.match(/Video progress:.*\((\d+)%\)/);
+      if (vidMatch) return parseInt(vidMatch[1], 10);
+      if (line.includes("[✔] Processed") || line.includes("Video done")) return 100;
+      if (line.includes("PDF scrolled")) return 90;
+      if (line.includes("PDF / Resource Document detected")) return 30;
+      if (line.includes("→ Opening:")) return 1;
+    }
+    return isRunning ? 5 : 0;
+  }, [logsList, isRunning, isDone]);
+
   const handleSimpleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -837,51 +882,6 @@ export default function DikshaAutomationPage() {
   }
 
   /* ─── DASHBOARD ───────────────────────────────────────────────────────── */
-  const isRunning = status?.running ?? false;
-  const isPaused = status?.paused ?? false;
-  const isDone = status?.status === "done";
-  const isStopped = status?.status === "stopped";
-  const isError = status?.status === "error";
-  const overallProgress = status?.progress ?? 0;
-  const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
-  const logsList = status?.logs || [];
-
-  const activeModule = useMemo(() => {
-    for (let i = logsList.length - 1; i >= 0; i--) {
-      const line = logsList[i];
-      if (line.includes("Module:") || line.includes("Processing Module")) {
-        const match = line.match(/Module:\s*'([^']+)'/) || line.match(/Module\s*\d+[^:']*/);
-        if (match) return match[1] || match[0];
-      }
-    }
-    return status?.current_module || "";
-  }, [logsList, status]);
-
-  const activeTopic = useMemo(() => {
-    for (let i = logsList.length - 1; i >= 0; i--) {
-      const line = logsList[i];
-      if (line.includes("→ Opening:") || line.includes("Opening:")) {
-        const match = line.match(/Opening:\s*'([^']+)'/);
-        if (match) return match[1];
-      }
-    }
-    return "";
-  }, [logsList]);
-
-  const topicProgress = useMemo(() => {
-    if (isDone) return 100;
-    for (let i = logsList.length - 1; i >= 0; i--) {
-      const line = logsList[i];
-      const vidMatch = line.match(/Video progress:.*\((\d+)%\)/);
-      if (vidMatch) return parseInt(vidMatch[1], 10);
-      if (line.includes("[✔] Processed") || line.includes("Video done")) return 100;
-      if (line.includes("PDF scrolled")) return 90;
-      if (line.includes("PDF / Resource Document detected")) return 30;
-      if (line.includes("→ Opening:")) return 1;
-    }
-    return isRunning ? 5 : 0;
-  }, [logsList, isRunning, isDone]);
-
   const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
   const finishedCourses = courses.filter((c) => c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
