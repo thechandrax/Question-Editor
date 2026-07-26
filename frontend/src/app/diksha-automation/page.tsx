@@ -54,8 +54,21 @@ function formatTime(seconds: number): string {
 
 /* ─── SVG Icons ────────────────────────────────────────────────────────── */
 const IconGraduate = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+    <circle cx="12" cy="12" r="1.5" fill="#f59e0b"/>
+  </svg>
+);
+const IconEye = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+const IconEyeOff = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-10-7-10-7a19.4 19.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a19.5 19.5 0 0 1-4.29 5.34"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
   </svg>
 );
 const IconLogin = () => (
@@ -344,9 +357,20 @@ export default function DikshaAutomationPage() {
 
           <div style={{width:'100%',maxWidth:'460px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div className="float-anim" style={{textAlign:'center',marginBottom:'36px'}}>
-              <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'80px',height:'80px',borderRadius:'24px',background:'linear-gradient(135deg,#4f46e5,#7c3aed)',padding:'3px',boxShadow:'0 18px 44px rgba(79,70,229,0.35)',marginBottom:'22px'}}>
-                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'21px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
+            <div style={{textAlign:'center',marginBottom:'36px'}}>
+              <div style={{
+                display:'inline-flex',alignItems:'center',justifyContent:'center',
+                width:'84px',height:'84px',borderRadius:'26px',
+                background:'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#7c3aed 100%)',
+                padding:'3px',
+                boxShadow:'0 20px 40px -10px rgba(79,70,229,0.35), 0 0 20px rgba(99,102,241,0.2)',
+                marginBottom:'22px'
+              }}>
+                <div style={{
+                  width:'100%',height:'100%',background:'#ffffff',borderRadius:'23px',
+                  display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5',
+                  boxShadow:'inset 0 2px 4px rgba(0,0,0,0.02)'
+                }}>
                   <IconGraduate/>
                 </div>
               </div>
@@ -394,14 +418,20 @@ export default function DikshaAutomationPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
-                      style={{paddingRight:'46px'}}
+                      style={{paddingRight:'48px'}}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPass(!showPass)}
-                      style={{position:'absolute',right:'14px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'18px',padding:'4px'}}
+                      style={{
+                        position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',
+                        background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',
+                        cursor:'pointer',padding:'6px 8px',display:'flex',alignItems:'center',justifyContent:'center',
+                        transition:'all 0.2s ease'
+                      }}
+                      title={showPass ? "Hide password" : "Show password"}
                     >
-                      {showPass ? '🙈' : '👁️'}
+                      {showPass ? <IconEyeOff /> : <IconEye />}
                     </button>
                   </div>
                 </div>
@@ -462,21 +492,6 @@ export default function DikshaAutomationPage() {
                   )}
                 </button>
               </form>
-
-              {/* Security note */}
-              <div style={{marginTop:'26px',paddingTop:'22px',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
-                <span style={{fontSize:'14px'}}>🔒</span>
-                <span style={{fontSize:'12px',color:'#64748b',fontWeight:'600'}}>Secured via Keycloak SSO · DIKSHA Portal</span>
-              </div>
-            </div>
-
-            {/* Feature pills */}
-            <div style={{display:'flex',justifyContent:'center',gap:'10px',marginTop:'26px',flexWrap:'wrap'}}>
-              {['Auto-Login','Course Scan','Progress Track','Pause & Stop'].map((f) => (
-                <span key={f} style={{fontSize:'12px',fontWeight:'700',color:'#4338ca',background:'#e0e7ff',border:'1px solid #c7d2fe',borderRadius:'20px',padding:'6px 14px'}}>
-                  {f}
-                </span>
-              ))}
             </div>
           </div>
         </div>
