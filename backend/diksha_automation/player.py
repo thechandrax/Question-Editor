@@ -142,11 +142,12 @@ class VideoPlayer:
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
             # Process all activities inside this module
-            self._process_all_activities_in_module(module_url, mod_id, mod_name)
-            self.completed_module_ids.add(mod_id)
-            module["progress"] = 100
-            module["iscompleted"] = True
-            logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — All Activities Completed!")
+            completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name)
+            if completed_cnt > 0:
+                self.completed_module_ids.add(mod_id)
+                logger.info(f"  [✔] Processed {completed_cnt} activity(ies) in Module: '{mod_name[:55]}'")
+            else:
+                logger.info(f"  [!] 0 activities processed in Module: '{mod_name[:55]}' (Navigation timeout or locked prerequisites)")
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
@@ -341,7 +342,7 @@ class VideoPlayer:
                 }""")
                 container = parent.as_element()
                 if container and container.is_visible():
-                    logger.info(f"  Scoped module container found (wrapper)")
+                    logger.info("  Scoped module container found (wrapper)")
                     return container
             except Exception as e:
                 logger.warning(f"Parent traversal error: {e}")
@@ -365,14 +366,17 @@ class VideoPlayer:
         logger.info("  No module container found — searching full page.")
         return self.page
 
-    def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str):
+    def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str) -> int:
         """
         Finds and processes every activity inside a module section.
         After each activity, reloads the module URL to close any overlay
         and re-read the (now updated) activity list.
+        Returns the number of activities completed in this run.
         """
         completed_titles: set = set()
-        MAX_ACTIVITIES = 15
+        completed_count = 0
+        MAX_ACTIVITIES = 20
+        retry_prereq_attempts = 0
 
         for act_num in range(1, MAX_ACTIVITIES + 1):
 
@@ -445,6 +449,7 @@ class VideoPlayer:
 
             unlocked_btn = None
             item_title   = f"Activity_{act_num}"
+            has_locked_prereqs = False
 
             for btn in view_buttons:
                 try:
@@ -455,6 +460,7 @@ class VideoPlayer:
                     btn_class = (btn.get_attribute("class") or "").lower()
                     aria_dis = btn.get_attribute("aria-disabled")
                     if "disabled" in btn_class or "dimmed" in btn_class or aria_dis == "true":
+                        has_locked_prereqs = True
                         continue
 
                     parent = (
@@ -468,7 +474,8 @@ class VideoPlayer:
 
                     # Ignore locked activity prerequisite text
                     if "not available unless" in parent_text.lower():
-                        logger.info(f"  Activity '{clean_text[:35]}' is locked by prerequisite — waiting for completion.")
+                        has_locked_prereqs = True
+                        logger.info(f"  Activity '{clean_text[:35]}' is locked by prerequisite — waiting for completion telemetry.")
                         continue
 
                     # Check for completion via checkmark icons, 100% progress, or text status
@@ -501,8 +508,22 @@ class VideoPlayer:
                     continue
 
             if not unlocked_btn:
-                logger.info(f"  No more unlocked activities in this module (checked {act_num - 1}).")
+                # If activities are locked by prerequisite telemetry right after finishing an activity, wait 5s and retry!
+                if has_locked_prereqs and retry_prereq_attempts < 2:
+                    retry_prereq_attempts += 1
+                    logger.info(f"  Waiting 5s for DIKSHA server telemetry sync to unlock next activity (retry {retry_prereq_attempts}/2)...")
+                    time.sleep(5)
+                    try:
+                        self.page.reload(wait_until="domcontentloaded", timeout=15000)
+                        time.sleep(3)
+                    except Exception:
+                        pass
+                    continue
+                logger.info(f"  No more unlocked activities in this module (completed {completed_count} activities).")
                 break
+
+            # Reset retry count when an unlocked activity is found
+            retry_prereq_attempts = 0
 
             logger.info(f"  → Opening: '{item_title[:50]}'")
             try:
@@ -519,8 +540,11 @@ class VideoPlayer:
             self._process_activity_then_return(module_url)
 
             completed_titles.add(item_title)
+            completed_count += 1
             logger.info("  Waiting 4s for server checkmark sync...")
             time.sleep(4)
+
+        return completed_count
 
     # ------------------------------------------------------------------ #
     #  Activity processor — no × button; navigate back after content loads
