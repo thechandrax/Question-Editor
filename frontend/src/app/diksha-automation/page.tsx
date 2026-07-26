@@ -351,11 +351,11 @@ export default function DikshaAutomationPage() {
     e.preventDefault();
     setLoginError("");
     if (!username || !password || !pin) {
-      setLoginError("Please enter your username, password, and 6-digit Admin Security PIN.");
+      setLoginError("Please enter your username, password, and 6-digit Security PIN.");
       return;
     }
     if (pin.trim() !== "452389") {
-      setLoginError("❌ Invalid Admin Security PIN. Access Denied.");
+      setLoginError("Invalid PIN. Access Denied.");
       return;
     }
     setLoginLoading(true);
@@ -383,11 +383,11 @@ export default function DikshaAutomationPage() {
         }, 600);
       } else {
         setLoginLoading(false);
-        setLoginError("❌ Account verification failed. Please check credentials.");
+        setLoginError("Account verification failed. Please check credentials.");
       }
     } catch {
       setLoginLoading(false);
-      setLoginError("❌ Connection error. Check server status.");
+      setLoginError("Connection error. Check server status.");
     }
   };
 
@@ -642,9 +642,32 @@ export default function DikshaAutomationPage() {
             {/* Glass Card */}
             <div className="glass-card" style={{borderRadius:'28px',padding:'38px'}}>
               {loginError && (
-                <div style={{marginBottom:'22px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'14px',padding:'14px 18px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
-                  <span style={{fontSize:'18px'}}>⚠️</span>
-                  <p style={{color:'#dc2626',fontSize:'13px',margin:0,lineHeight:'1.5',fontWeight:'700'}}>{loginError}</p>
+                <div style={{
+                  marginBottom: '22px',
+                  background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+                  border: '1px solid #fecdd3',
+                  borderRadius: '16px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  boxShadow: '0 4px 12px rgba(225,29,72,0.08)'
+                }}>
+                  <div style={{
+                    width: '28px', height: '28px', borderRadius: '10px',
+                    background: '#ffe4e6', border: '1px solid #fda4af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <p style={{ color: '#e11d48', fontSize: '13px', margin: 0, fontWeight: '700', lineHeight: '1.4' }}>
+                    {loginError}
+                  </p>
                 </div>
               )}
 
