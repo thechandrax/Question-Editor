@@ -857,8 +857,8 @@ export default function DikshaAutomationPage() {
         @media (min-width: 641px) {
           .mobile-brand-block { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px !important; width: auto !important; }
           .mobile-email-wrapper { width: auto !important; margin: 0 !important; }
-          .mobile-email-pill, .mobile-btn { height: 34px !important; min-height: 34px !important; padding: 0 14px !important; font-size: 11.5px !important; border-radius: 12px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
-          .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 10px 20px !important; font-size: 12.5px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
+          .mobile-email-pill, .mobile-btn { height: 30px !important; min-height: 30px !important; padding: 0 12px !important; font-size: 11px !important; border-radius: 10px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+          .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 9px 18px !important; font-size: 12px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
         }
 
         @media (max-width: 640px) {
