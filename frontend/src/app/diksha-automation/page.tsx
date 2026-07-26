@@ -615,26 +615,26 @@ export default function DikshaAutomationPage() {
 
           <div style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div style={{textAlign:'center',marginBottom:'12px'}}>
+            <div style={{textAlign:'center',marginBottom:'14px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
-                width:'56px',height:'56px',borderRadius:'18px',
+                width:'68px',height:'68px',borderRadius:'20px',
                 background:'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                padding:'8px',
+                padding:'10px',
                 border:'1.5px solid rgba(99,102,241,0.25)',
-                boxShadow:'0 10px 24px -6px rgba(79,70,229,0.20), 0 0 14px rgba(99,102,241,0.08)',
-                marginBottom:'8px'
+                boxShadow:'0 12px 28px -8px rgba(79,70,229,0.22), 0 0 16px rgba(99,102,241,0.10)',
+                marginBottom:'10px'
               }}>
                 <img
                   src="/diksha-logo.png"
                   alt="DIKSHA Official Logo"
-                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 6px rgba(79,70,229,0.15))'}}
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 3px 8px rgba(79,70,229,0.15))'}}
                 />
               </div>
-              <h1 style={{fontSize:'19px',fontWeight:'800',color:'#0f172a',margin:'0 0 2px',letterSpacing:'-0.3px'}}>
+              <h1 style={{fontSize:'22px',fontWeight:'800',color:'#0f172a',margin:'0 0 2px',letterSpacing:'-0.4px'}}>
                 DIKSHA COURSES
               </h1>
-              <p style={{color:'#64748b',fontSize:'11.5px',margin:0,lineHeight:'1.3',fontWeight:'600'}}>
+              <p style={{color:'#64748b',fontSize:'13.5px',margin:0,lineHeight:'1.3',fontWeight:'600'}}>
                 Complete your courses automatically
               </p>
             </div>
