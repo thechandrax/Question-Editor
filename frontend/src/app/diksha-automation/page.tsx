@@ -272,6 +272,7 @@ export default function DikshaAutomationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, course_url: course.url }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to load course details.");
       if (data.success === false) throw new Error(data.error || "Failed to scrape course details.");
