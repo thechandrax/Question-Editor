@@ -857,7 +857,7 @@ export default function DikshaAutomationPage() {
         @media (min-width: 641px) {
           .mobile-brand-block { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px !important; width: auto !important; }
           .mobile-email-wrapper { width: auto !important; margin: 0 !important; }
-          .mobile-email-pill { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 6px 16px !important; font-size: 12px !important; border-radius: 20px !important; }
+          .mobile-email-pill, .mobile-btn { height: 40px !important; min-height: 40px !important; padding: 0 18px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
           .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 12px 24px !important; font-size: 13px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
         }
 
