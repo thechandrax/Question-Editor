@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 type Stage = "login" | "dashboard";
 
@@ -314,8 +316,8 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  // Restore session from localStorage on page refresh (F5 / reload) without flashing login screen
-  useEffect(() => {
+  // Restore session synchronously before first browser frame paint (Zero Login Flash on F5)
+  useIsomorphicLayoutEffect(() => {
     try {
       const saved = localStorage.getItem("diksha_session");
       if (saved) {
