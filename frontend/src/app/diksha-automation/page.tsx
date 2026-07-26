@@ -1253,7 +1253,7 @@ export default function DikshaAutomationPage() {
                     className="btn mobile-full-btn"
                     style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#0284c7,#0369a1)',boxShadow:'0 6px 20px rgba(2,132,199,0.25)'}}
                   >
-                    {scanning ? <><IconSpinner/> Rescanning...</> : <><IconScan/> 🔄 Reset & Rescan</>}
+                    {scanning ? <><IconSpinner/> Rescanning...</> : <><IconScan/> Reset & Rescan</>}
                   </button>
                 ) : (
                   <button
