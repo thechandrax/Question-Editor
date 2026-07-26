@@ -116,6 +116,14 @@ const IconCopy = () => (
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
   </svg>
 );
+const IconTrash = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+    <line x1="10" y1="11" x2="10" y2="17"/>
+    <line x1="14" y1="11" x2="14" y2="17"/>
+  </svg>
+);
 const IconPlay = ({ size = 12 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -297,6 +305,7 @@ export default function DikshaAutomationPage() {
   const [expandedModuleIdxs, setExpandedModuleIdxs] = useState<Record<number, boolean>>({});
   const [confirmModal, setConfirmModal] = useState<ModalConfig | null>(null);
   const [copiedLogs, setCopiedLogs] = useState(false);
+  const [clearedLogs, setClearedLogs] = useState(false);
 
   const handleCopyLogs = () => {
     const text = status?.logs ? status.logs.join('\n') : "";
@@ -305,6 +314,15 @@ export default function DikshaAutomationPage() {
       setCopiedLogs(true);
       setTimeout(() => setCopiedLogs(false), 2000);
     }).catch(() => {});
+  };
+
+  const handleClearLogs = async () => {
+    setStatus((prev) => (prev ? { ...prev, logs: [] } : null));
+    try {
+      await fetch("/api/diksha/clear-logs", { method: "POST" });
+    } catch {}
+    setClearedLogs(true);
+    setTimeout(() => setClearedLogs(false), 2000);
   };
 
   const logRef = useRef<HTMLDivElement>(null);
@@ -1372,6 +1390,22 @@ export default function DikshaAutomationPage() {
                   }}
                 >
                   {copiedLogs ? 'Copied! ✓' : <><IconCopy /> Copy Logs</>}
+                </button>
+                <button
+                  onClick={handleClearLogs}
+                  disabled={logsList.length === 0}
+                  style={{
+                    fontSize:'11px',fontWeight:'700',
+                    color: clearedLogs ? '#047857' : '#dc2626',
+                    background: clearedLogs ? '#d1fae5' : '#fef2f2',
+                    border: `1px solid ${clearedLogs ? '#6ee7b7' : '#fca5a5'}`,
+                    borderRadius:'8px',padding:'4px 10px',cursor: logsList.length === 0 ? 'not-allowed' : 'pointer',
+                    display:'inline-flex',alignItems:'center',gap:'4px',
+                    transition:'all 0.2s ease',
+                    opacity: logsList.length === 0 ? 0.5 : 1
+                  }}
+                >
+                  {clearedLogs ? 'Cleared! ✓' : <><IconTrash /> Clear Logs</>}
                 </button>
               </div>
             </div>

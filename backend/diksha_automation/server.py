@@ -220,6 +220,18 @@ async def stream_logs(request: Request):
     )
 
 
+@app.post("/api/clear-logs")
+async def clear_logs():
+    """Clears all in-memory log history and active log queue."""
+    state.logs.clear()
+    while not state.log_queue.empty():
+        try:
+            state.log_queue.get_nowait()
+        except queue.Empty:
+            break
+    return {"ok": True, "message": "Logs cleared successfully"}
+
+
 @app.get("/health")
 async def health():
     return {"ok": True, "status": state.status, "version": "2.0.0"}
