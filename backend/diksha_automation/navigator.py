@@ -26,19 +26,28 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
         enrolled_selectors = [
             '#coursedata', '.coursedata', '[id*="coursedata"]', '[class*="coursedata"]',
             '#ongoing_courses', '#ongoing', '#finished_courses', '#finished',
-            '.my-courses', '#mycourses', '[data-tab="ongoing"]', '[data-tab="finished"]',
-            '#region-main', '.main-content', '#maincontent', '#region-main-box'
+            '.my-courses', '#mycourses', '[data-tab="ongoing"]', '[data-tab="finished"]'
         ]
         for selector in enrolled_selectors:
             found = soup.select_one(selector)
             if found:
                 container_text = found.get_text().lower()
                 # Skip if this container is explicitly for recommended/popular courses
-                if not any(skip_kw in container_text[:120] for skip_kw in ['recommended courses', 'popular courses', 'featured courses', 'explore all']):
+                if not any(skip_kw in container_text[:120] for skip_kw in ['recommended', 'popular', 'featured', 'explore', 'catalog', 'all courses']):
                     enrolled_container = found
                     logger.info(f"  Scoping HTML parse strictly to ENROLLED container: {selector}")
                     break
         
+        # If no specific container ID matched, try finding the header "My Courses" section
+        if not enrolled_container:
+            for section in soup.find_all(['section', 'div'], class_=True):
+                sec_text = section.get_text().lower()
+                if any(kw in sec_text[:80] for kw in ['my courses', 'enrolled courses', 'ongoing courses', 'my learning']):
+                    if not any(skip_kw in sec_text[:120] for skip_kw in ['recommended', 'popular', 'explore', 'all courses']):
+                        enrolled_container = section
+                        logger.info("  Scoping HTML parse to section with 'My Courses' header")
+                        break
+
         parse_root = enrolled_container if enrolled_container else soup
 
         # Double safety: Check for explicit "No courses found" message in the main content area
@@ -83,10 +92,14 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
                         break
                     cls_id = (curr.get('class', []) if isinstance(curr.get('class'), list) else []) + [curr.get('id', '')]
                     cls_id_str = ' '.join(str(x) for x in cls_id).lower()
-                    if any(kw in cls_id_str for kw in ['recommended', 'popular', 'featured', 'explore', 'other-course', 'catalog', 'search-result', 'all-course']):
+                    if any(kw in cls_id_str for kw in ['recommended', 'popular', 'featured', 'explore', 'other-course', 'catalog', 'search-result', 'all-course', 'latest', 'public', 'discovery']):
                         is_recommended = True
                         break
                     curr = curr.parent
+
+                elem_text = elem.get_text().lower()
+                if any(k in elem_text for k in ['enroll in course', 'join course', 'view catalog', 'explore courses']):
+                    is_recommended = True
 
                 if is_recommended:
                     continue
