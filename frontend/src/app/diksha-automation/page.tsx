@@ -1058,7 +1058,7 @@ export default function DikshaAutomationPage() {
                   Automatically scan your DIKSHA account to discover all active and completed enrolled courses.
                 </p>
                 <button onClick={handleScanCourses} className="btn mobile-full-btn" style={{padding:'12px 24px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
-                  <IconScan/> Scan Enrolled Courses Now
+                  <IconScan/> Scan Enrolled Courses
                 </button>
               </div>
             ) : displayedCourses.length === 0 ? (
