@@ -373,7 +373,7 @@ class VideoPlayer:
         and re-read the (now updated) activity list.
         Returns the number of activities completed in this run.
         """
-        completed_titles: set = set()
+        activity_attempts: dict = {}
         completed_count = 0
         MAX_ACTIVITIES = 20
         retry_prereq_attempts = 0
@@ -478,10 +478,13 @@ class VideoPlayer:
                         logger.info(f"  Activity '{clean_text[:35]}' is locked by prerequisite — waiting for completion telemetry.")
                         continue
 
-                    # Check for completion via checkmark icons, 100% progress, or text status
+                    # Check for true completion strictly via DIKSHA DOM checkmark icons/text
                     is_completed = False
                     if parent:
-                        checkmark = parent.query_selector(".fa-check, .fa-check-circle, .micon-check_circle, .check-icon")
+                        checkmark = parent.query_selector(
+                            ".fa-check, .fa-check-circle, .micon-check_circle, "
+                            ".check-icon, svg.check, i.fa-check, [class*='check'], [class*='complete']"
+                        )
                         if checkmark:
                             is_completed = True
                         else:
@@ -490,15 +493,16 @@ class VideoPlayer:
                                 is_completed = True
 
                     if not is_completed:
-                        if (
-                            "✔" in parent_text
-                            or "Completed" in parent_text
-                            or clean_text in completed_titles
-                        ):
+                        if "✔" in parent_text or "100%" in parent_text:
                             is_completed = True
 
-                    if is_completed:
-                        logger.info(f"  Already done: '{clean_text[:35]}' — skipping.")
+                    # Only skip if DIKSHA explicitly displays a checkmark, or if we played this title 3 times
+                    attempts = activity_attempts.get(clean_text, 0)
+                    if is_completed or attempts >= 3:
+                        if is_completed:
+                            logger.info(f"  Already done: '{clean_text[:35]}' — skipping.")
+                        else:
+                            logger.info(f"  Played {attempts} times without checkmark: '{clean_text[:35]}' — moving next.")
                         continue
 
                     unlocked_btn = btn
@@ -539,7 +543,7 @@ class VideoPlayer:
             # Process the activity then return to the module page
             self._process_activity_then_return(module_url)
 
-            completed_titles.add(item_title)
+            activity_attempts[item_title] = activity_attempts.get(item_title, 0) + 1
             completed_count += 1
             logger.info("  Waiting 7s for server checkmark sync...")
             time.sleep(7)
