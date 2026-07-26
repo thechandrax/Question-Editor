@@ -479,15 +479,18 @@ class VideoPlayer:
                                         }}
                                     }}""")
                                 elif stuck_count >= 4:  # Stuck for 40 seconds — Force completion
-                                    logger.warning(f"  [WARNING] Video still stuck after rewind. Forcing completion...")
+                                    logger.warning(f"  [WARNING] Video still stuck after rewind. Forcing completion & network sync...")
                                     video_frame.evaluate("""() => {
                                         let v = document.querySelector("video");
                                         if (v) {
                                             try { v.currentTime = v.duration; } catch(e){}
+                                            v.dispatchEvent(new Event('timeupdate'));
                                             v.dispatchEvent(new Event('ended'));
+                                            v.dispatchEvent(new Event('pause'));
                                         }
                                     }""")
-                                    logger.info("  Forced ended event. Exiting video loop.")
+                                    logger.info("  Forced ended event. Waiting 6 seconds for network sync to DIKSHA server...")
+                                    time.sleep(6)
                                     break
                             else:
                                 stuck_count = 0
@@ -501,7 +504,15 @@ class VideoPlayer:
                         ' ? document.querySelector("video").ended : false'
                     )
                     if ended:
-                        logger.info("  Video ended naturally.")
+                        logger.info("  Video ended naturally. Ensuring full network sync to DIKSHA server...")
+                        video_frame.evaluate("""() => {
+                            let v = document.querySelector("video");
+                            if (v) {
+                                v.dispatchEvent(new Event('timeupdate'));
+                                v.dispatchEvent(new Event('ended'));
+                            }
+                        }""")
+                        time.sleep(6)
                         break
                 except Exception:
                     pass
@@ -636,11 +647,16 @@ class VideoPlayer:
                 window.__speedOverrideActive = true;
                 setInterval(() => {
                     document.querySelectorAll('video').forEach(v => {
-                        if (v.playbackRate !== 6.0) {
+                        if (v.duration && (v.duration - v.currentTime <= 5)) {
+                            v.playbackRate = 1.0;
+                            v.defaultPlaybackRate = 1.0;
+                        } else if (v.playbackRate !== 6.0) {
                             v.playbackRate = 6.0;
                             v.defaultPlaybackRate = 6.0;
                         }
-                        if (v.paused) { v.play().catch(() => {}); }
+                        if (v.paused && (!v.duration || (v.duration - v.currentTime > 1))) {
+                            v.play().catch(() => {});
+                        }
                     });
                 }, 300);
             }
