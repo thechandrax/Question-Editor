@@ -528,6 +528,59 @@ export default function DikshaAutomationPage() {
     }
   };
 
+  const handleResetAndRescan = async () => {
+    setScanning(true);
+    setScanMessage("Stopping automation, clearing state & fetching fresh course progress...");
+    try {
+      // 1. Stop active automation run
+      try { await fetch("/api/diksha/stop", { method: "POST" }); } catch {}
+      // 2. Reset backend state and clear logs
+      try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
+      try { await fetch("/api/diksha/clear-logs", { method: "POST" }); } catch {}
+
+      // 3. Clear local UI state
+      setStatus(null);
+      setElapsed(0);
+      logsClearedRef.current = true;
+
+      // 4. Fetch fresh enrolled course progress directly from DIKSHA
+      const res = await fetch("/api/diksha/fetch-courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Rescan request failed.");
+
+      let fetchedCourses: Course[] = [];
+      if (Array.isArray(data)) {
+        fetchedCourses = data;
+      } else if (data && typeof data === "object") {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          fetchedCourses = data.courses;
+        } else if (Array.isArray(data.ongoing) || Array.isArray(data.finished)) {
+          const ongoing = Array.isArray(data.ongoing) ? data.ongoing : [];
+          const finished = Array.isArray(data.finished) ? data.finished : [];
+          fetchedCourses = [...ongoing, ...finished];
+        }
+      }
+
+      if (fetchedCourses.length > 0) {
+        setCourses(fetchedCourses);
+        setHasScanned(true);
+        setScanMessage(`Rescan complete! Updated progress for ${fetchedCourses.length} course(s).`);
+      } else {
+        setCourses([]);
+        setHasScanned(true);
+        setScanMessage(data.message || "Rescan finished: No courses found.");
+      }
+    } catch (err: unknown) {
+      setScanMessage(err instanceof Error ? err.message : "Error rescanning course progress.");
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const handleStartAutomation = async (targetUrl?: string) => {
     setActionLoading(true);
     setAutomatingCourseUrl(targetUrl || "all");
@@ -1193,14 +1246,25 @@ export default function DikshaAutomationPage() {
               </div>
 
               <div className="mobile-course-actions" style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
-                <button
-                  onClick={handleScanCourses}
-                  disabled={scanning || isRunning}
-                  className="btn mobile-full-btn"
-                  style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 6px 20px rgba(79,70,229,0.25)'}}
-                >
-                  {scanning ? <><IconSpinner/> Scanning...</> : <><IconScan/> Scan Enrolled Courses</>}
-                </button>
+                {hasScanned ? (
+                  <button
+                    onClick={handleResetAndRescan}
+                    disabled={scanning}
+                    className="btn mobile-full-btn"
+                    style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#0284c7,#0369a1)',boxShadow:'0 6px 20px rgba(2,132,199,0.25)'}}
+                  >
+                    {scanning ? <><IconSpinner/> Rescanning Fresh Progress...</> : <><IconScan/> 🔄 Reset & Rescan Fresh Progress</>}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleScanCourses}
+                    disabled={scanning || isRunning}
+                    className="btn mobile-full-btn"
+                    style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 6px 20px rgba(79,70,229,0.25)'}}
+                  >
+                    {scanning ? <><IconSpinner/> Scanning...</> : <><IconScan/> Scan Enrolled Courses</>}
+                  </button>
+                )}
 
                 {hasScanned && ongoingCourses.length > 0 && (
                   <button
