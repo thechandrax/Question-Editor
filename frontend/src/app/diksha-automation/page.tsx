@@ -631,9 +631,9 @@ export default function DikshaAutomationPage() {
           {/* Grid pattern overlay */}
           <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
 
-          <div className="mobile-login-box" style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
+          <div className="mobile-login-box" style={{width:'100%',maxWidth:'480px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div style={{textAlign:'center',marginBottom:'14px'}}>
+            <div style={{textAlign:'center',marginBottom:'16px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
                 width:'68px',height:'68px',borderRadius:'20px',
@@ -658,7 +658,7 @@ export default function DikshaAutomationPage() {
             </div>
 
             {/* Glass Card */}
-            <div className="glass-card" style={{borderRadius:'24px',padding:'24px 28px'}}>
+            <div className="glass-card" style={{borderRadius:'24px',padding:'32px 28px'}}>
               {loginError && (
                 <div style={{
                   marginBottom: '16px',
@@ -862,9 +862,9 @@ export default function DikshaAutomationPage() {
         }
 
         @media (max-width: 640px) {
-          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px 8px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
+          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 20px 14px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
           .mobile-login-box { margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-          .diksha-root .glass-card { padding: 24px 20px !important; border-radius: 20px !important; width: 100% !important; max-width: 100% !important; }
+          .diksha-root .glass-card { padding: 28px 22px !important; border-radius: 22px !important; width: 100% !important; max-width: 100% !important; }
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; gap: 10px !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
