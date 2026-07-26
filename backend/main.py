@@ -20,7 +20,7 @@ from fastapi import BackgroundTasks
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "diksha_automation"))
 from orchestrator import run_automation, fetch_courses_only, fetch_course_details_only
-import cloudscraper
+from utils import STOP_EVENT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -310,7 +310,7 @@ async def api_bypass_shortlink(request: ShortlinkRequest):
 # --- END SHORTLINK BYPASS LOGIC ---
 
 def convert_math(text: str, wrapper: str) -> str:
-    """Converts $...$ into \(...\) if inline_parentheses is selected."""
+    """Converts $...$ into \\(...\\) if inline_parentheses is selected."""
     if wrapper == 'inline_parentheses':
         text = re.sub(r'\$\$(.+?)\$\$', r'\\[\1\\]', text, flags=re.DOTALL)
         text = re.sub(r'(?<!\$)\$([^\$]+)\$(?!\$)', r'\\(\1\\)', text)
@@ -714,6 +714,7 @@ def _run_diksha_task(username: str, password: str, target_course_url: str | None
     """Wrapper that tracks global state around run_automation."""
     _pause_event.set()
     _stop_event.clear()
+    STOP_EVENT.clear()        # ← clear any previous stop signal before new run
     _diksha.update({
         "running": True,
         "status": "running",
@@ -767,6 +768,7 @@ async def stop_diksha_automation():
         return {"status": "success", "message": "Automation is already stopped."}
     _stop_event.set()
     _pause_event.set()
+    STOP_EVENT.set()          # ← signal player.py / orchestrator.py loops to stop
     _diksha["running"] = False
     _diksha["paused"] = False
     _diksha["status"] = "stopped"
@@ -777,6 +779,7 @@ async def stop_diksha_automation():
 async def reset_diksha_state():
     _stop_event.set()
     _pause_event.set()
+    STOP_EVENT.set()          # ← signal player.py / orchestrator.py loops to stop
     _diksha.update({
         "running": False,
         "status": "idle",

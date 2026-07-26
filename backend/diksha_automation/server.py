@@ -52,6 +52,32 @@ class WebLogHandler(logging.Handler):
         except queue.Full:
             pass
 
+        # ── Infer progress & module completion from log text ──────────────────
+        try:
+            lo = msg.lower()
+            if "authenticat" in lo or "keycloak" in lo or "login" in lo:
+                state.progress = max(state.progress, 5)
+            elif "fetching course" in lo or "course listing" in lo:
+                state.progress = max(state.progress, 15)
+            elif "scanning" in lo or "incomplete" in lo:
+                state.progress = max(state.progress, 25)
+            elif "→ opening" in lo or "opening:" in lo:
+                state.progress = max(state.progress, min(state.progress + 2, 85))
+            elif "video detected" in lo or "playing" in lo:
+                state.progress = max(state.progress, min(state.progress + 2, 85))
+            elif "pdf" in lo or "scrolling" in lo:
+                state.progress = max(state.progress, min(state.progress + 2, 85))
+            elif "assessment" in lo or "quiz" in lo:
+                state.progress = max(state.progress, 88)
+            elif "[✔] 100% verified complete" in lo:
+                state.modules_done = min(state.modules_done + 1, state.modules_total)
+                state.progress = max(state.progress, min(10 + int(state.modules_done / state.modules_total * 88), 98))
+            elif "all courses processed" in lo or "automation completed" in lo:
+                state.progress = 100
+        except Exception:
+            pass
+
+
 
 def _install_web_handler():
     handler = WebLogHandler()
@@ -75,6 +101,12 @@ def _automation_worker(course_url: str):
     state.modules_done   = 0
     state.current_module = ""
     state.logs.clear()
+    # flush the queue too
+    while not state.log_queue.empty():
+        try:
+            state.log_queue.get_nowait()
+        except queue.Empty:
+            break
 
     try:
         # Force headless on the server

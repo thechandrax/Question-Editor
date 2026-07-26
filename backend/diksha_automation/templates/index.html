@@ -609,6 +609,17 @@
       document.getElementById("terminal-body").innerHTML =
         '<span class="log-line" style="color:var(--muted)">Logs cleared.</span>';
       logOffset = 0;
+      // Also clear server-side log buffer so SSE backlog does not repopulate
+      fetch("/api/clear-logs", { method: "POST" }).catch(() => {});
+      // Reconnect SSE so it starts fresh (no backlog replay)
+      if (evtSource) {
+        evtSource.close();
+        evtSource = null;
+        const dot = document.getElementById("header-dot");
+        if (dot && dot.classList.contains("running")) {
+          setTimeout(startSSE, 500);
+        }
+      }
     }
 
     function addLogLine(msg, cls = "log-line info") {

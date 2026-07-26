@@ -1,7 +1,11 @@
 import logging
 import sys
+import threading
 from datetime import datetime
 from config import Config
+
+# ── Global stop event — set this to signal all automation loops to stop ────────
+STOP_EVENT = threading.Event()   # set() = stop requested;  clear() = allow running
 
 def setup_logger(name: str = "diksha_automation") -> logging.Logger:
     Config.ensure_directories()

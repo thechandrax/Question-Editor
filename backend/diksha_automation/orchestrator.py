@@ -5,7 +5,7 @@ from auth import DikshaAuthenticator
 from navigator import CourseNavigator
 from player import VideoPlayer
 from api_client import DikshaAPIClient
-from utils import logger, take_screenshot_sync, log_error_diagnostic
+from utils import logger, take_screenshot_sync, log_error_diagnostic, STOP_EVENT
 
 
 def fetch_courses_only(username=None, password=None, headless=True):
@@ -36,9 +36,12 @@ def fetch_courses_only(username=None, password=None, headless=True):
 
 def run_automation(username=None, password=None, headless=False, target_course_url=None):
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logger.info("==================================================")
+    logger.info("=================================================")
     logger.info("=== Starting Complete DIKSHA Course Automation ===")
-    logger.info("==================================================")
+    logger.info("=================================================")
+
+    # Clear any previous stop signal at the start of every run
+    STOP_EVENT.clear()
 
     auth = DikshaAuthenticator(headless=headless, username=username, password=password)
 
@@ -58,85 +61,90 @@ def run_automation(username=None, password=None, headless=False, target_course_u
             navigator.step_4_explore_courses()
             navigator.step_5_my_learning()
 
-            # Step 6: Find incomplete course
+            # Step 6: Find incomplete courses
             incomplete_courses = navigator.step_6_check_incomplete_courses()
 
             if incomplete_courses:
-                target_course_url = incomplete_courses[0]['url']
-                logger.info(
-                    f"Targeting: '{incomplete_courses[0]['title']}' → {target_course_url}"
-                )
+                course_urls_to_process = [c['url'] for c in incomplete_courses]
+                for i, c in enumerate(incomplete_courses):
+                    logger.info(f"  [{i+1}] '{c['title']}' → {c['url']}")
             else:
-                target_course_url = (
+                course_urls_to_process = [
                     "https://learning.diksha.gov.in/diksha/course.php?id=1186&section=2486"
-                )
-                logger.info(f"Fallback course URL: {target_course_url}")
+                ]
+                logger.info(f"No incomplete courses found. Using fallback: {course_urls_to_process[0]}")
         else:
+            course_urls_to_process = [target_course_url]
             logger.info(f"Targeting specific course URL provided by user: {target_course_url}")
 
-        # Extract course/section IDs for API calls
-        qs = parse_qs(urlparse(target_course_url).query)
-        course_id  = qs.get("id",      ["1186"])[0]
-        section_id = qs.get("section", ["2486"])[0]
+        # ── Process EVERY incomplete course ────────────────────────────────────
+        for course_idx, target_course_url in enumerate(course_urls_to_process):
+            if STOP_EVENT.is_set():
+                logger.info("[⏹] Stop requested — skipping remaining courses.")
+                break
 
-        # ── Activate request interception BEFORE navigating to course page ──
-        # This auto-captures the exact POST payload the browser sends to course.php
-        api.setup_interception(page, course_id, section_id)
+            logger.info(f"\n{'='*52}")
+            logger.info(f"COURSE {course_idx + 1}/{len(course_urls_to_process)}: {target_course_url}")
+            logger.info(f"{'='*52}")
 
-        # Step 7: Open course page (interception captures the API payload here)
-        player.step_7_open_incomplete_course(target_course_url)
+            # Extract course/section IDs for API calls
+            qs = parse_qs(urlparse(target_course_url).query)
+            course_id  = qs.get("id",      ["1186"])[0]
+            section_id = qs.get("section", ["2486"])[0]
 
-        # Refresh cookies after full navigation
-        api.refresh_cookies(auth.context)
+            # Activate request interception BEFORE navigating to course page
+            api.setup_interception(page, course_id, section_id)
 
-        # ── Show current module progress ───────────────────────────────────
-        logger.info("─── Current Module Progress ──────────────────────────")
-        modules = api.get_module_progress(course_id, section_id, page=player.page)
-        if modules:
-            for m in modules:
-                pct  = str(m.get("progress", "?")).rjust(3)
-                name = m.get("name", "?")[:50]
-                tick = "✔" if m.get("iscompleted") else " "
-                logger.info(f"  [{tick}] {pct}%  {name}")
-        else:
-            logger.info("  (API progress not available — using hardcoded fallback)")
-        logger.info("──────────────────────────────────────────────────────")
+            # Step 7: Open course page
+            player.step_7_open_incomplete_course(target_course_url)
 
-        # Step 8: About the Course
-        player.step_8_about_the_course(target_course_url)
+            # Refresh cookies after full navigation
+            api.refresh_cookies(auth.context)
 
-        # Step 9: Complete all lessons
-        player.complete_entire_course_lessons(target_course_url)
+            # Show current module progress
+            logger.info("─── Current Module Progress ──────────────────────────")
+            modules = api.get_module_progress(course_id, section_id, page=player.page)
+            if modules:
+                for m in modules:
+                    pct  = str(m.get("progress", "?")).rjust(3)
+                    name = m.get("name", "?")[:50]
+                    tick = "✔" if m.get("iscompleted") else " "
+                    logger.info(f"  [{tick}] {pct}%  {name}")
+            else:
+                logger.info("  (API progress not available — using hardcoded fallback)")
+            logger.info("──────────────────────────────────────────────────────")
 
-        # ── Final progress check ───────────────────────────────────────────
-        api.refresh_cookies(auth.context)
-        logger.info("─── Final Module Progress ────────────────────────────")
-        final_modules = api.get_module_progress(course_id, section_id, page=player.page)
-        
-        display_modules = final_modules or player.last_module_list
-        if display_modules:
-            for m in display_modules:
-                mod_id = str(m.get("id", ""))
-                prog_val = int(m.get("progress", 0))
-                is_done = bool(m.get("iscompleted")) or prog_val >= 100 or (bool(mod_id) and mod_id in player.completed_module_ids)
-                
-                if is_done:
-                    pct_str = "100%"
-                    tick = "✔"
-                else:
-                    pct_str = f"{prog_val:3d}%"
-                    tick = " "
-                
-                name = m.get("name", "?")[:55]
-                logger.info(f"  [{tick}] {pct_str}  {name}")
-        else:
-            logger.info("  [✔] 100%  All modules processed successfully!")
-        logger.info("──────────────────────────────────────────────────────")
+            # Step 8: About the Course
+            player.step_8_about_the_course(target_course_url)
 
-        logger.info("==================================================")
-        logger.info("All modules done! Keeping browser open for 30s...")
-        logger.info("==================================================")
-        time.sleep(30)
+            # Step 9: Complete all lessons
+            player.complete_entire_course_lessons(target_course_url)
+
+            if STOP_EVENT.is_set():
+                logger.info("[⏹] Stop requested — not starting next course.")
+                break
+
+            # Final progress check for this course
+            api.refresh_cookies(auth.context)
+            logger.info("─── Final Module Progress ────────────────────────────")
+            final_modules = api.get_module_progress(course_id, section_id, page=player.page)
+            display_modules = final_modules or player.last_module_list
+            if display_modules:
+                for m in display_modules:
+                    mod_id   = str(m.get("id", ""))
+                    prog_val = int(m.get("progress", 0))
+                    is_done  = bool(m.get("iscompleted")) or prog_val >= 100 or (bool(mod_id) and mod_id in player.completed_module_ids)
+                    pct_str  = "100%" if is_done else f"{prog_val:3d}%"
+                    tick     = "✔" if is_done else " "
+                    logger.info(f"  [{tick}] {pct_str}  {m.get('name','?')[:55]}")
+            else:
+                logger.info("  [✔] 100%  All modules processed successfully!")
+            logger.info("──────────────────────────────────────────────────────")
+
+        logger.info("=================================================")
+        logger.info("All courses processed! Browser closing in 5s...")
+        logger.info("=================================================")
+        time.sleep(5)
 
     except Exception as e:
         log_error_diagnostic(e, "Complete Course Automation Flow")

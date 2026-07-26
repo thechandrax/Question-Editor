@@ -7,11 +7,12 @@ ARCHITECTURE:
   • Module IDs come from the API (with hardcoded fallback for course 1186)
 """
 
+import re
 import time
 import random
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import Page
-from utils import logger, take_screenshot_sync
+from utils import logger, take_screenshot_sync, STOP_EVENT
 
 
 # ── Fallback module list for course 1186 (confirmed from API inspection) ──────
@@ -110,6 +111,11 @@ class VideoPlayer:
         logger.info("──────────────────────────────────────────────────────")
 
         for module in module_list:
+            # ── Check stop signal before each module ──────────────────────────
+            if STOP_EVENT.is_set():
+                logger.info("  [⏹] Stop requested — halting module loop.")
+                break
+
             mod_id   = str(module.get("id", ""))
             mod_name = module.get("name", mod_id)
             progress = int(module.get("progress", 0))
@@ -143,7 +149,12 @@ class VideoPlayer:
 
             # Process all activities inside this module
             completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name)
-            
+
+            # Re-check stop signal after processing a module
+            if STOP_EVENT.is_set():
+                logger.info("  [⏹] Stop requested — halting after current module.")
+                break
+
             # Verify if all activities in this module are actually 100% completed with checkmarks
             is_fully_done = self._verify_module_100_percent(mod_id, mod_name)
             if is_fully_done:
@@ -383,6 +394,10 @@ class VideoPlayer:
         retry_prereq_attempts = 0
 
         for act_num in range(1, MAX_ACTIVITIES + 1):
+            # ── Check stop signal before each activity ────────────────────────
+            if STOP_EVENT.is_set():
+                logger.info("  [⏹] Stop requested — halting activity loop.")
+                break
 
             # Always start from the clean module page
             if self.page.url.split("?")[0] != module_url.split("?")[0]:
@@ -451,7 +466,6 @@ class VideoPlayer:
                 except Exception as ex:
                     logger.debug(f"Accordion toggle error: {ex}")
 
-            unlocked_btn = None
             unlocked_btn = None
             item_title   = f"Activity_{act_num}"
             item_key     = ""
@@ -632,7 +646,7 @@ class VideoPlayer:
             last_log_time = 0.0
             last_time = -1.0
             stuck_count = 0
-            while (time.time() - start) < 600:
+            while (time.time() - start) < 600 and not STOP_EVENT.is_set():
                 self._simulate_mouse()
                 time.sleep(2)
                 self._inject_speed_override() # keep applying speed override
@@ -955,6 +969,7 @@ class VideoPlayer:
 
     def _answer_quiz_questions(self, answer_key: dict):
         """Loops through all questions and selects options."""
+        unanswered_streak = 0  # count consecutive steps where nothing was answered
         for q_step in range(1, 40):
             self._close_popups()
             answered_something = False
@@ -997,8 +1012,15 @@ class VideoPlayer:
                 except Exception:
                     pass
 
-            if not answered_something:
-                break
+            if answered_something:
+                unanswered_streak = 0
+            else:
+                unanswered_streak += 1
+                if unanswered_streak >= 3:
+                    # 3 consecutive steps with nothing to answer — quiz is done or stuck
+                    break
+                time.sleep(1)
+
 
     def _submit_quiz_attempt(self):
         """Clicks 'Final Submit' and confirms submission."""
