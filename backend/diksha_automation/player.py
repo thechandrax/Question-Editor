@@ -286,12 +286,28 @@ class VideoPlayer:
             scope = self._get_active_module_container(mod_id, mod_name)
 
             # Find action buttons ONLY inside the active module container
-            view_buttons = scope.query_selector_all(
-                'button:has-text("View"),   a:has-text("View"), '
-                'button:has-text("Start"),  a:has-text("Start"), '
-                'button:has-text("Resume"), a:has-text("Resume"), '
-                'button:has-text("Open"),   a:has-text("Open")'
-            )
+            view_buttons = []
+            try:
+                view_buttons = scope.query_selector_all(
+                    'button:has-text("View"),   a:has-text("View"), '
+                    'button:has-text("Start"),  a:has-text("Start"), '
+                    'button:has-text("Resume"), a:has-text("Resume"), '
+                    'button:has-text("Open"),   a:has-text("Open")'
+                )
+            except Exception as query_err:
+                logger.warning(f"  DOM query note ({query_err}) — refreshing page...")
+                try:
+                    self.page.reload(wait_until="domcontentloaded", timeout=20000)
+                    time.sleep(3)
+                    scope = self._get_active_module_container(mod_id, mod_name)
+                    view_buttons = scope.query_selector_all(
+                        'button:has-text("View"),   a:has-text("View"), '
+                        'button:has-text("Start"),  a:has-text("Start"), '
+                        'button:has-text("Resume"), a:has-text("Resume"), '
+                        'button:has-text("Open"),   a:has-text("Open")'
+                    )
+                except Exception:
+                    view_buttons = []
 
             # Check if there are any visible unlocked buttons
             has_visible_activities = False
