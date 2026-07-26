@@ -143,11 +143,14 @@ class VideoPlayer:
 
             # Process all activities inside this module
             completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name)
-            if completed_cnt > 0:
+            
+            # Verify if all activities in this module are actually 100% completed with checkmarks
+            is_fully_done = self._verify_module_100_percent(mod_id, mod_name)
+            if is_fully_done:
                 self.completed_module_ids.add(mod_id)
-                logger.info(f"  [✔] Processed {completed_cnt} activity(ies) in Module: '{mod_name[:55]}'")
+                logger.info(f"  [✔] 100% VERIFIED COMPLETE Module: '{mod_name[:55]}'")
             else:
-                logger.info(f"  [!] 0 activities processed in Module: '{mod_name[:55]}' (Navigation timeout or locked prerequisites)")
+                logger.warning(f"  [!] Module '{mod_name[:40]}' still has uncompleted or locked activities pending — WILL NOT advance to next module.")
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
@@ -716,9 +719,11 @@ class VideoPlayer:
         )
         iframe_has_pdf = self._iframe_contains_pdf()
 
+        # ── 2. PDF / Document / Embedded Resource ─────────────────────────────
         if pdf_element or iframe_has_pdf or "Course Instructions" in self.page.content() or "resource" in current_url.lower() or "file.php" in current_url.lower():
             logger.info("  PDF / Resource Document detected — performing full telemetry scroll to last page...")
             self._scroll_pdf_to_end()
+            self._click_mark_as_complete()
             logger.info("  PDF scrolled — waiting 12s for full completion telemetry sync to DIKSHA server...")
             time.sleep(12)
             self._return_to_url(return_url)
@@ -727,8 +732,61 @@ class VideoPlayer:
         # ── 3. Generic Activity (e.g. Moodle Page, SCORM, Assignment) ───────────
         logger.info("  Generic / Text Activity — scrolling page to bottom & waiting 8s for telemetry completion...")
         self._scroll_pdf_to_end()
+        self._click_mark_as_complete()
         time.sleep(8)
         self._return_to_url(return_url)
+
+    def _click_mark_as_complete(self):
+        """Clicks any explicit 'Mark as Complete' / 'Finish' / 'Next' button if present."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                btn = target.query_selector(
+                    "button:has-text('Mark as complete'), button:has-text('Mark as done'), "
+                    "button:has-text('Finish'), button:has-text('Complete'), "
+                    "a:has-text('Mark as complete'), input[value*='Mark as complete'], "
+                    ".completionbtn, #completion-btn, [data-action='toggle-manual-completion']"
+                )
+                if btn and btn.is_visible():
+                    logger.info("  ✔ Found 'Mark as Complete' button — clicking to trigger completion telemetry...")
+                    btn.click(force=True)
+                    time.sleep(3)
+                    break
+            except Exception:
+                pass
+
+    def _verify_module_100_percent(self, mod_id: str, mod_name: str) -> bool:
+        """Verifies if all visible activities inside a module have checkmarks. Returns True ONLY if 0 uncompleted remain."""
+        try:
+            elements = self.page.query_selector_all(
+                "a[data-href], div.course-library-link, div.library-card, "
+                "div.new-card, .activityinstance, .mod-indent"
+            )
+            if not elements:
+                return False
+
+            uncompleted_count = 0
+            for elem in elements:
+                try:
+                    txt = elem.inner_text().strip()
+                    if not txt:
+                        continue
+                    if "not available unless" in txt.lower():
+                        uncompleted_count += 1
+                        continue
+                    checkmark = elem.query_selector(
+                        ".fa-check, .fa-check-circle, .micon-check_circle, "
+                        ".check-icon, svg.check, i.fa-check, [class*='check'], [class*='complete']"
+                    )
+                    has_check = checkmark is not None or "✔" in txt or "100%" in txt
+                    if not has_check:
+                        uncompleted_count += 1
+                except Exception:
+                    pass
+
+            logger.info(f"  Module '{mod_name[:35]}' verification: {uncompleted_count} uncompleted activity(ies) remaining.")
+            return uncompleted_count == 0
+        except Exception:
+            return False
 
     # ------------------------------------------------------------------ #
     #  Navigation — reload closes overlay; goto handles new-URL activities
