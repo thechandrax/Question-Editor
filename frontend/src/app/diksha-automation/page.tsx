@@ -549,7 +549,8 @@ export default function DikshaAutomationPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         .dash-root * { font-family: 'Cambria', Georgia, serif !important; box-sizing: border-box; }
-        @keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.7} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
         @keyframes progress-shine { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         @keyframes fade-in-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         .fade-in-up { animation: fade-in-up 0.35s ease both; }
@@ -1013,9 +1014,44 @@ export default function DikshaAutomationPage() {
             {/* Content Area */}
             <div style={{padding:'28px 30px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
               {detailsLoading ? (
-                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 0',gap:'16px'}}>
-                  <IconSpinner />
-                  <p style={{margin:0,fontSize:'14px',color:'#64748b',fontWeight:'600'}}>Fetching course content & details from DIKSHA portal...</p>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'85px 24px',gap:'22px'}}>
+                  {/* Glowing Badge with Animated Dual Ring */}
+                  <div style={{
+                    position:'relative',width:'76px',height:'76px',display:'flex',alignItems:'center',justifyContent:'center'
+                  }}>
+                    <div style={{
+                      position:'absolute',inset:'-8px',borderRadius:'28px',
+                      background:'linear-gradient(135deg,#4f46e5,#7c3aed)',
+                      opacity:0.3,filter:'blur(14px)',animation:'pulse-dot 2s ease-in-out infinite'
+                    }}/>
+                    <div style={{
+                      width:'68px',height:'68px',borderRadius:'22px',
+                      background:'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#7c3aed 100%)',
+                      display:'flex',alignItems:'center',justifyContent:'center',color:'#ffffff',
+                      boxShadow:'0 14px 32px -6px rgba(79,70,229,0.45)',position:'relative',zIndex:1
+                    }}>
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{animation:'spin 1.2s linear infinite'}}>
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div style={{textAlign:'center'}}>
+                    <h4 style={{margin:'0 0 6px',fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>
+                      Fetching Course Content
+                    </h4>
+                    <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'600'}}>
+                      Syncing module structure & live progress directly from DIKSHA portal...
+                    </p>
+                  </div>
+
+                  {/* Animated Progress Bar */}
+                  <div style={{
+                    width:'260px',height:'6px',background:'#e2e8f0',borderRadius:'10px',
+                    overflow:'hidden',position:'relative',marginTop:'4px'
+                  }}>
+                    <div className="progress-bar-animated" style={{width:'100%',height:'100%',borderRadius:'10px'}}/>
+                  </div>
                 </div>
               ) : detailsError ? (
                 <div style={{textAlign:'center',padding:'40px 0'}}>
