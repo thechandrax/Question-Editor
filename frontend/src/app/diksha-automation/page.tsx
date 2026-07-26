@@ -617,9 +617,15 @@ export default function DikshaAutomationPage() {
             <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
               {/* Status pill (Only shown when active/running/paused/done/error) */}
               {statusLabel !== "Idle" && (
-                <div style={{display:'flex',alignItems:'center',gap:'8px',background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'20px',padding:'6px 14px'}}>
-                  <div style={{width:'8px',height:'8px',borderRadius:'50%',background:statusColor,position:'relative',flexShrink:0}}/>
-                  <span style={{fontSize:'12px',fontWeight:'700',color:statusColor}}>{statusLabel}</span>
+                <div style={{
+                  display:'inline-flex',alignItems:'center',gap:'8px',
+                  padding:'8px 18px',fontSize:'12px',fontWeight:'800',
+                  background:'#ffffff',border:`1.5px solid ${statusColor}40`,
+                  color:statusColor,borderRadius:'14px',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
+                }}>
+                  <div style={{width:'8px',height:'8px',borderRadius:'50%',background:statusColor,flexShrink:0,boxShadow:`0 0 6px ${statusColor}`}}/>
+                  <span>{statusLabel}</span>
                 </div>
               )}
 
@@ -629,7 +635,14 @@ export default function DikshaAutomationPage() {
                     onClick={handlePauseToggle}
                     disabled={actionLoading}
                     className="btn"
-                    style={{padding:'8px 16px',fontSize:'12px',background: isPaused ? '#fef3c7' : '#f1f5f9',border:`1px solid ${isPaused ? '#fcd34d' : '#cbd5e1'}`,color: isPaused ? '#b45309' : '#334155'}}
+                    style={{
+                      padding:'8px 18px',fontSize:'12px',fontWeight:'800',
+                      background: isPaused ? '#fffbeb' : '#ffffff',
+                      border: `1.5px solid ${isPaused ? '#fcd34d' : '#cbd5e1'}`,
+                      color: isPaused ? '#b45309' : '#334155',
+                      borderRadius:'14px',
+                      boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
+                    }}
                   >
                     {isPaused ? '▶ Resume' : '⏸ Pause'}
                   </button>
@@ -637,7 +650,14 @@ export default function DikshaAutomationPage() {
                     onClick={handleStop}
                     disabled={actionLoading}
                     className="btn"
-                    style={{padding:'8px 16px',fontSize:'12px',background:'#fef2f2',border:'1px solid #fecaca',color:'#dc2626'}}
+                    style={{
+                      padding:'8px 18px',fontSize:'12px',fontWeight:'800',
+                      background:'#fff1f2',
+                      border:'1.5px solid #fecdd3',
+                      color:'#dc2626',
+                      borderRadius:'14px',
+                      boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
+                    }}
                   >
                     ⏹ Stop
                   </button>
@@ -648,11 +668,12 @@ export default function DikshaAutomationPage() {
                 onClick={() => setShowLogoutConfirm(true)}
                 className="btn"
                 style={{
-                  padding:'9px 18px',fontSize:'13px',fontWeight:'800',
-                  background:'#ffffff',border:'1.5px solid #e2e8f0',
-                  color:'#e11d48',borderRadius:'12px',
-                  boxShadow:'0 2px 8px rgba(0,0,0,0.04)',
-                  transition:'all 0.2s ease'
+                  padding:'8px 18px',fontSize:'12px',fontWeight:'800',
+                  background:'#ffffff',
+                  border:'1.5px solid #cbd5e1',
+                  color:'#e11d48',
+                  borderRadius:'14px',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
                 }}
               >
                 <IconLogout /> Logout
