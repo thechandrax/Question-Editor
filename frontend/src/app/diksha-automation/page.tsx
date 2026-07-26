@@ -449,7 +449,6 @@ export default function DikshaAutomationPage() {
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     className="input-field"
-                    style={{letterSpacing:'0.25em',fontFamily:'JetBrains Mono, monospace',fontWeight:'700',fontSize:'16px'}}
                   />
                 </div>
 
