@@ -713,10 +713,10 @@ class VideoPlayer:
         iframe_has_pdf = self._iframe_contains_pdf()
 
         if pdf_element or iframe_has_pdf or "Course Instructions" in self.page.content() or "resource" in current_url.lower() or "file.php" in current_url.lower():
-            logger.info("  PDF / Resource Document detected — scrolling to last page for completion telemetry...")
+            logger.info("  PDF / Resource Document detected — performing full telemetry scroll to last page...")
             self._scroll_pdf_to_end()
-            logger.info("  PDF scrolled — waiting 6s for telemetry sync to DIKSHA server...")
-            time.sleep(6)
+            logger.info("  PDF scrolled — waiting 12s for full completion telemetry sync to DIKSHA server...")
+            time.sleep(12)
             self._return_to_url(return_url)
             return
 
@@ -772,35 +772,28 @@ class VideoPlayer:
     # ------------------------------------------------------------------ #
 
     def _scroll_pdf_to_end(self):
-        """Scrolls the PDF viewer. Tries the hosting iframe first."""
-        try:
-            for frame in self.page.frames:
-                if frame == self.page.main_frame:
-                    continue
-                url = frame.url or ""
-                if not url or url == "about:blank":
-                    continue
-                logger.info(f"  Scrolling PDF in iframe: {url[:60]}")
-                for _ in range(8):
-                    try:
-                        frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                        time.sleep(0.5)
-                        frame.keyboard.press("PageDown")
-                        frame.keyboard.press("End")
-                    except Exception:
-                        pass
-                return
-        except Exception:
-            pass
-
-        # Fallback: main frame
-        for _ in range(8):
+        """Scrolls the PDF viewer completely from top to bottom, dispatching telemetry events."""
+        frames_to_scroll = [self.page] + [f for f in self.page.frames if f != self.page.main_frame and f.url and f.url != "about:blank"]
+        for frame in frames_to_scroll:
             try:
-                self.page.keyboard.press("PageDown")
+                frame.evaluate("""() => {
+                    window.scrollTo(0, 0);
+                    window.dispatchEvent(new Event('scroll'));
+                }""")
                 time.sleep(0.5)
-                self.page.keyboard.press("End")
-                time.sleep(0.5)
-                self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                for _ in range(10):
+                    frame.evaluate("""() => {
+                        window.scrollBy(0, 800);
+                        window.dispatchEvent(new Event('scroll'));
+                        let el = document.querySelector("#viewerContainer, .pdfViewer, #resourceobject, .resourcecontent");
+                        if (el) { el.scrollTop += 800; el.dispatchEvent(new Event('scroll')); }
+                    }""")
+                    time.sleep(0.4)
+                frame.evaluate("""() => {
+                    window.scrollTo(0, document.body.scrollHeight);
+                    window.dispatchEvent(new Event('scroll'));
+                    window.dispatchEvent(new Event('ended'));
+                }""")
             except Exception:
                 pass
 
