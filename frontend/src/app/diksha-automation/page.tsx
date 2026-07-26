@@ -1027,15 +1027,35 @@ export default function DikshaAutomationPage() {
             {/* Scan status toast */}
             {scanMessage && (
               <div style={{
-                marginBottom:'20px',padding:'12px 16px',borderRadius:'12px',fontSize:'13px',fontWeight:'600',
-                display:'flex',alignItems:'center',gap:'10px',
-                background: scanning ? '#eff6ff' : scanMessage.includes('Error') ? '#fef2f2' : '#ecfdf5',
-                border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecaca' : '#a7f3d0'}`,
-                color: scanning ? '#1d4ed8' : scanMessage.includes('Error') ? '#dc2626' : '#047857',
-                wordBreak: 'break-word', width: '100%'
+                marginBottom:'14px',
+                padding:'8px 14px',
+                borderRadius:'10px',
+                fontSize:'12px',
+                fontWeight:'700',
+                display:'flex',
+                alignItems:'center',
+                gap:'8px',
+                background: scanning ? '#eff6ff' : scanMessage.includes('Error') ? '#fff1f2' : '#ecfdf5',
+                border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecdd3' : '#a7f3d0'}`,
+                color: scanning ? '#1e40af' : scanMessage.includes('Error') ? '#e11d48' : '#047857',
+                wordBreak: 'break-word',
+                width: '100%',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
               }}>
-                {(scanning || scanMessage.includes('Error')) && <span>{scanning ? '⚙️' : '❌'}</span>}
-                {scanMessage}
+                {scanning ? (
+                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'#2563eb',flexShrink:0}}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                ) : scanMessage.includes('Error') ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+                <span>{scanMessage}</span>
               </div>
             )}
 
