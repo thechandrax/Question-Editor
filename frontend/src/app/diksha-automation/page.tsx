@@ -918,7 +918,8 @@ export default function DikshaAutomationPage() {
           .mobile-btn, .mobile-status-badge { width: 100% !important; height: 42px !important; min-height: 42px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-full-grid { grid-column: 1 / -1 !important; }
           .mobile-course-actions { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; margin-top: 4px !important; }
-          .mobile-log-controls { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; margin-top: 6px !important; }
+          .mobile-log-controls { width: 100% !important; display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 4px !important; align-items: center !important; margin-top: 4px !important; padding-bottom: 2px !important; -webkit-overflow-scrolling: touch !important; }
+          .mobile-log-controls > * { flex-shrink: 0 !important; white-space: nowrap !important; font-size: 10.5px !important; padding: 4px 7px !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
           .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
