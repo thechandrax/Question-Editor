@@ -160,6 +160,7 @@ export default function DikshaAutomationPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const [expandedModuleIdxs, setExpandedModuleIdxs] = useState<Record<number, boolean>>({});
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -644,7 +645,7 @@ export default function DikshaAutomationPage() {
               )}
 
               <button
-                onClick={() => { setStage("login"); setCourses([]); setHasScanned(false); setStatus(null); stopPolling(); }}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="btn"
                 style={{
                   padding:'9px 18px',fontSize:'13px',fontWeight:'800',
@@ -1306,6 +1307,73 @@ export default function DikshaAutomationPage() {
                 }}
               >
                 Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── LOGOUT CONFIRMATION MODAL ─── */}
+      {showLogoutConfirm && (
+        <div style={{
+          position:'fixed',inset:0,zIndex:99999,
+          background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
+        }}>
+          <div className="glass-card-light fade-in-up" style={{
+            width:'100%',maxWidth:'440px',borderRadius:'24px',overflow:'hidden',
+            padding:'32px 28px',textAlign:'center',
+            boxShadow:'0 25px 60px -15px rgba(0,0,0,0.25)',
+            border:'1px solid #e2e8f0',background:'#ffffff'
+          }}>
+            {/* Door/Warning Icon Badge */}
+            <div style={{
+              width:'68px',height:'68px',borderRadius:'22px',
+              background:'linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)',
+              border:'1.5px solid #fecdd3',color:'#e11d48',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              margin:'0 auto 20px',boxShadow:'0 10px 24px rgba(225,29,72,0.12)'
+            }}>
+              <IconLogout />
+            </div>
+
+            <h3 style={{margin:'0 0 8px',fontSize:'20px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>
+              Confirm Logout
+            </h3>
+            <p style={{margin:'0 0 28px',fontSize:'14px',color:'#64748b',lineHeight:'1.5',fontWeight:'500'}}>
+              Are you sure you want to log out of DIKSHA Courses? Any unsaved session will end.
+            </p>
+
+            <div style={{display:'flex',gap:'12px'}}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="btn"
+                style={{
+                  flex:1,padding:'12px 18px',fontSize:'13px',fontWeight:'800',
+                  background:'#f8fafc',border:'1.5px solid #cbd5e1',color:'#475569',
+                  borderRadius:'12px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  setStage("login");
+                  setCourses([]);
+                  setHasScanned(false);
+                  setStatus(null);
+                  stopPolling();
+                }}
+                className="btn"
+                style={{
+                  flex:1,padding:'12px 18px',fontSize:'13px',fontWeight:'800',
+                  background:'linear-gradient(135deg,#e11d48,#be123c)',color:'#ffffff',
+                  border:'none',borderRadius:'12px',
+                  boxShadow:'0 6px 20px rgba(225,29,72,0.25)'
+                }}
+              >
+                Yes, Logout
               </button>
             </div>
           </div>
