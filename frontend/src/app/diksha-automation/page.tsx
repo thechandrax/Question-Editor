@@ -1194,9 +1194,21 @@ export default function DikshaAutomationPage() {
                 <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
               <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
-                <span style={{fontSize:'11px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>
+                <div style={{
+                  fontSize:'11px',
+                  fontWeight:'700',
+                  color:'#475569',
+                  background:'#f1f5f9',
+                  border:'1px solid #cbd5e1',
+                  borderRadius:'8px',
+                  padding:'4px 10px',
+                  display:'inline-flex',
+                  alignItems:'center',
+                  gap:'4px',
+                  fontFamily:'JetBrains Mono, monospace'
+                }}>
                   {logsList.length} lines
-                </span>
+                </div>
                 <button
                   onClick={handleCopyLogs}
                   disabled={logsList.length === 0}
