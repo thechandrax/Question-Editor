@@ -857,8 +857,8 @@ export default function DikshaAutomationPage() {
         @media (min-width: 641px) {
           .mobile-brand-block { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px !important; width: auto !important; }
           .mobile-email-wrapper { width: auto !important; margin: 0 !important; }
-          .mobile-email-pill, .mobile-btn { height: 40px !important; min-height: 40px !important; padding: 0 18px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
-          .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 12px 24px !important; font-size: 13px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
+          .mobile-email-pill, .mobile-btn { height: 34px !important; min-height: 34px !important; padding: 0 14px !important; font-size: 11.5px !important; border-radius: 12px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+          .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 10px 20px !important; font-size: 12.5px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
         }
 
         @media (max-width: 640px) {
@@ -871,10 +871,10 @@ export default function DikshaAutomationPage() {
           .mobile-brand-block { width: 100% !important; gap: 10px !important; flex-direction: column !important; }
           .mobile-subtitle { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 11px !important; width: 100% !important; }
           .mobile-email-wrapper { width: 100% !important; display: flex !important; margin-top: 2px !important; margin-bottom: 0 !important; }
-          .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 42px !important; min-height: 42px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 36px !important; min-height: 36px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 11.5px !important; border-radius: 12px !important; box-sizing: border-box !important; }
           .mobile-email-text { max-width: 85% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
           .mobile-btn-group { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 2px !important; }
-          .mobile-btn, .mobile-status-badge { width: 100% !important; height: 42px !important; min-height: 42px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-btn, .mobile-status-badge { width: 100% !important; height: 36px !important; min-height: 36px !important; padding: 0 10px !important; font-size: 11.5px !important; justify-content: center !important; border-radius: 12px !important; box-sizing: border-box !important; }
           .mobile-full-grid { grid-column: 1 / -1 !important; }
           .mobile-course-actions { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; margin-top: 4px !important; }
           .mobile-log-controls { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; margin-top: 6px !important; }
