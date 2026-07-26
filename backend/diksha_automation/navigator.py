@@ -21,15 +21,25 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        # Scope parsing to main content container to avoid sidebars/headers
-        main_content = None
-        for selector in ['#region-main', '.main-content', '#maincontent', '#region-main-box', '.col-md-9']:
-            main_content = soup.select_one(selector)
-            if main_content:
-                logger.info(f"  Scoping HTML parse to container: {selector}")
-                break
+        # Scope parsing strictly to enrolled course containers to avoid recommended/popular courses
+        enrolled_container = None
+        enrolled_selectors = [
+            '#coursedata', '.coursedata', '[id*="coursedata"]', '[class*="coursedata"]',
+            '#ongoing_courses', '#ongoing', '#finished_courses', '#finished',
+            '.my-courses', '#mycourses', '[data-tab="ongoing"]', '[data-tab="finished"]',
+            '#region-main', '.main-content', '#maincontent', '#region-main-box'
+        ]
+        for selector in enrolled_selectors:
+            found = soup.select_one(selector)
+            if found:
+                container_text = found.get_text().lower()
+                # Skip if this container is explicitly for recommended/popular courses
+                if not any(skip_kw in container_text[:120] for skip_kw in ['recommended courses', 'popular courses', 'featured courses', 'explore all']):
+                    enrolled_container = found
+                    logger.info(f"  Scoping HTML parse strictly to ENROLLED container: {selector}")
+                    break
         
-        parse_root = main_content if main_content else soup
+        parse_root = enrolled_container if enrolled_container else soup
 
         # Double safety: Check for explicit "No courses found" message in the main content area
         main_text = parse_root.get_text().lower()
@@ -65,6 +75,22 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
         seen_titles = set()
         for elem in candidates:
             try:
+                # Parent hierarchy check: Skip if element is inside recommended/popular/explore section
+                is_recommended = False
+                curr = elem
+                for _ in range(6):
+                    if not curr or not hasattr(curr, 'get'):
+                        break
+                    cls_id = (curr.get('class', []) if isinstance(curr.get('class'), list) else []) + [curr.get('id', '')]
+                    cls_id_str = ' '.join(str(x) for x in cls_id).lower()
+                    if any(kw in cls_id_str for kw in ['recommended', 'popular', 'featured', 'explore', 'other-course', 'catalog', 'search-result', 'all-course']):
+                        is_recommended = True
+                        break
+                    curr = curr.parent
+
+                if is_recommended:
+                    continue
+
                 url = (elem.get('data-href') or '').strip()
                 if not url:
                     a_tag = elem.find('a', href=True)
