@@ -99,6 +99,12 @@ class VideoPlayer:
         # ── Get module list ────────────────────────────────────────────────
         module_list = self._get_module_list()
         logger.info(f"Total modules to process: {len(module_list)}")
+        logger.info("─── Course Modules Completion Status ─────────────────")
+        for m in module_list:
+            pct_str = "100%" if m.get("iscompleted") or int(m.get("progress", 0)) >= 100 else f"{int(m.get('progress', 0)):3d}%"
+            badge = "[✔]" if m.get("iscompleted") or int(m.get("progress", 0)) >= 100 else "[ ]"
+            logger.info(f"  {badge} {pct_str}  {m.get('name', '')[:55]}")
+        logger.info("──────────────────────────────────────────────────────")
 
         for module in module_list:
             mod_id   = str(module.get("id", ""))
@@ -106,13 +112,15 @@ class VideoPlayer:
             progress = int(module.get("progress", 0))
             is_done  = module.get("iscompleted", False)
 
+            if is_done or progress >= 100:
+                logger.info("════════════════════════════════════════════════════")
+                logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — Complete! Skipping.")
+                logger.info("════════════════════════════════════════════════════")
+                continue
+
             logger.info("════════════════════════════════════════════════════")
             logger.info(f"Module: '{mod_name[:55]}' | Progress: {progress}%")
             logger.info("════════════════════════════════════════════════════")
-
-            if is_done or progress >= 100:
-                logger.info("✔ Already complete — skipping.")
-                continue
 
             if not mod_id:
                 logger.warning("No module ID — skipping.")
@@ -131,6 +139,7 @@ class VideoPlayer:
 
             # Process all activities inside this module
             self._process_all_activities_in_module(module_url, mod_id, mod_name)
+            logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — All Activities Completed!")
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
