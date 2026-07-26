@@ -313,6 +313,22 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  // Restore session from localStorage on page refresh (F5 / reload)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("diksha_session");
+      if (saved) {
+        const { username: u, password: p, pin: pinVal } = JSON.parse(saved);
+        if (u && p && pinVal) {
+          setUsername(u);
+          setPassword(p);
+          setPin(pinVal);
+          setStage("dashboard");
+        }
+      }
+    } catch {}
+  }, []);
+
   // Auto clear scan toast message after 30 seconds
   useEffect(() => {
     if (scanMessage && !scanning) {
@@ -369,6 +385,7 @@ export default function DikshaAutomationPage() {
       const data = await res.json();
       if (data.valid) {
         setLoginVerified(true);
+        try { localStorage.setItem("diksha_session", JSON.stringify({ username, password, pin })); } catch {}
         // Clear old session state on new login
         try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
         setTimeout(() => {
@@ -520,6 +537,7 @@ export default function DikshaAutomationPage() {
       ),
       onConfirm: async () => {
         setConfirmModal(null);
+        try { localStorage.removeItem("diksha_session"); } catch {}
         try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
         setStage("login");
         setCourses([]);
