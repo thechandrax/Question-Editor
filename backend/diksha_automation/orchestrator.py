@@ -5,7 +5,7 @@ from auth import DikshaAuthenticator
 from navigator import CourseNavigator
 from player import VideoPlayer
 from api_client import DikshaAPIClient
-from utils import logger, take_screenshot_sync
+from utils import logger, take_screenshot_sync, log_error_diagnostic
 
 
 def fetch_courses_only(username=None, password=None, headless=True):
@@ -128,7 +128,8 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         time.sleep(30)
 
     except Exception as e:
-        logger.error(f"Error during automation: {e}", exc_info=True)
+        log_error_diagnostic(e, "Complete Course Automation Flow")
+        raise e
     finally:
         auth.close()
 
