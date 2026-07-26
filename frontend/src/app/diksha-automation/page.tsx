@@ -290,33 +290,32 @@ export default function DikshaAutomationPage() {
           .float-anim { animation: float 6s ease-in-out infinite; }
           .glow-orb { animation: glow-pulse 4s ease-in-out infinite; }
           .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 20px 50px -10px rgba(79, 70, 229, 0.08), 0 10px 20px -5px rgba(0, 0, 0, 0.04);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 25px 60px -15px rgba(79, 70, 229, 0.12), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
           }
           .input-field {
             background: #f8fafc;
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid #cbd5e1;
             color: #0f172a;
             width: 100%;
-            padding: 13px 16px;
-            border-radius: 12px;
-            font-size: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
             outline: none;
             transition: all 0.2s ease;
           }
-          .input-field:focus { border-color: #6366f1; background: #ffffff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
+          .input-field:focus { border-color: #4f46e5; background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15); }
           .input-field::placeholder { color: #94a3b8; }
           .btn-primary {
             width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 700;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 800;
             font-size: 15px;
             color: white;
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #7c3aed 100%);
             border: none;
             cursor: pointer;
             display: flex;
@@ -324,47 +323,47 @@ export default function DikshaAutomationPage() {
             justify-content: center;
             gap: 8px;
             transition: all 0.25s ease;
-            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 10px 28px rgba(79, 70, 229, 0.35);
           }
-          .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(79, 70, 229, 0.4); }
+          .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(79, 70, 229, 0.45); }
           .btn-primary:active { transform: translateY(0); }
         `}</style>
         <div className="diksha-root" style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',position:'relative',overflow:'hidden'}}>
           {/* Animated background glowing gradient orbs */}
-          <div className="glow-orb" style={{position:'absolute',top:'5%',left:'15%',width:'550px',height:'550px',background:'radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none'}}/>
-          <div className="glow-orb" style={{position:'absolute',bottom:'5%',right:'10%',width:'450px',height:'450px',background:'radial-gradient(circle,rgba(234,88,12,0.12) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none',animationDelay:'2s'}}/>
+          <div className="glow-orb" style={{position:'absolute',top:'5%',left:'15%',width:'550px',height:'550px',background:'radial-gradient(circle,rgba(99,102,241,0.20) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none'}}/>
+          <div className="glow-orb" style={{position:'absolute',bottom:'5%',right:'10%',width:'450px',height:'450px',background:'radial-gradient(circle,rgba(124,58,237,0.15) 0%,transparent 70%)',borderRadius:'50%',pointerEvents:'none',animationDelay:'2s'}}/>
 
           {/* Grid pattern overlay */}
-          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
+          <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
 
-          <div style={{width:'100%',maxWidth:'450px',position:'relative',zIndex:10}}>
+          <div style={{width:'100%',maxWidth:'460px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div className="float-anim" style={{textAlign:'center',marginBottom:'32px'}}>
-              <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'76px',height:'76px',borderRadius:'22px',background:'linear-gradient(135deg,#4f46e5,#6366f1)',padding:'3px',boxShadow:'0 16px 40px rgba(79,70,229,0.3)',marginBottom:'20px'}}>
-                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'19px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
+            <div className="float-anim" style={{textAlign:'center',marginBottom:'36px'}}>
+              <div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'80px',height:'80px',borderRadius:'24px',background:'linear-gradient(135deg,#4f46e5,#7c3aed)',padding:'3px',boxShadow:'0 18px 44px rgba(79,70,229,0.35)',marginBottom:'22px'}}>
+                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'21px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
                   <IconGraduate/>
                 </div>
               </div>
-              <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 8px',letterSpacing:'-0.5px'}}>
+              <h1 style={{fontSize:'32px',fontWeight:'800',color:'#0f172a',margin:'0 0 8px',letterSpacing:'-0.5px'}}>
                 DIKSHA Automation
               </h1>
-              <p style={{color:'#64748b',fontSize:'14px',margin:0,lineHeight:'1.6',fontWeight:'500'}}>
+              <p style={{color:'#64748b',fontSize:'15px',margin:0,lineHeight:'1.6',fontWeight:'600'}}>
                 Ultra Pro Course Automation Platform
               </p>
             </div>
 
             {/* Glass Card */}
-            <div className="glass-card" style={{borderRadius:'24px',padding:'36px'}}>
+            <div className="glass-card" style={{borderRadius:'28px',padding:'38px'}}>
               {loginError && (
-                <div style={{marginBottom:'20px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'12px',padding:'12px 16px',display:'flex',gap:'10px',alignItems:'flex-start'}}>
-                  <span style={{fontSize:'16px'}}>⚠️</span>
-                  <p style={{color:'#dc2626',fontSize:'13px',margin:0,lineHeight:'1.5',fontWeight:'600'}}>{loginError}</p>
+                <div style={{marginBottom:'22px',background:'#fef2f2',border:'1px solid #fecaca',borderRadius:'14px',padding:'14px 18px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
+                  <span style={{fontSize:'18px'}}>⚠️</span>
+                  <p style={{color:'#dc2626',fontSize:'13px',margin:0,lineHeight:'1.5',fontWeight:'700'}}>{loginError}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+              <form onSubmit={handleSimpleLogin} style={{display:'flex',flexDirection:'column',gap:'22px'}}>
                 <div>
-                  <label style={{display:'block',fontSize:'12px',fontWeight:'700',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'800',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
                     DIKSHA Username / Mobile
                   </label>
                   <input
@@ -378,7 +377,7 @@ export default function DikshaAutomationPage() {
                 </div>
 
                 <div>
-                  <label style={{display:'block',fontSize:'12px',fontWeight:'700',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'800',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
                     Password
                   </label>
                   <div style={{position:'relative'}}>
@@ -389,12 +388,12 @@ export default function DikshaAutomationPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
-                      style={{paddingRight:'44px'}}
+                      style={{paddingRight:'46px'}}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPass(!showPass)}
-                      style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'18px',padding:'4px'}}
+                      style={{position:'absolute',right:'14px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'18px',padding:'4px'}}
                     >
                       {showPass ? '🙈' : '👁️'}
                     </button>
@@ -443,16 +442,16 @@ export default function DikshaAutomationPage() {
               </form>
 
               {/* Security note */}
-              <div style={{marginTop:'24px',paddingTop:'20px',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
-                <span style={{fontSize:'13px'}}>🔒</span>
-                <span style={{fontSize:'12px',color:'#64748b',fontWeight:'500'}}>Secured via Keycloak SSO · DIKSHA Portal</span>
+              <div style={{marginTop:'26px',paddingTop:'22px',borderTop:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+                <span style={{fontSize:'14px'}}>🔒</span>
+                <span style={{fontSize:'12px',color:'#64748b',fontWeight:'600'}}>Secured via Keycloak SSO · DIKSHA Portal</span>
               </div>
             </div>
 
             {/* Feature pills */}
-            <div style={{display:'flex',justifyContent:'center',gap:'8px',marginTop:'24px',flexWrap:'wrap'}}>
+            <div style={{display:'flex',justifyContent:'center',gap:'10px',marginTop:'26px',flexWrap:'wrap'}}>
               {['Auto-Login','Course Scan','Progress Track','Pause & Stop'].map((f) => (
-                <span key={f} style={{fontSize:'11px',fontWeight:'600',color:'#4f46e5',background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.18)',borderRadius:'20px',padding:'5px 12px'}}>
+                <span key={f} style={{fontSize:'12px',fontWeight:'700',color:'#4338ca',background:'#e0e7ff',border:'1px solid #c7d2fe',borderRadius:'20px',padding:'6px 14px'}}>
                   {f}
                 </span>
               ))}
