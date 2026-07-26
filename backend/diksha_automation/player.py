@@ -358,27 +358,30 @@ class VideoPlayer:
             # Find active module container to scope the buttons search
             scope = self._get_active_module_container(mod_id, mod_name)
 
-            # Find action buttons ONLY inside the active module container
+            # Find action buttons ONLY inside the active module container (supports English & regional DIKSHA layouts)
             view_buttons = []
+            selectors = (
+                'button:has-text("View"),   a:has-text("View"), '
+                'button:has-text("Start"),  a:has-text("Start"), '
+                'button:has-text("Resume"), a:has-text("Resume"), '
+                'button:has-text("Open"),   a:has-text("Open"), '
+                'button:has-text("চাওক"),   a:has-text("চাওক"), '
+                'button:has-text("আৰম্ভ"),   a:has-text("আৰম্ভ"), '
+                'button:has-text("দেখें"),   a:has-text("দেখें"), '
+                'button:has-text("শুরু"),   a:has-text("শুরু"), '
+                'a.btn-primary, button.btn-primary, '
+                'a.btn-outline-primary, button.btn-outline-primary, '
+                '.view-btn, .start-btn, [data-action="view"]'
+            )
             try:
-                view_buttons = scope.query_selector_all(
-                    'button:has-text("View"),   a:has-text("View"), '
-                    'button:has-text("Start"),  a:has-text("Start"), '
-                    'button:has-text("Resume"), a:has-text("Resume"), '
-                    'button:has-text("Open"),   a:has-text("Open")'
-                )
+                view_buttons = scope.query_selector_all(selectors)
             except Exception as query_err:
                 logger.warning(f"  DOM query note ({query_err}) — refreshing page...")
                 try:
                     self.page.reload(wait_until="domcontentloaded", timeout=20000)
                     time.sleep(3)
                     scope = self._get_active_module_container(mod_id, mod_name)
-                    view_buttons = scope.query_selector_all(
-                        'button:has-text("View"),   a:has-text("View"), '
-                        'button:has-text("Start"),  a:has-text("Start"), '
-                        'button:has-text("Resume"), a:has-text("Resume"), '
-                        'button:has-text("Open"),   a:has-text("Open")'
-                    )
+                    view_buttons = scope.query_selector_all(selectors)
                 except Exception:
                     view_buttons = []
 
@@ -407,12 +410,7 @@ class VideoPlayer:
                         time.sleep(3)
                         # Re-read
                         scope = self._get_active_module_container(mod_id, mod_name)
-                        view_buttons = scope.query_selector_all(
-                            'button:has-text("View"),   a:has-text("View"), '
-                            'button:has-text("Start"),  a:has-text("Start"), '
-                            'button:has-text("Resume"), a:has-text("Resume"), '
-                            'button:has-text("Open"),   a:has-text("Open")'
-                        )
+                        view_buttons = scope.query_selector_all(selectors)
                 except Exception as ex:
                     logger.debug(f"Accordion toggle error: {ex}")
 
@@ -424,6 +422,12 @@ class VideoPlayer:
                     if not (btn.is_visible() and btn.is_enabled()):
                         continue
 
+                    # Filter out locked or disabled buttons (e.g. prerequisite pending)
+                    btn_class = (btn.get_attribute("class") or "").lower()
+                    aria_dis = btn.get_attribute("aria-disabled")
+                    if "disabled" in btn_class or "dimmed" in btn_class or aria_dis == "true":
+                        continue
+
                     parent = (
                         btn.query_selector("xpath=ancestor::div[contains(@class, 'courses_modules_desc')]") or
                         btn.query_selector("xpath=ancestor::div[contains(@class, 'draggable-item')]") or
@@ -432,6 +436,11 @@ class VideoPlayer:
                     )
                     parent_text = parent.inner_text().strip() if parent else ""
                     clean_text  = parent_text.split("\n")[0].strip()
+
+                    # Ignore locked activity prerequisite text
+                    if "not available unless" in parent_text.lower():
+                        logger.info(f"  Activity '{clean_text[:35]}' is locked by prerequisite — waiting for completion.")
+                        continue
 
                     # Check for completion via checkmark icons, 100% progress, or text status
                     is_completed = False
@@ -498,6 +507,25 @@ class VideoPlayer:
 
         current_url = self.page.url
         logger.info(f"  Activity URL: {current_url[:80]}")
+
+        # ── Auto Click Play Button if Present ─────────────────────────────
+        for frame in [self.page] + list(self.page.frames):
+            try:
+                play_btn = (
+                    frame.query_selector(".vjs-big-play-button") or
+                    frame.query_selector(".play-btn") or
+                    frame.query_selector("button[title*='Play']") or
+                    frame.query_selector(".vjs-play-control") or
+                    frame.query_selector("button.play") or
+                    frame.query_selector(".play-icon") or
+                    frame.query_selector(".fa-play")
+                )
+                if play_btn and play_btn.is_visible():
+                    logger.info("  Auto-clicking play button to start video playback...")
+                    play_btn.click(force=True)
+                    time.sleep(1)
+            except Exception:
+                pass
 
         # ── 1. Video (retry loop up to 15s for iframe player to load) ──────
         video_element = None
@@ -616,24 +644,33 @@ class VideoPlayer:
             self._return_to_url(return_url)
             return
 
-        # ── 2. PDF / document ─────────────────────────────────────────────
-        pdf_element   = (
+        # ── 2. PDF / Document / Embedded Resource ─────────────────────────────
+        pdf_element = (
             self.page.query_selector("#viewerContainer") or
             self.page.query_selector(".pdfViewer") or
-            self.page.query_selector(".doc-view")
+            self.page.query_selector(".doc-view") or
+            self.page.query_selector("#resourceobject") or
+            self.page.query_selector(".resourcecontent") or
+            self.page.query_selector("object[type*='pdf']") or
+            self.page.query_selector("embed[type*='pdf']") or
+            self.page.query_selector("canvas.pdf-canvas") or
+            self.page.query_selector(".pdf-viewer") or
+            self.page.query_selector("#pdf-player")
         )
         iframe_has_pdf = self._iframe_contains_pdf()
 
-        if pdf_element or iframe_has_pdf or "Course Instructions" in self.page.content():
-            logger.info("  PDF detected — scrolling to last page...")
+        if pdf_element or iframe_has_pdf or "Course Instructions" in self.page.content() or "resource" in current_url.lower() or "file.php" in current_url.lower():
+            logger.info("  PDF / Resource Document detected — scrolling to last page for completion telemetry...")
             self._scroll_pdf_to_end()
-            logger.info("  PDF scrolled — returning to module page...")
+            logger.info("  PDF scrolled — waiting 6s for telemetry sync to DIKSHA server...")
+            time.sleep(6)
             self._return_to_url(return_url)
             return
 
-        # ── 3. Generic ────────────────────────────────────────────────────
-        logger.info("  Generic activity — waiting 4s then returning...")
-        time.sleep(4)
+        # ── 3. Generic Activity (e.g. Moodle Page, SCORM, Assignment) ───────────
+        logger.info("  Generic / Text Activity — scrolling page to bottom & waiting 8s for telemetry completion...")
+        self._scroll_pdf_to_end()
+        time.sleep(8)
         self._return_to_url(return_url)
 
     # ------------------------------------------------------------------ #
@@ -719,12 +756,12 @@ class VideoPlayer:
             for frame in self.page.frames:
                 if frame == self.page.main_frame:
                     continue
-                url = frame.url or ""
-                if any(k in url.lower() for k in ["pdf", "viewer", "document", "content"]):
+                url = (frame.url or "").lower()
+                if any(k in url for k in ["pdf", "viewer", "document", "content", "resource", "file.php", "mod_resource", "pluginfile"]):
                     return True
                 try:
                     if frame.evaluate(
-                        'document.querySelector("#viewerContainer,.pdfViewer,canvas") ? true : false'
+                        'document.querySelector("#viewerContainer,.pdfViewer,canvas,object,embed,#resourceobject,.resourcecontent") ? true : false'
                     ):
                         return True
                 except Exception:
