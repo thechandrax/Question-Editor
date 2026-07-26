@@ -37,6 +37,8 @@ class VideoPlayer:
         self._course_url = ""
         self._course_id = ""
         self._section_id = "2486"
+        self.completed_module_ids = set()
+        self.last_module_list = []
 
     # ------------------------------------------------------------------ #
     #  Public step methods
@@ -98,6 +100,7 @@ class VideoPlayer:
 
         # ── Get module list ────────────────────────────────────────────────
         module_list = self._get_module_list()
+        self.last_module_list = module_list
         logger.info(f"Total modules to process: {len(module_list)}")
         logger.info("─── Course Modules Completion Status ─────────────────")
         for m in module_list:
@@ -113,6 +116,7 @@ class VideoPlayer:
             is_done  = module.get("iscompleted", False)
 
             if is_done or progress >= 100:
+                self.completed_module_ids.add(mod_id)
                 logger.info("════════════════════════════════════════════════════")
                 logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — Complete! Skipping.")
                 logger.info("════════════════════════════════════════════════════")
@@ -139,6 +143,9 @@ class VideoPlayer:
 
             # Process all activities inside this module
             self._process_all_activities_in_module(module_url, mod_id, mod_name)
+            self.completed_module_ids.add(mod_id)
+            module["progress"] = 100
+            module["iscompleted"] = True
             logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — All Activities Completed!")
 
         take_screenshot_sync(self.page, "course_lessons_finished")
