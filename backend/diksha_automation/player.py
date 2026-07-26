@@ -150,7 +150,8 @@ class VideoPlayer:
                 self.completed_module_ids.add(mod_id)
                 logger.info(f"  [✔] 100% VERIFIED COMPLETE Module: '{mod_name[:55]}'")
             else:
-                logger.warning(f"  [!] Module '{mod_name[:40]}' still has uncompleted or locked activities pending — WILL NOT advance to next module.")
+                logger.warning(f"  [!] Module '{mod_name[:40]}' still has uncompleted or locked activities pending — STOPPING MODULE ADVANCEMENT.")
+                break
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
@@ -451,10 +452,12 @@ class VideoPlayer:
                     logger.debug(f"Accordion toggle error: {ex}")
 
             unlocked_btn = None
+            unlocked_btn = None
             item_title   = f"Activity_{act_num}"
+            item_key     = ""
             has_locked_prereqs = False
 
-            for btn in view_buttons:
+            for btn_idx, btn in enumerate(view_buttons):
                 try:
                     if not (btn.is_visible() and btn.is_enabled()):
                         continue
@@ -474,6 +477,7 @@ class VideoPlayer:
                     )
                     parent_text = parent.inner_text().strip() if parent else ""
                     clean_text  = parent_text.split("\n")[0].strip()
+                    curr_item_key = f"act_{btn_idx}_{clean_text}"
 
                     # Ignore locked activity prerequisite text
                     if "not available unless" in parent_text.lower():
@@ -499,8 +503,8 @@ class VideoPlayer:
                         if "✔" in parent_text or "100%" in parent_text:
                             is_completed = True
 
-                    # Only skip if DIKSHA explicitly displays a checkmark, or if we played this title 3 times
-                    attempts = activity_attempts.get(clean_text, 0)
+                    # Only skip if DIKSHA explicitly displays a checkmark, or if we played this item 3 times
+                    attempts = activity_attempts.get(curr_item_key, 0)
                     if is_completed or attempts >= 3:
                         if is_completed:
                             logger.info(f"  Already done: '{clean_text[:35]}' — skipping.")
@@ -510,6 +514,7 @@ class VideoPlayer:
 
                     unlocked_btn = btn
                     item_title   = clean_text
+                    item_key     = curr_item_key
                     break
                 except Exception:
                     continue
@@ -546,7 +551,7 @@ class VideoPlayer:
             # Process the activity then return to the module page
             self._process_activity_then_return(module_url)
 
-            activity_attempts[item_title] = activity_attempts.get(item_title, 0) + 1
+            activity_attempts[item_key] = activity_attempts.get(item_key, 0) + 1
             completed_count += 1
             logger.info("  Waiting 7s for server checkmark sync...")
             time.sleep(7)
