@@ -1237,6 +1237,12 @@ export default function DikshaAutomationPage() {
                   {logsList.length} lines
                 </div>
                 <button
+                  onClick={() => setShowLogs(!showLogs)}
+                  style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}
+                >
+                  {showLogs ? 'Collapse' : 'Expand'}
+                </button>
+                <button
                   onClick={handleCopyLogs}
                   disabled={logsList.length === 0}
                   style={{
@@ -1251,12 +1257,6 @@ export default function DikshaAutomationPage() {
                   }}
                 >
                   {copiedLogs ? 'Copied! ✓' : <><IconCopy /> Copy Logs</>}
-                </button>
-                <button
-                  onClick={() => setShowLogs(!showLogs)}
-                  style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}
-                >
-                  {showLogs ? 'Collapse' : 'Expand'}
                 </button>
               </div>
             </div>
