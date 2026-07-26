@@ -618,19 +618,18 @@ export default function DikshaAutomationPage() {
             <div style={{textAlign:'center',marginBottom:'18px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
-                width:'74px',height:'74px',borderRadius:'22px',
-                background:'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#7c3aed 100%)',
-                padding:'3px',
-                boxShadow:'0 16px 36px -10px rgba(79,70,229,0.32), 0 0 16px rgba(99,102,241,0.18)',
-                marginBottom:'12px'
+                width:'78px',height:'78px',borderRadius:'24px',
+                background:'#ffffff',
+                padding:'10px',
+                border:'1.5px solid rgba(99,102,241,0.22)',
+                boxShadow:'0 16px 36px -10px rgba(79,70,229,0.25), 0 0 20px rgba(99,102,241,0.12)',
+                marginBottom:'14px'
               }}>
-                <div style={{
-                  width:'100%',height:'100%',background:'#ffffff',borderRadius:'19px',
-                  display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5',
-                  boxShadow:'inset 0 2px 4px rgba(0,0,0,0.02)'
-                }}>
-                  <IconGraduate/>
-                </div>
+                <img
+                  src="/diksha-logo.png"
+                  alt="DIKSHA Official Logo"
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.06))'}}
+                />
               </div>
               <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 3px',letterSpacing:'-0.5px'}}>
                 DIKSHA COURSES
@@ -834,12 +833,18 @@ export default function DikshaAutomationPage() {
           {/* ── TOP NAVBAR ─────────────────────────────────────────────── */}
           <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',width:'100%'}}>
             <div style={{display:'flex',alignItems:'center',gap:'12px',maxWidth:'100%'}}>
-              <div style={{width:'44px',height:'44px',borderRadius:'14px',background:'linear-gradient(135deg,#4f46e5,#6366f1)',padding:'2px',boxShadow:'0 6px 20px rgba(79,70,229,0.3)',flexShrink:0}}>
-                <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                  </svg>
-                </div>
+              <div style={{
+                width:'48px',height:'48px',borderRadius:'16px',
+                background:'#ffffff',padding:'6px',
+                border:'1.5px solid rgba(99,102,241,0.22)',
+                boxShadow:'0 8px 22px rgba(79,70,229,0.18)',
+                flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'
+              }}>
+                <img
+                  src="/diksha-logo.png"
+                  alt="DIKSHA Official Logo"
+                  style={{width:'100%',height:'100%',objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.06))'}}
+                />
               </div>
               <div style={{minWidth:0,flex:1}}>
                 <h1 style={{margin:0,fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px',lineHeight:'1.2'}}>DIKSHA COURSES</h1>

@@ -5,8 +5,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Question Editor",
-  description: "Advanced PDF and HTML Question Extraction",
+  title: "DIKSHA Courses — Complete Courses Automatically",
+  description: "Automate your DIKSHA learning journey & course completions smoothly.",
+  icons: {
+    icon: "/diksha-logo.png",
+    shortcut: "/diksha-logo.png",
+    apple: "/diksha-logo.png",
+  },
 };
 
 export default function RootLayout({
