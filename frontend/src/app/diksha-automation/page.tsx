@@ -1400,7 +1400,13 @@ export default function DikshaAutomationPage() {
                       {/* Course banner */}
                       <div style={{height:'120px',background: isCurrent ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : isFinished ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',borderBottom:'1px solid #e2e8f0',width:'100%'}}>
                         {c.image_url ? (
-                          <img src={c.image_url} alt={c.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img
+                            src={`/api/diksha/proxy-image?url=${encodeURIComponent(c.image_url)}`}
+                            alt={c.title}
+                            style={{width:'100%',height:'100%',objectFit:'cover'}}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+
                         ) : (
                           <div style={{textAlign:'center'}}>
                             <div style={{width:'48px',height:'48px',borderRadius:'14px',background: isFinished ? '#ecfdf5' : '#e0e7ff',border:`1px solid ${isFinished ? '#6ee7b7' : '#a5b4fc'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 4px',fontSize:'22px'}}>

@@ -7,9 +7,9 @@ import random
 import logging
 import fitz
 import base64
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 import time
 import sys
@@ -620,11 +620,38 @@ async def fetch_diksha_courses(req: DikshaFetchRequest):
         logging.error("Failed to fetch courses: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch courses: {str(e)}")
 
+@app.get("/api/diksha/proxy-image")
+async def proxy_diksha_image(url: str = Query(...)):
+    """
+    Proxies DIKSHA course thumbnail images through the backend.
+    DIKSHA images are session-authenticated; the <img> tag in the
+    Next.js frontend can't load them directly (cross-origin + auth).
+    This endpoint fetches the image server-side and streams it back.
+    """
+    if not url or not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Invalid image URL")
+    try:
+        scraper = cloudscraper.create_scraper()
+        resp = scraper.get(url, timeout=10, headers={
+            "Referer": "https://learning.diksha.gov.in/",
+            "User-Agent": "Mozilla/5.0"
+        })
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Image fetch failed")
+        content_type = resp.headers.get("Content-Type", "image/jpeg")
+        return Response(content=resp.content, media_type=content_type,
+                        headers={"Cache-Control": "public, max-age=3600"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Proxy error: {e}")
+
 
 class DikshaCourseDetailsRequest(BaseModel):
     username: str
     password: str
     course_url: str
+
 
 @app.post("/api/diksha/course-details")
 async def get_course_details(req: DikshaCourseDetailsRequest):

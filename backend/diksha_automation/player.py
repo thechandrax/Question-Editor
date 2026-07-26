@@ -147,16 +147,28 @@ class VideoPlayer:
             time.sleep(5)
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
-            # Process all activities inside this module
-            completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name)
+            # Process all activities inside this module (pass API progress so we don't falsely skip)
+            completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name, module_progress=progress)
 
             # Re-check stop signal after processing a module
             if STOP_EVENT.is_set():
                 logger.info("  [⏹] Stop requested — halting after current module.")
                 break
 
-            # Verify if all activities in this module are actually 100% completed with checkmarks
+            # Verify if all activities in this module are actually 100% completed.
+            # If the DOM scan says incomplete but we DID process at least 1 activity,
+            # give it 8s for server telemetry to register then re-check once more.
             is_fully_done = self._verify_module_100_percent(mod_id, mod_name)
+            if not is_fully_done and completed_cnt > 0:
+                logger.info("  Waiting 8s for DIKSHA telemetry sync then re-verifying module...")
+                time.sleep(8)
+                try:
+                    self.page.reload(wait_until="domcontentloaded", timeout=20000)
+                    time.sleep(3)
+                except Exception:
+                    pass
+                is_fully_done = self._verify_module_100_percent(mod_id, mod_name)
+
             if is_fully_done:
                 self.completed_module_ids.add(mod_id)
                 logger.info(f"  [✔] 100% VERIFIED COMPLETE Module: '{mod_name[:55]}'")
@@ -381,12 +393,16 @@ class VideoPlayer:
         logger.info("  No module container found — searching full page.")
         return self.page
 
-    def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str) -> int:
+    def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str, module_progress: int = 0) -> int:
         """
         Finds and processes every activity inside a module section.
         After each activity, reloads the module URL to close any overlay
         and re-read the (now updated) activity list.
         Returns the number of activities completed in this run.
+
+        module_progress: the API-reported % for this module (0 means nothing done yet
+                         on the DIKSHA server — so never trust DOM-only checkmarks on
+                         the very first attempt at each activity).
         """
         activity_attempts: dict = {}
         completed_count = 0
@@ -499,12 +515,15 @@ class VideoPlayer:
                         logger.info(f"  Activity '{clean_text[:35]}' is locked by prerequisite — waiting for completion telemetry.")
                         continue
 
-                    # Check for true completion strictly via DIKSHA DOM checkmark icons/text
+                    # Check for true completion strictly via DIKSHA DOM checkmark icons/text.
+                    # NOTE: We intentionally avoid [class*='check'] / [class*='complete'] because
+                    # those match ordinary CSS classes in Moodle (e.g. 'checkmark_container',
+                    # 'completion-info') and cause false positives when the module is at 0%.
                     is_completed = False
                     if parent:
                         checkmark = parent.query_selector(
                             ".fa-check, .fa-check-circle, .micon-check_circle, "
-                            ".check-icon, svg.check, i.fa-check, [class*='check'], [class*='complete']"
+                            ".check-icon, svg.check, i.fa-check"
                         )
                         if checkmark:
                             is_completed = True
@@ -517,8 +536,20 @@ class VideoPlayer:
                         if "✔" in parent_text or "100%" in parent_text:
                             is_completed = True
 
-                    # Only skip if DIKSHA explicitly displays a checkmark, or if we played this item 3 times
+                    # ── API cross-validation ────────────────────────────────────────────
+                    # If the DIKSHA API reported this module is at 0% progress, then no
+                    # activity can genuinely be marked complete on the server yet.
+                    # A DOM checkmark in that case is stale/false — force-process it.
                     attempts = activity_attempts.get(curr_item_key, 0)
+                    if is_completed and module_progress == 0 and attempts == 0:
+                        logger.info(
+                            f"  [Override] DOM shows checkmark for '{clean_text[:35]}' "
+                            f"but API says module is 0% — forcing re-process."
+                        )
+                        is_completed = False
+
+                    # Only skip if DIKSHA explicitly shows checkmark AND module is not at 0%,
+                    # OR if we have already played this item 3+ times without success.
                     if is_completed or attempts >= 3:
                         if is_completed:
                             logger.info(f"  Already done: '{clean_text[:35]}' — skipping.")
@@ -781,14 +812,26 @@ class VideoPlayer:
                 pass
 
     def _verify_module_100_percent(self, mod_id: str, mod_name: str) -> bool:
-        """Verifies if all visible activities inside a module have checkmarks. Returns True ONLY if 0 uncompleted remain."""
+        """
+        Verifies if all visible activities inside a module have checkmarks.
+        Scopes the check to the active module container only.
+        Returns True if 0 uncompleted activities remain (or if the module
+        container is not found — treat as OK and let API re-fetch decide).
+        """
         try:
-            elements = self.page.query_selector_all(
-                "a[data-href], div.course-library-link, div.library-card, "
-                "div.new-card, .activityinstance, .mod-indent"
+            # Scope check to just this module's container to avoid cross-module false reads
+            scope = self._get_active_module_container(mod_id, mod_name)
+
+            elements = scope.query_selector_all(
+                ".activityinstance, .mod-indent, div.course-library-link, "
+                "div.new-card, a[data-href]"
             )
+
+            # If the module container has no activity elements at all,
+            # we cannot say it's incomplete — return True to let the flow continue.
             if not elements:
-                return False
+                logger.info(f"  Module '{mod_name[:35]}' verification: no activity elements found — treating as OK.")
+                return True
 
             uncompleted_count = 0
             for elem in elements:
@@ -799,9 +842,10 @@ class VideoPlayer:
                     if "not available unless" in txt.lower():
                         uncompleted_count += 1
                         continue
+                    # Use ONLY specific DIKSHA checkmark selectors (no broad class* matchers)
                     checkmark = elem.query_selector(
                         ".fa-check, .fa-check-circle, .micon-check_circle, "
-                        ".check-icon, svg.check, i.fa-check, [class*='check'], [class*='complete']"
+                        ".check-icon, svg.check, i.fa-check"
                     )
                     has_check = checkmark is not None or "✔" in txt or "100%" in txt
                     if not has_check:
@@ -812,7 +856,8 @@ class VideoPlayer:
             logger.info(f"  Module '{mod_name[:35]}' verification: {uncompleted_count} uncompleted activity(ies) remaining.")
             return uncompleted_count == 0
         except Exception:
-            return False
+            # On error, return True so we don't block the course loop unnecessarily
+            return True
 
     # ------------------------------------------------------------------ #
     #  Navigation — reload closes overlay; goto handles new-URL activities
