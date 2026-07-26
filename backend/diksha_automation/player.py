@@ -151,14 +151,14 @@ class VideoPlayer:
         """
         if self.api and self._course_id and self._section_id:
             api_modules = self.api.get_module_progress(self._course_id, self._section_id, page=self.page)
-            if api_modules and any(m.get("progress", 0) > 0 or m.get("iscompleted") for m in api_modules):
+            if api_modules and len(api_modules) > 0:
                 logger.info(f"Using live API module list ({len(api_modules)} modules).")
                 return api_modules
 
         # DOM fallback: parse module checkmarks directly from page DOM
         logger.info("API progress data unpopulated — checking DOM checkmarks on page...")
         dom_modules = self._parse_module_list_from_dom()
-        if dom_modules and any(m.get("iscompleted") for m in dom_modules):
+        if dom_modules and len(dom_modules) > 0:
             return dom_modules
 
         # Fallback: hardcoded module IDs for course 1186

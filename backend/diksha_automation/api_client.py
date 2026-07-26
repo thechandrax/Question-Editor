@@ -147,8 +147,8 @@ class DikshaAPIClient:
                         if raw_modules:
                             for m in raw_modules:
                                 modules.append({
-                                    "id": str(m.get("syl_id") or m.get("id") or ""),
-                                    "name": m.get("syl_name") or m.get("name") or "",
+                                    "id": str(m.get("syl_id") or m.get("section_id") or m.get("sectionid") or m.get("section") or m.get("cmid") or m.get("id") or ""),
+                                    "name": m.get("syl_name") or m.get("name") or m.get("sectionname") or m.get("title") or "",
                                     "progress": int(m.get("progress") or m.get("syl_progress") or 0),
                                     "iscompleted": bool(m.get("iscompleted") or m.get("completed") or False)
                                 })
