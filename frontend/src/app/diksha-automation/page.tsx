@@ -806,11 +806,13 @@ export default function DikshaAutomationPage() {
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .mobile-brand-block { width: 100% !important; }
+          .mobile-subtitle { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 11px !important; width: 100% !important; }
           .mobile-email-wrapper { width: 100% !important; display: flex !important; margin-top: 4px !important; }
-          .mobile-email-pill { width: 100% !important; max-width: 100% !important; justify-content: center !important; text-align: center !important; padding: 10px 14px !important; font-size: 12px !important; border-radius: 14px !important; }
+          .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 42px !important; min-height: 42px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-email-text { max-width: 85% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
-          .mobile-btn-group { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
-          .mobile-btn { width: 100% !important; flex: 1 1 100% !important; padding: 12px 14px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; }
+          .mobile-btn-group { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-top: 4px !important; }
+          .mobile-btn { width: 100% !important; flex: 1 1 100% !important; height: 42px !important; min-height: 42px !important; padding: 0 14px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
           .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
@@ -853,7 +855,7 @@ export default function DikshaAutomationPage() {
                 </div>
                 <div style={{minWidth:0,flex:1}}>
                   <h1 style={{margin:0,fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px',lineHeight:'1.2'}}>DIKSHA COURSES</h1>
-                  <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'600',lineHeight:'1.3'}}>My Learning Journey & Course Automation</p>
+                  <p className="mobile-subtitle" style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'600',lineHeight:'1.3'}}>My Learning Journey & Course Automation</p>
                 </div>
               </div>
 
