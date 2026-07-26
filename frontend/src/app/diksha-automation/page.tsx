@@ -357,27 +357,27 @@ export default function DikshaAutomationPage() {
 
           <div style={{width:'100%',maxWidth:'460px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
-            <div style={{textAlign:'center',marginBottom:'36px'}}>
+            <div style={{textAlign:'center',marginBottom:'18px'}}>
               <div style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
-                width:'84px',height:'84px',borderRadius:'26px',
+                width:'74px',height:'74px',borderRadius:'22px',
                 background:'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#7c3aed 100%)',
                 padding:'3px',
-                boxShadow:'0 20px 40px -10px rgba(79,70,229,0.35), 0 0 20px rgba(99,102,241,0.2)',
-                marginBottom:'22px'
+                boxShadow:'0 16px 36px -10px rgba(79,70,229,0.32), 0 0 16px rgba(99,102,241,0.18)',
+                marginBottom:'12px'
               }}>
                 <div style={{
-                  width:'100%',height:'100%',background:'#ffffff',borderRadius:'23px',
+                  width:'100%',height:'100%',background:'#ffffff',borderRadius:'19px',
                   display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5',
                   boxShadow:'inset 0 2px 4px rgba(0,0,0,0.02)'
                 }}>
                   <IconGraduate/>
                 </div>
               </div>
-              <h1 style={{fontSize:'32px',fontWeight:'800',color:'#0f172a',margin:'0 0 8px',letterSpacing:'-0.5px'}}>
+              <h1 style={{fontSize:'30px',fontWeight:'800',color:'#0f172a',margin:'0 0 3px',letterSpacing:'-0.5px'}}>
                 DIKSHA COURSES
               </h1>
-              <p style={{color:'#64748b',fontSize:'15px',margin:0,lineHeight:'1.6',fontWeight:'600'}}>
+              <p style={{color:'#64748b',fontSize:'14px',margin:0,lineHeight:'1.4',fontWeight:'600'}}>
                 Complete your courses automatically
               </p>
             </div>
