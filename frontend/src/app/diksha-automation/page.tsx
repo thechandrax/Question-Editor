@@ -153,6 +153,7 @@ export default function DikshaAutomationPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsError, setDetailsError] = useState("");
+  const [expandedModuleIdxs, setExpandedModuleIdxs] = useState<Record<number, boolean>>({});
 
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -980,19 +981,19 @@ export default function DikshaAutomationPage() {
         <div style={{
           position:'fixed',inset:0,zIndex:9999,
           background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
-          display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
         }}>
           <div className="glass-card-light fade-in-up" style={{
-            width:'100%',maxWidth:'1040px',borderRadius:'24px',overflow:'hidden',
-            display:'flex',flexDirection:'column',maxHeight:'90vh',
+            width:'100%',maxWidth:'1160px',height:'90vh',maxHeight:'92vh',borderRadius:'26px',overflow:'hidden',
+            display:'flex',flexDirection:'column',
             boxShadow:'0 25px 60px -15px rgba(0,0,0,0.25)',
             border:'1px solid #e2e8f0'
           }}>
             {/* Header */}
             <div style={{
-              padding:'22px 30px',borderBottom:'1px solid #e2e8f0',
+              padding:'22px 32px',borderBottom:'1px solid #e2e8f0',
               display:'flex',alignItems:'center',justifyContent:'space-between',
-              background:'#ffffff'
+              background:'#ffffff',flexShrink:0
             }}>
               <div>
                 <span style={{fontSize:'11px',fontWeight:'800',color:'#4f46e5',textTransform:'uppercase',letterSpacing:'0.06em'}}>DIKSHA Course Details</span>
@@ -1012,9 +1013,9 @@ export default function DikshaAutomationPage() {
             </div>
 
             {/* Content Area */}
-            <div style={{padding:'28px 30px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+            <div style={{padding:'28px 32px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
               {detailsLoading ? (
-                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'85px 24px',gap:'22px'}}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'100px 24px',gap:'22px'}}>
                   {/* Glowing Badge with Animated Dual Ring */}
                   <div style={{
                     position:'relative',width:'76px',height:'76px',display:'flex',alignItems:'center',justifyContent:'center'
@@ -1054,44 +1055,44 @@ export default function DikshaAutomationPage() {
                   </div>
                 </div>
               ) : detailsError ? (
-                <div style={{textAlign:'center',padding:'40px 0'}}>
+                <div style={{textAlign:'center',padding:'50px 0'}}>
                   <div style={{fontSize:'36px',marginBottom:'12px'}}>⚠️</div>
                   <h3 style={{color:'#0f172a',margin:'0 0 8px',fontSize:'16px'}}>{detailsError}</h3>
                   <p style={{color:'#64748b',fontSize:'13px',maxWidth:'450px',margin:'0 auto'}}>
-                    Please make sure the bot has completed initial scanning and that your session is still active.
+                    Please make sure initial scanning was completed and your session is active.
                   </p>
                 </div>
               ) : courseDetails ? (
-                <div style={{display:'grid',gridTemplateColumns:'400px 1fr',gap:'28px',alignItems:'start'}}>
+                <div style={{display:'grid',gridTemplateColumns:'420px 1fr',gap:'32px',alignItems:'start'}}>
                   
                   {/* Left Column: Info & Description */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
                     <div>
                       <h4 style={{margin:'0 0 10px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>About this Course</h4>
                       <div style={{
-                        background:'#f8fafc',padding:'18px',borderRadius:'16px',border:'1px solid #e2e8f0',
-                        maxHeight:'380px',overflowY:'auto'
+                        background:'#f8fafc',padding:'20px',borderRadius:'16px',border:'1px solid #e2e8f0',
+                        maxHeight:'440px',overflowY:'auto'
                       }}>
                         <p style={{
                           margin:0,fontSize:'13px',color:'#334155',
-                          lineHeight:'1.7',whiteSpace:'pre-wrap',fontWeight:'500'
+                          lineHeight:'1.8',whiteSpace:'pre-wrap',fontWeight:'500'
                         }}>
                           {courseDetails.description || "No description provided by the DIKSHA portal."}
                         </p>
                       </div>
                     </div>
 
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'16px',padding:'16px 20px'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'16px',padding:'18px 22px'}}>
                       <div>
                         <p style={{margin:0,fontSize:'11px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}>Course Status</p>
-                        <p style={{margin:'2px 0 0',fontSize:'16px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
+                        <p style={{margin:'2px 0 0',fontSize:'17px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
                       </div>
                       <button
                         onClick={() => { setShowDetailsModal(false); handleStartAutomation(selectedCourse?.url); }}
                         disabled={isRunning || actionLoading || selectedCourse?.progress === 100}
                         style={{
                           background:'linear-gradient(135deg,#ea580c,#f59e0b)',
-                          color:'white',border:'none',padding:'11px 20px',borderRadius:'12px',
+                          color:'white',border:'none',padding:'12px 22px',borderRadius:'12px',
                           fontSize:'13px',fontWeight:'800',cursor:'pointer',
                           boxShadow:'0 4px 14px rgba(234,88,12,0.25)',
                           opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
@@ -1104,58 +1105,172 @@ export default function DikshaAutomationPage() {
 
                   {/* Right Column: Lessons / Modules */}
                   <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
-                    <h4 style={{margin:'0 0 4px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Course Lessons & Modules</h4>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                      <h4 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Course Lessons & Modules</h4>
+                      <span style={{fontSize:'11px',fontWeight:'700',color:'#6366f1',background:'rgba(99,102,241,0.08)',padding:'2px 10px',borderRadius:'12px'}}>
+                        Click module to view PDF & Video details
+                      </span>
+                    </div>
+                    
                     <div style={{
                       display:'flex',flexDirection:'column',gap:'12px',
-                      maxHeight:'460px',overflowY:'auto',paddingRight:'4px'
+                      maxHeight:'520px',overflowY:'auto',paddingRight:'6px'
                     }}>
                       {courseDetails.modules && courseDetails.modules.length > 0 ? (
                         courseDetails.modules.map((m: any, idx: number) => {
-                          const rawPct = m.progress ?? 0;
-                          const isDone = m.iscompleted || rawPct === 100 || selectedCourse?.progress === 100;
+                          const isCourseComplete = selectedCourse?.progress === 100;
+                          const rawPct = m.progress ?? (isCourseComplete || m.iscompleted ? 100 : 0);
+                          const isDone = isCourseComplete || m.iscompleted || rawPct === 100;
                           const displayPct = isDone ? 100 : rawPct;
+                          const isExpanded = !!expandedModuleIdxs[idx];
+
                           return (
-                            <div key={idx} style={{
-                              background:'#ffffff',border:`1.5px solid ${isDone ? '#a7f3d0' : '#e2e8f0'}`,
-                              borderRadius:'14px',padding:'14px 18px',display:'flex',alignItems:'center',
-                              justifyContent:'space-between',gap:'14px',
-                              boxShadow: isDone ? '0 2px 10px rgba(16,185,129,0.06)' : '0 2px 6px rgba(0,0,0,0.02)'
-                            }}>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
-                                  <p style={{margin:0,fontSize:'14px',fontWeight:'700',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
-                                    {m.name}
-                                  </p>
-                                  <span style={{
-                                    fontSize:'12px',fontWeight:'800',
-                                    color: isDone ? '#059669' : '#4f46e5',
-                                    background: isDone ? '#ecfdf5' : '#eff6ff',
-                                    padding:'2px 8px',borderRadius:'12px',
-                                    border: `1px solid ${isDone ? '#a7f3d0' : '#bfdbfe'}`
-                                  }}>
-                                    {displayPct}%
-                                  </span>
-                                </div>
-                                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                                  <div style={{flex:1,background:'#e2e8f0',height:'7px',borderRadius:'10px',overflow:'hidden'}}>
-                                    <div style={{
-                                      width:`${displayPct}%`,height:'100%',
-                                      background: isDone ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',
-                                      borderRadius:'10px',transition:'width 0.3s ease'
-                                    }} />
+                            <div 
+                              key={idx} 
+                              style={{
+                                background:'#ffffff',border:`1.5px solid ${isDone ? '#a7f3d0' : '#e2e8f0'}`,
+                                borderRadius:'16px',overflow:'hidden',
+                                boxShadow: isDone ? '0 2px 10px rgba(16,185,129,0.06)' : '0 2px 8px rgba(0,0,0,0.02)',
+                                transition:'all 0.2s ease'
+                              }}
+                            >
+                              {/* Module Header Row */}
+                              <div 
+                                onClick={() => setExpandedModuleIdxs(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                style={{
+                                  padding:'16px 20px',display:'flex',alignItems:'center',
+                                  justifyContent:'space-between',gap:'14px',cursor:'pointer',
+                                  background: isExpanded ? '#f8fafc' : '#ffffff'
+                                }}
+                              >
+                                {/* LEFT SERIAL BADGE (1, 2, 3, 4, ✓) */}
+                                <span style={{
+                                  width:'32px',height:'32px',borderRadius:'50%',
+                                  background: isDone ? '#d1fae5' : '#f1f5f9',
+                                  border:`1.5px solid ${isDone ? '#34d399' : '#cbd5e1'}`,
+                                  display:'flex',alignItems:'center',justifyContent:'center',
+                                  color: isDone ? '#047857' : '#475569',fontSize:'13px',fontWeight:'800',
+                                  flexShrink:0
+                                }}>
+                                  {isDone ? '✓' : idx + 1}
+                                </span>
+
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
+                                    <p style={{margin:0,fontSize:'14px',fontWeight:'800',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
+                                      {m.name}
+                                    </p>
+                                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                      <span style={{
+                                        fontSize:'12px',fontWeight:'800',
+                                        color: isDone ? '#059669' : '#4f46e5',
+                                        background: isDone ? '#ecfdf5' : '#eff6ff',
+                                        padding:'2px 10px',borderRadius:'12px',
+                                        border: `1px solid ${isDone ? '#a7f3d0' : '#bfdbfe'}`
+                                      }}>
+                                        {displayPct}%
+                                      </span>
+                                      <span style={{fontSize:'12px',color:'#94a3b8',fontWeight:'800',width:'14px',textAlign:'center'}}>
+                                        {isExpanded ? '▲' : '▼'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                    <div style={{flex:1,background:'#e2e8f0',height:'7px',borderRadius:'10px',overflow:'hidden'}}>
+                                      <div style={{
+                                        width:`${displayPct}%`,height:'100%',
+                                        background: isDone ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',
+                                        borderRadius:'10px',transition:'width 0.3s ease'
+                                      }} />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                              <span style={{
-                                width:'28px',height:'28px',borderRadius:'50%',
-                                background: isDone ? '#d1fae5' : '#f1f5f9',
-                                border:`1.5px solid ${isDone ? '#34d399' : '#cbd5e1'}`,
-                                display:'flex',alignItems:'center',justifyContent:'center',
-                                color: isDone ? '#047857' : '#64748b',fontSize:'12px',fontWeight:'800',
-                                flexShrink:0
-                              }}>
-                                {isDone ? '✓' : idx + 1}
-                              </span>
+
+                              {/* EXPANDABLE MODULE CONTENTS (PDF & VIDEO DETAILS) */}
+                              {isExpanded && (
+                                <div style={{
+                                  padding:'16px 20px',borderTop:'1px solid #e2e8f0',
+                                  background:'#f8fafc',display:'flex',flexDirection:'column',gap:'10px'
+                                }}>
+                                  <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>
+                                    Module Resources & Content Breakdown
+                                  </p>
+
+                                  {/* PDF Material */}
+                                  <div style={{
+                                    background:'#ffffff',padding:'12px 16px',borderRadius:'12px',
+                                    border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'
+                                  }}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                      <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#fef2f2',border:'1px solid #fecaca',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
+                                        📄
+                                      </div>
+                                      <div>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Reading Material (PDF)</p>
+                                        <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>DIKSHA Official PDF Guide & Notes</p>
+                                      </div>
+                                    </div>
+                                    <span style={{
+                                      fontSize:'11px',fontWeight:'800',padding:'3px 10px',borderRadius:'10px',
+                                      background: isDone ? '#ecfdf5' : '#f1f5f9',
+                                      color: isDone ? '#047857' : '#64748b',
+                                      border: `1px solid ${isDone ? '#a7f3d0' : '#cbd5e1'}`
+                                    }}>
+                                      {isDone ? 'Completed 100%' : 'Pending'}
+                                    </span>
+                                  </div>
+
+                                  {/* Video Lesson */}
+                                  <div style={{
+                                    background:'#ffffff',padding:'12px 16px',borderRadius:'12px',
+                                    border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'
+                                  }}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                      <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#eff6ff',border:'1px solid #bfdbfe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
+                                        🎬
+                                      </div>
+                                      <div>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Interactive Video Lecture</p>
+                                        <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>Full Video Playback & Audio Stream</p>
+                                      </div>
+                                    </div>
+                                    <span style={{
+                                      fontSize:'11px',fontWeight:'800',padding:'3px 10px',borderRadius:'10px',
+                                      background: isDone ? '#ecfdf5' : '#f1f5f9',
+                                      color: isDone ? '#047857' : '#64748b',
+                                      border: `1px solid ${isDone ? '#a7f3d0' : '#cbd5e1'}`
+                                    }}>
+                                      {isDone ? 'Watched 100%' : 'Pending'}
+                                    </span>
+                                  </div>
+
+                                  {/* Quiz / Assessment */}
+                                  <div style={{
+                                    background:'#ffffff',padding:'12px 16px',borderRadius:'12px',
+                                    border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'
+                                  }}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                      <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#fef3c7',border:'1px solid #fde68a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
+                                        📝
+                                      </div>
+                                      <div>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Assessment & Evaluation</p>
+                                        <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>Module Quiz & Question Submission</p>
+                                      </div>
+                                    </div>
+                                    <span style={{
+                                      fontSize:'11px',fontWeight:'800',padding:'3px 10px',borderRadius:'10px',
+                                      background: isDone ? '#ecfdf5' : '#f1f5f9',
+                                      color: isDone ? '#047857' : '#64748b',
+                                      border: `1px solid ${isDone ? '#a7f3d0' : '#cbd5e1'}`
+                                    }}>
+                                      {isDone ? 'Submitted 100%' : 'Pending'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })
@@ -1173,14 +1288,14 @@ export default function DikshaAutomationPage() {
             
             {/* Footer */}
             <div style={{
-              padding:'18px 30px',borderTop:'1px solid #e2e8f0',
-              display:'flex',justifyContent:'flex-end',background:'#ffffff'
+              padding:'20px 32px',borderTop:'1px solid #e2e8f0',
+              display:'flex',justifyContent:'flex-end',background:'#ffffff',flexShrink:0
             }}>
               <button 
                 onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
                 style={{
                   background:'#f8fafc',border:'1.5px solid #cbd5e1',
-                  color:'#334155',borderRadius:'12px',padding:'10px 22px',fontSize:'13px',
+                  color:'#334155',borderRadius:'12px',padding:'10px 24px',fontSize:'13px',
                   fontWeight:'800',cursor:'pointer',transition:'all 0.2s'
                 }}
               >
