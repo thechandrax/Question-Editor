@@ -758,23 +758,42 @@ export default function DikshaAutomationPage() {
         .btn:active { transform: translateY(0); }
         .btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; filter:none; }
         .tab-active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(79,70,229,0.3) !important; }
-        .log-line { padding: 3px 0; font-size:12px; line-height:1.6; font-family:'JetBrains Mono',monospace; }
+        .log-line { padding: 3px 0; font-size:12px; line-height:1.6; font-family:'JetBrains Mono',monospace; word-break: break-all; }
         ::-webkit-scrollbar { width:6px; height:6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius:4px; }
+
+        @media (max-width: 640px) {
+          .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
+          .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; }
+          .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .mobile-email-pill { max-width: 150px !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: inline-block !important; }
+          .mobile-btn-group { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
+          .mobile-btn { flex: 1 1 auto !important; min-width: 100px !important; padding: 10px 12px !important; font-size: 11px !important; justify-content: center !important; }
+          .mobile-grid-2 { grid-template-columns: 1fr !important; }
+          .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+          .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
+          .mobile-log-box { height: 260px !important; padding: 10px !important; font-size: 10px !important; word-break: break-all !important; white-space: pre-wrap !important; overflow-x: auto !important; }
+          .mobile-status-row { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .mobile-stat-pills { display: grid !important; grid-template-columns: 1fr 1fr !important; width: 100% !important; gap: 10px !important; }
+          .mobile-course-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
+          .mobile-modal-content { padding: 14px !important; grid-template-columns: 1fr !important; gap: 14px !important; }
+          .mobile-modal-box { width: 95vw !important; max-width: 95vw !important; height: 92vh !important; border-radius: 18px !important; }
+          .mobile-full-btn { width: 100% !important; }
+        }
       `}</style>
 
-      <div className="dash-root" style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',color:'#0f172a',padding:'24px 16px',position:'relative'}}>
+      <div className="dash-root" style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',color:'#0f172a',padding:'24px 16px',position:'relative',width:'100%',maxWidth:'100vw',overflowX:'hidden'}}>
         {/* Subtle grid background */}
         <div style={{position:'fixed',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none',zIndex:0}}/>
         {/* Top ambient blur */}
         <div style={{position:'fixed',top:'-100px',left:'50%',transform:'translateX(-50%)',width:'800px',height:'300px',background:'radial-gradient(ellipse,rgba(99,102,241,0.10) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}}/>
 
-        <div style={{maxWidth:'1200px',margin:'0 auto',position:'relative',zIndex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+        <div style={{maxWidth:'1200px',margin:'0 auto',position:'relative',zIndex:1,display:'flex',flexDirection:'column',gap:'20px',width:'100%'}}>
 
           {/* ── TOP NAVBAR ─────────────────────────────────────────────── */}
-          <div className="glass-card-light" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',width:'100%'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'12px',maxWidth:'100%'}}>
               <div style={{width:'44px',height:'44px',borderRadius:'14px',background:'linear-gradient(135deg,#4f46e5,#6366f1)',padding:'2px',boxShadow:'0 6px 20px rgba(79,70,229,0.3)',flexShrink:0}}>
                 <div style={{width:'100%',height:'100%',background:'#ffffff',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',color:'#4f46e5'}}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -782,23 +801,23 @@ export default function DikshaAutomationPage() {
                   </svg>
                 </div>
               </div>
-              <div>
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>DIKSHA COURSES</h1>
-                  <span style={{fontSize:'11px',fontWeight:'700',color:'#4f46e5',background:'rgba(99,102,241,0.1)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'20px',padding:'3px 10px'}}>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px',whiteSpace:'nowrap'}}>DIKSHA COURSES</h1>
+                  <span className="mobile-email-pill" style={{fontSize:'11px',fontWeight:'700',color:'#4f46e5',background:'rgba(99,102,241,0.1)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'20px',padding:'3px 10px'}}>
                     {username || "User"}
                   </span>
                 </div>
-                <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'500'}}>My Learning Journey & Course Automation</p>
+                <p style={{margin:'2px 0 0',fontSize:'12px',color:'#64748b',fontWeight:'500',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>My Learning Journey & Course Automation</p>
               </div>
             </div>
 
-            <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+            <div className="mobile-btn-group" style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
               {/* Status pill (Only shown when active/running/paused/done/error) */}
               {statusLabel !== "Idle" && (
                 <div style={{
                   display:'inline-flex',alignItems:'center',gap:'8px',
-                  padding:'8px 18px',fontSize:'12px',fontWeight:'800',
+                  padding:'8px 16px',fontSize:'12px',fontWeight:'800',
                   background:'#ffffff',border:`1.5px solid ${statusColor}40`,
                   color:statusColor,borderRadius:'14px',
                   boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
@@ -813,7 +832,7 @@ export default function DikshaAutomationPage() {
                   <button
                     onClick={handlePauseToggle}
                     disabled={actionLoading}
-                    className="btn"
+                    className="btn mobile-btn"
                     style={{
                       padding:'8px 18px',fontSize:'12px',fontWeight:'800',
                       background: isPaused ? '#fffbeb' : '#ffffff',
@@ -828,7 +847,7 @@ export default function DikshaAutomationPage() {
                   <button
                     onClick={handleStop}
                     disabled={actionLoading}
-                    className="btn"
+                    className="btn mobile-btn"
                     style={{
                       padding:'8px 18px',fontSize:'12px',fontWeight:'800',
                       background:'#fff1f2',
@@ -845,7 +864,7 @@ export default function DikshaAutomationPage() {
 
               <button
                 onClick={handleLogoutClick}
-                className="btn"
+                className="btn mobile-btn"
                 style={{
                   padding:'8px 18px',fontSize:'12px',fontWeight:'800',
                   background:'#ffffff',
@@ -862,32 +881,32 @@ export default function DikshaAutomationPage() {
 
           {/* ── AUTOMATION STATUS BANNER ──────────────────────────────── */}
           {(isRunning || isDone || isStopped || isError) && (
-            <div className="glass-card-light fade-in-up" style={{borderRadius:'20px',padding:'24px',border:`1px solid ${statusColor}40`}}>
-              <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'16px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+            <div className="glass-card-light fade-in-up mobile-card" style={{borderRadius:'20px',padding:'24px',border:`1px solid ${statusColor}40`,width:'100%'}}>
+              <div className="mobile-status-row" style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'16px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'14px',minWidth:0}}>
                   <div style={{width:'42px',height:'42px',borderRadius:'12px',background:`${statusColor}15`,border:`1px solid ${statusColor}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
                     {isDone ? '🎉' : isPaused ? '⏸' : isError ? '⚠️' : isStopped ? '⏹' : '⚙️'}
                   </div>
-                  <div>
+                  <div style={{minWidth:0}}>
                     <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Bot Status</p>
-                    <p style={{margin:'4px 0 0',fontSize:'14px',fontWeight:'700',color:'#0f172a'}}>{currentStepMsg}</p>
+                    <p style={{margin:'4px 0 0',fontSize:'14px',fontWeight:'700',color:'#0f172a',wordBreak:'break-word'}}>{currentStepMsg}</p>
                   </div>
                 </div>
 
-                <div style={{display:'flex',alignItems:'center',gap:'20px'}}>
-                  <div style={{textAlign:'right'}}>
-                    <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Elapsed</p>
-                    <p style={{margin:'2px 0 0',fontSize:'18px',fontWeight:'800',color:'#0f172a',fontFamily:'JetBrains Mono, monospace'}}>{formatTime(elapsed)}</p>
+                <div className="mobile-stat-pills" style={{display:'flex',alignItems:'center',gap:'20px'}}>
+                  <div style={{textAlign:'left',background:'#f8fafc',padding:'8px 14px',borderRadius:'12px',border:'1px solid #e2e8f0',flex:1}}>
+                    <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Elapsed</p>
+                    <p style={{margin:'2px 0 0',fontSize:'16px',fontWeight:'800',color:'#0f172a',fontFamily:'JetBrains Mono, monospace'}}>{formatTime(elapsed)}</p>
                   </div>
-                  <div style={{textAlign:'right'}}>
-                    <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Progress</p>
-                    <p style={{margin:'2px 0 0',fontSize:'28px',fontWeight:'800',color:statusColor,lineHeight:1}}>{overallProgress}%</p>
+                  <div style={{textAlign:'left',background:'#f8fafc',padding:'8px 14px',borderRadius:'12px',border:'1px solid #e2e8f0',flex:1}}>
+                    <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Progress</p>
+                    <p style={{margin:'2px 0 0',fontSize:'22px',fontWeight:'800',color:statusColor,lineHeight:1}}>{overallProgress}%</p>
                   </div>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'12px',overflow:'hidden'}}>
+              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'10px',overflow:'hidden',width:'100%'}}>
                 <div
                   className={isRunning && !isPaused ? 'progress-bar-animated' : ''}
                   style={{
@@ -908,19 +927,19 @@ export default function DikshaAutomationPage() {
           )}
 
           {/* ── COURSES SECTION ───────────────────────────────────────── */}
-          <div className="glass-card-light" style={{borderRadius:'20px',padding:'28px'}}>
+          <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'28px',width:'100%'}}>
             {/* Header */}
-            <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'20px',paddingBottom:'20px',borderBottom:'1px solid #e2e8f0'}}>
+            <div className="mobile-header-row" style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'20px',paddingBottom:'20px',borderBottom:'1px solid #e2e8f0',width:'100%'}}>
               <div>
                 <h2 style={{margin:'0 0 4px',fontSize:'22px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px'}}>My Learning Journey</h2>
                 <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'500'}}>Enrolled courses · Progress tracking · Automation</p>
               </div>
 
-              <div style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
+              <div className="mobile-btn-group" style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
                 <button
                   onClick={handleScanCourses}
                   disabled={scanning || isRunning}
-                  className="btn"
+                  className="btn mobile-full-btn"
                   style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 6px 20px rgba(79,70,229,0.25)'}}
                 >
                   {scanning ? <><IconSpinner/> Scanning...</> : <><IconScan/> Scan Enrolled Courses</>}
@@ -930,7 +949,7 @@ export default function DikshaAutomationPage() {
                   <button
                     onClick={() => handleStartAutomation()}
                     disabled={isRunning || actionLoading}
-                    className="btn"
+                    className="btn mobile-full-btn"
                     style={{padding:'12px 20px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#ea580c,#f59e0b)',boxShadow:'0 6px 20px rgba(234,88,12,0.25)'}}
                   >
                     {actionLoading && automatingCourseUrl === 'all' ? <><IconSpinner/> Starting...</> : <><IconPlay size={14}/> Start All Automation ({ongoingCourses.length})</>}
@@ -946,7 +965,8 @@ export default function DikshaAutomationPage() {
                 display:'flex',alignItems:'center',gap:'10px',
                 background: scanning ? '#eff6ff' : scanMessage.includes('Error') ? '#fef2f2' : '#ecfdf5',
                 border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecaca' : '#a7f3d0'}`,
-                color: scanning ? '#1d4ed8' : scanMessage.includes('Error') ? '#dc2626' : '#047857'
+                color: scanning ? '#1d4ed8' : scanMessage.includes('Error') ? '#dc2626' : '#047857',
+                wordBreak: 'break-word', width: '100%'
               }}>
                 {(scanning || scanMessage.includes('Error')) && <span>{scanning ? '⚙️' : '❌'}</span>}
                 {scanMessage}
@@ -954,7 +974,7 @@ export default function DikshaAutomationPage() {
             )}
 
             {/* Tabs */}
-            <div style={{display:'flex',gap:'10px',marginBottom:'24px'}}>
+            <div className="mobile-tabs" style={{display:'flex',gap:'10px',marginBottom:'24px',width:'100%'}}>
               {(['ongoing','finished'] as const).map((tab) => {
                 const count = tab === 'ongoing' ? ongoingCourses.length : finishedCourses.length;
                 const isActive = activeTab === tab;
@@ -962,20 +982,20 @@ export default function DikshaAutomationPage() {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`btn ${isActive ? 'tab-active' : ''}`}
+                    className={`btn mobile-tab-btn ${isActive ? 'tab-active' : ''}`}
                     style={{
-                      padding:'10px 20px',fontSize:'13px',fontWeight:'700',
+                      padding:'10px 18px',fontSize:'13px',fontWeight:'700',
                       background: isActive ? '' : '#f8fafc',
                       border:`1px solid ${isActive ? '' : '#e2e8f0'}`,
                       color: isActive ? '' : '#475569',
                       borderRadius:'12px',
-                      display:'inline-flex',alignItems:'center',gap:'8px'
+                      display:'inline-flex',alignItems:'center',gap:'6px'
                     }}
                   >
-                    {tab === 'ongoing' ? <IconBook size={16}/> : <IconTrophy size={16}/>}
-                    <span>{tab === 'ongoing' ? 'Ongoing' : 'Finished'} Courses</span>
+                    {tab === 'ongoing' ? <IconBook size={15}/> : <IconTrophy size={15}/>}
+                    <span>{tab === 'ongoing' ? 'Ongoing' : 'Finished'}</span>
                     <span style={{
-                      marginLeft:'4px',fontSize:'11px',fontWeight:'800',padding:'2px 8px',borderRadius:'20px',
+                      marginLeft:'2px',fontSize:'11px',fontWeight:'800',padding:'2px 7px',borderRadius:'20px',
                       background: isActive ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
                       color: isActive ? '#ffffff' : '#64748b'
                     }}>{count}</span>
@@ -986,37 +1006,37 @@ export default function DikshaAutomationPage() {
 
             {/* Course Cards */}
             {!hasScanned && !scanning ? (
-              <div style={{padding:'52px 24px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0',boxShadow:'0 4px 20px rgba(15,23,42,0.03)'}}>
+              <div style={{padding:'40px 16px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0',boxShadow:'0 4px 20px rgba(15,23,42,0.03)',width:'100%'}}>
                 <div style={{
-                  width:'76px',height:'76px',borderRadius:'24px',
+                  width:'68px',height:'68px',borderRadius:'20px',
                   background:'linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%)',
                   border:'1px solid #a5b4fc',
                   display:'flex',alignItems:'center',justifyContent:'center',
-                  margin:'0 auto 18px',color:'#4f46e5',
+                  margin:'0 auto 16px',color:'#4f46e5',
                   boxShadow:'0 10px 25px -5px rgba(79,70,229,0.2)'
                 }}>
-                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                 </div>
-                <h3 style={{margin:'0 0 8px',fontSize:'20px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>Scan Your Enrolled Courses</h3>
-                <p style={{margin:'0 0 24px',fontSize:'14px',color:'#64748b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontWeight:'600',lineHeight:'1.4'}}>
+                <h3 style={{margin:'0 0 8px',fontSize:'18px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>Scan Your Enrolled Courses</h3>
+                <p style={{margin:'0 0 20px',fontSize:'13px',color:'#64748b',fontWeight:'600',lineHeight:'1.4'}}>
                   Automatically scan your DIKSHA account to discover all active and completed enrolled courses.
                 </p>
-                <button onClick={handleScanCourses} className="btn" style={{padding:'13px 30px',fontSize:'14px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
+                <button onClick={handleScanCourses} className="btn mobile-full-btn" style={{padding:'12px 24px',fontSize:'13px',color:'white',background:'linear-gradient(135deg,#4f46e5,#6366f1)',boxShadow:'0 8px 24px rgba(79,70,229,0.3)'}}>
                   <IconScan/> Scan Enrolled Courses Now
                 </button>
               </div>
             ) : displayedCourses.length === 0 ? (
-              <div style={{padding:'48px 24px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0'}}>
+              <div style={{padding:'40px 16px',textAlign:'center',background:'#ffffff',borderRadius:'20px',border:'1px solid #e2e8f0',width:'100%'}}>
                 <div style={{display:'flex',justifyContent:'center',marginBottom:'12px',color:'#6366f1'}}>
-                  {activeTab === 'ongoing' ? <IconBook size={40}/> : <IconTrophy size={40}/>}
+                  {activeTab === 'ongoing' ? <IconBook size={36}/> : <IconTrophy size={36}/>}
                 </div>
-                <h3 style={{margin:'0 0 6px',fontSize:'16px',fontWeight:'800',color:'#475569'}}>No {activeTab} courses found</h3>
-                <p style={{margin:0,fontSize:'13px',color:'#94a3b8'}}>Try scanning again or switch tabs.</p>
+                <h3 style={{margin:'0 0 6px',fontSize:'15px',fontWeight:'800',color:'#475569'}}>No {activeTab} courses found</h3>
+                <p style={{margin:0,fontSize:'12px',color:'#94a3b8'}}>Try scanning again or switch tabs.</p>
               </div>
             ) : (
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:'20px'}}>
+              <div className="mobile-course-grid" style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:'18px',width:'100%'}}>
                 {displayedCourses.map((c, idx) => {
                   const pct = c.pct ?? c.progress ?? 0;
                   const isFinished = pct === 100;
@@ -1027,21 +1047,22 @@ export default function DikshaAutomationPage() {
                       className="card-hover fade-in-up"
                       style={{
                         background:'#ffffff',
-                        borderRadius:'20px',
+                        borderRadius:'18px',
                         overflow:'hidden',
                         display:'flex',flexDirection:'column',
                         border: isCurrent ? '2px solid #6366f1' : isFinished ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
                         boxShadow: isCurrent ? '0 12px 30px rgba(99,102,241,0.15)' : '0 4px 16px rgba(15,23,42,0.04)',
-                        animationDelay:`${idx * 0.06}s`
+                        animationDelay:`${idx * 0.06}s`,
+                        width:'100%',maxWidth:'100%'
                       }}
                     >
                       {/* Course banner */}
-                      <div style={{height:'130px',background: isCurrent ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : isFinished ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',borderBottom:'1px solid #e2e8f0'}}>
+                      <div style={{height:'120px',background: isCurrent ? 'linear-gradient(135deg,#e0e7ff,#c7d2fe)' : isFinished ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',borderBottom:'1px solid #e2e8f0',width:'100%'}}>
                         {c.image_url ? (
                           <img src={c.image_url} alt={c.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         ) : (
                           <div style={{textAlign:'center'}}>
-                            <div style={{width:'52px',height:'52px',borderRadius:'16px',background: isFinished ? '#ecfdf5' : '#e0e7ff',border:`1px solid ${isFinished ? '#6ee7b7' : '#a5b4fc'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 6px',fontSize:'24px'}}>
+                            <div style={{width:'48px',height:'48px',borderRadius:'14px',background: isFinished ? '#ecfdf5' : '#e0e7ff',border:`1px solid ${isFinished ? '#6ee7b7' : '#a5b4fc'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 4px',fontSize:'22px'}}>
                               {isFinished ? '🏆' : isCurrent ? '▶️' : '🎓'}
                             </div>
                             <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.05em'}}>DIKSHA Digital Learning</p>
@@ -1049,9 +1070,9 @@ export default function DikshaAutomationPage() {
                         )}
 
                         {/* Status badge */}
-                        <div style={{position:'absolute',top:'12px',right:'12px'}}>
+                        <div style={{position:'absolute',top:'10px',right:'10px'}}>
                           <span style={{
-                            fontSize:'11px',fontWeight:'800',padding:'4px 12px',borderRadius:'20px',
+                            fontSize:'10px',fontWeight:'800',padding:'3px 10px',borderRadius:'20px',
                             background: isFinished ? '#d1fae5' : isCurrent ? '#e0e7ff' : '#fef3c7',
                             border: `1px solid ${isFinished ? '#6ee7b7' : isCurrent ? '#818cf8' : '#fcd34d'}`,
                             color: isFinished ? '#047857' : isCurrent ? '#4338ca' : '#b45309',
@@ -1063,13 +1084,13 @@ export default function DikshaAutomationPage() {
                       </div>
 
                       {/* Body */}
-                      <div style={{padding:'20px',flex:1,display:'flex',flexDirection:'column',gap:'14px'}}>
+                      <div style={{padding:'16px',flex:1,display:'flex',flexDirection:'column',gap:'12px',width:'100%'}}>
                         <div>
-                          <h3 style={{margin:'0 0 6px',fontSize:'15px',fontWeight:'800',color:'#0f172a',lineHeight:'1.5',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+                          <h3 style={{margin:'0 0 4px',fontSize:'14px',fontWeight:'800',color:'#0f172a',lineHeight:'1.4',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
                             {c.title}
                           </h3>
                           {c.ends_on && (
-                            <p style={{margin:0,fontSize:'12px',color:'#64748b',fontWeight:'600'}}>
+                            <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'600'}}>
                               📅 Ends: <span style={{color:'#334155'}}>{c.ends_on}</span>
                             </p>
                           )}
@@ -1077,26 +1098,26 @@ export default function DikshaAutomationPage() {
 
                         {/* Progress bar */}
                         <div>
-                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'8px'}}>
-                            <span style={{fontSize:'11px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.04em'}}>Progress</span>
-                            <span style={{fontSize:'12px',fontWeight:'800',color: isFinished ? '#10b981' : '#4f46e5'}}>{pct}%</span>
+                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
+                            <span style={{fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.04em'}}>Progress</span>
+                            <span style={{fontSize:'11px',fontWeight:'800',color: isFinished ? '#10b981' : '#4f46e5'}}>{pct}%</span>
                           </div>
-                          <div style={{background:'#e2e8f0',borderRadius:'100px',height:'8px',overflow:'hidden'}}>
+                          <div style={{background:'#e2e8f0',borderRadius:'100px',height:'8px',overflow:'hidden',width:'100%'}}>
                             <div style={{height:'100%',width:`${pct}%`,borderRadius:'100px',background: isFinished ? 'linear-gradient(90deg,#10b981,#059669)' : isCurrent ? 'linear-gradient(90deg,#ea580c,#f59e0b)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',transition:'width 0.6s ease'}}/>
                           </div>
                         </div>
                       </div>
 
                       {/* Footer actions */}
-                      <div style={{padding:'14px 20px',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',background:'#f8fafc'}}>
+                      <div style={{padding:'12px 14px',borderTop:'1px solid #e2e8f0',display:'flex',gap:'8px',background:'#f8fafc',width:'100%'}}>
                         <button
                           onClick={() => handleViewCourseDetails(c)}
                           style={{
-                            flex:1,padding:'10px',borderRadius:'10px',
+                            flex:1,padding:'9px',borderRadius:'10px',
                             background:'#ffffff',
                             border:'1px solid #cbd5e1',
-                            color:'#334155',fontSize:'12px',fontWeight:'700',
-                            display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                            color:'#334155',fontSize:'11px',fontWeight:'700',
+                            display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',
                             cursor:'pointer',transition:'all 0.2s'
                           }}
                         >
@@ -1108,7 +1129,7 @@ export default function DikshaAutomationPage() {
                           disabled={isRunning || actionLoading || isFinished}
                           className="btn"
                           style={{
-                            flex:1,padding:'10px',fontSize:'12px',
+                            flex:1,padding:'9px',fontSize:'11px',
                             color: isFinished ? '#94a3b8' : 'white',
                             background: isFinished ? '#f1f5f9' : 'linear-gradient(135deg,#ea580c,#f59e0b)',
                             border: isFinished ? '1px solid #e2e8f0' : 'none',
@@ -1120,7 +1141,7 @@ export default function DikshaAutomationPage() {
                           ) : isFinished ? (
                             <><IconCheck/> Completed</>
                           ) : (
-                            <><IconPlay size={12}/> Start Automation</>
+                            <><IconPlay size={11}/> Start Automation</>
                           )}
                         </button>
                       </div>
@@ -1131,15 +1152,15 @@ export default function DikshaAutomationPage() {
             )}
           </div>
 
-          {/* ── FULL WIDTH LIVE LOGS (REMOVED BOT EXECUTION STEPS PANEL PER USER DIRECTIVE) ── */}
-          <div className="glass-card-light" style={{borderRadius:'20px',padding:'24px',display:'flex',flexDirection:'column',gap:'14px'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          {/* ── FULL WIDTH LIVE LOGS ── */}
+          <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'20px 24px',display:'flex',flexDirection:'column',gap:'12px',width:'100%',overflow:'hidden'}}>
+            <div className="mobile-header-row" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px',width:'100%'}}>
               <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'8px'}}>
                 <IconTerminal /> Live Server Output Logs
                 <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
-              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'12px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                <span style={{fontSize:'11px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>
                   {logsList.length} lines
                 </span>
                 <button
@@ -1150,7 +1171,7 @@ export default function DikshaAutomationPage() {
                     color: copiedLogs ? '#047857' : '#475569',
                     background: copiedLogs ? '#d1fae5' : '#f1f5f9',
                     border: `1px solid ${copiedLogs ? '#6ee7b7' : '#cbd5e1'}`,
-                    borderRadius:'8px',padding:'4px 12px',cursor: logsList.length === 0 ? 'not-allowed' : 'pointer',
+                    borderRadius:'8px',padding:'4px 10px',cursor: logsList.length === 0 ? 'not-allowed' : 'pointer',
                     display:'inline-flex',alignItems:'center',gap:'4px',
                     transition:'all 0.2s ease',
                     opacity: logsList.length === 0 ? 0.5 : 1
@@ -1169,11 +1190,13 @@ export default function DikshaAutomationPage() {
 
             <div
               ref={logRef}
+              className="mobile-log-box"
               style={{
-                background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'16px',
-                height: showLogs ? '500px' : '280px',
-                overflowY:'auto',
-                transition:'height 0.3s ease'
+                background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'14px',
+                height: showLogs ? '480px' : '260px',
+                overflowY:'auto',overflowX:'hidden',
+                transition:'height 0.3s ease',
+                width:'100%'
               }}
             >
               {logsList.length === 0 ? (
@@ -1206,9 +1229,9 @@ export default function DikshaAutomationPage() {
         <div style={{
           position:'fixed',inset:0,zIndex:9999,
           background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
-          display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'10px'
         }}>
-          <div className="glass-card-light fade-in-up" style={{
+          <div className="glass-card-light fade-in-up mobile-modal-box" style={{
             width:'100%',maxWidth:'1160px',height:'90vh',maxHeight:'92vh',borderRadius:'26px',overflow:'hidden',
             display:'flex',flexDirection:'column',
             boxShadow:'0 25px 60px -15px rgba(0,0,0,0.25)',
@@ -1216,21 +1239,21 @@ export default function DikshaAutomationPage() {
           }}>
             {/* Header */}
             <div style={{
-              padding:'22px 32px',borderBottom:'1px solid #e2e8f0',
+              padding:'18px 20px',borderBottom:'1px solid #e2e8f0',
               display:'flex',alignItems:'center',justifyContent:'space-between',
               background:'#ffffff',flexShrink:0
             }}>
-              <div>
+              <div style={{minWidth:0,flex:1,paddingRight:'10px'}}>
                 <span style={{fontSize:'11px',fontWeight:'800',color:'#4f46e5',textTransform:'uppercase',letterSpacing:'0.06em'}}>DIKSHA Course Details</span>
-                <h2 style={{margin:'4px 0 0',fontSize:'20px',fontWeight:'800',color:'#0f172a'}}>{selectedCourse?.title}</h2>
+                <h2 style={{margin:'2px 0 0',fontSize:'16px',fontWeight:'800',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selectedCourse?.title}</h2>
               </div>
               <button 
                 onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
                 style={{
                   background:'#f1f5f9',border:'1px solid #cbd5e1',
-                  color:'#475569',borderRadius:'50%',width:'36px',height:'36px',
-                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
-                  cursor:'pointer',fontWeight:'700',transition:'all 0.2s'
+                  color:'#475569',borderRadius:'50%',width:'34px',height:'34px',
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:'15px',
+                  cursor:'pointer',fontWeight:'700',transition:'all 0.2s',flexShrink:0
                 }}
               >
                 ✕
@@ -1238,86 +1261,86 @@ export default function DikshaAutomationPage() {
             </div>
 
             {/* Content Area */}
-            <div style={{padding:'28px 32px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+            <div className="mobile-modal-content" style={{padding:'20px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'16px'}}>
               {detailsLoading ? (
-                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'100px 24px',gap:'22px'}}>
-                  {/* Glowing Badge with Animated Dual Ring */}
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 16px',gap:'20px'}}>
+                  {/* Glowing Badge */}
                   <div style={{
-                    position:'relative',width:'76px',height:'76px',display:'flex',alignItems:'center',justifyContent:'center'
+                    position:'relative',width:'68px',height:'68px',display:'flex',alignItems:'center',justifyContent:'center'
                   }}>
                     <div style={{
-                      position:'absolute',inset:'-8px',borderRadius:'28px',
+                      position:'absolute',inset:'-8px',borderRadius:'24px',
                       background:'linear-gradient(135deg,#4f46e5,#7c3aed)',
                       opacity:0.3,filter:'blur(14px)',animation:'pulse-dot 2s ease-in-out infinite'
                     }}/>
                     <div style={{
-                      width:'68px',height:'68px',borderRadius:'22px',
+                      width:'60px',height:'60px',borderRadius:'20px',
                       background:'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#7c3aed 100%)',
                       display:'flex',alignItems:'center',justifyContent:'center',color:'#ffffff',
                       boxShadow:'0 14px 32px -6px rgba(79,70,229,0.45)',position:'relative',zIndex:1
                     }}>
-                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{animation:'spin 1.2s linear infinite'}}>
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{animation:'spin 1.2s linear infinite'}}>
                         <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                       </svg>
                     </div>
                   </div>
 
                   <div style={{textAlign:'center'}}>
-                    <h4 style={{margin:'0 0 6px',fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>
+                    <h4 style={{margin:'0 0 6px',fontSize:'16px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>
                       Fetching Course Content
                     </h4>
-                    <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'600'}}>
+                    <p style={{margin:0,fontSize:'12px',color:'#64748b',fontWeight:'600'}}>
                       Syncing module structure & live progress directly from DIKSHA portal...
                     </p>
                   </div>
 
                   {/* Animated Progress Bar */}
                   <div style={{
-                    width:'260px',height:'6px',background:'#e2e8f0',borderRadius:'10px',
+                    width:'220px',height:'6px',background:'#e2e8f0',borderRadius:'10px',
                     overflow:'hidden',position:'relative',marginTop:'4px'
                   }}>
                     <div className="progress-bar-animated" style={{width:'100%',height:'100%',borderRadius:'10px'}}/>
                   </div>
                 </div>
               ) : detailsError ? (
-                <div style={{textAlign:'center',padding:'50px 0'}}>
-                  <div style={{fontSize:'36px',marginBottom:'12px'}}>⚠️</div>
-                  <h3 style={{color:'#0f172a',margin:'0 0 8px',fontSize:'16px'}}>{detailsError}</h3>
-                  <p style={{color:'#64748b',fontSize:'13px',maxWidth:'450px',margin:'0 auto'}}>
+                <div style={{textAlign:'center',padding:'40px 0'}}>
+                  <div style={{fontSize:'32px',marginBottom:'10px'}}>⚠️</div>
+                  <h3 style={{color:'#0f172a',margin:'0 0 6px',fontSize:'15px'}}>{detailsError}</h3>
+                  <p style={{color:'#64748b',fontSize:'12px',maxWidth:'400px',margin:'0 auto'}}>
                     Please make sure initial scanning was completed and your session is active.
                   </p>
                 </div>
               ) : courseDetails ? (
-                <div style={{display:'grid',gridTemplateColumns:'360px 1fr',gap:'28px',alignItems:'start'}}>
+                <div className="mobile-grid-2" style={{display:'grid',gridTemplateColumns:'320px 1fr',gap:'20px',alignItems:'start'}}>
                   
                   {/* Left Column: Info & Description */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'20px',position:'sticky',top:0}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
                     <div>
-                      <h4 style={{margin:'0 0 10px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>About this Course</h4>
+                      <h4 style={{margin:'0 0 8px',fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>About this Course</h4>
                       <div style={{
-                        background:'#f8fafc',padding:'20px',borderRadius:'16px',border:'1px solid #e2e8f0'
+                        background:'#f8fafc',padding:'16px',borderRadius:'14px',border:'1px solid #e2e8f0'
                       }}>
                         <p style={{
-                          margin:0,fontSize:'13px',color:'#334155',
-                          lineHeight:'1.7',fontWeight:'500'
+                          margin:0,fontSize:'12px',color:'#334155',
+                          lineHeight:'1.6',fontWeight:'500'
                         }}>
                           {(courseDetails.description as string)?.split(/View more|Lesson Details|Course Overview/i)[0]?.trim() || "No description provided by the DIKSHA portal."}
                         </p>
                       </div>
                     </div>
 
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'16px',padding:'18px 22px'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'14px',padding:'14px 18px'}}>
                       <div>
-                        <p style={{margin:0,fontSize:'11px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}>Course Status</p>
-                        <p style={{margin:'2px 0 0',fontSize:'17px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
+                        <p style={{margin:0,fontSize:'10px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}>Course Status</p>
+                        <p style={{margin:'2px 0 0',fontSize:'15px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
                       </div>
                       <button
                         onClick={() => { setShowDetailsModal(false); handleStartAutomation(selectedCourse?.url); }}
                         disabled={isRunning || actionLoading || selectedCourse?.progress === 100}
                         style={{
                           background:'linear-gradient(135deg,#ea580c,#f59e0b)',
-                          color:'white',border:'none',padding:'12px 22px',borderRadius:'12px',
-                          fontSize:'13px',fontWeight:'800',cursor:'pointer',
+                          color:'white',border:'none',padding:'10px 16px',borderRadius:'10px',
+                          fontSize:'12px',fontWeight:'800',cursor:'pointer',
                           boxShadow:'0 4px 14px rgba(234,88,12,0.25)',
                           opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
                         }}
@@ -1328,16 +1351,16 @@ export default function DikshaAutomationPage() {
                   </div>
 
                   {/* Right Column: Lessons / Modules */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                      <h4 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Course Lessons & Modules</h4>
-                      <span style={{fontSize:'11px',fontWeight:'700',color:'#6366f1',background:'rgba(99,102,241,0.08)',padding:'2px 10px',borderRadius:'12px'}}>
-                        Click module to view PDF & Video details
+                      <h4 style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Course Lessons & Modules</h4>
+                      <span style={{fontSize:'10px',fontWeight:'700',color:'#6366f1',background:'rgba(99,102,241,0.08)',padding:'2px 8px',borderRadius:'10px'}}>
+                        Click module for details
                       </span>
                     </div>
                     
                     <div style={{
-                      display:'flex',flexDirection:'column',gap:'14px'
+                      display:'flex',flexDirection:'column',gap:'12px'
                     }}>
                       {Array.isArray(courseDetails.modules) && (courseDetails.modules as any[]).length > 0 ? (
                         (courseDetails.modules as any[]).map((m: any, idx: number) => {
@@ -1352,7 +1375,7 @@ export default function DikshaAutomationPage() {
                               key={idx} 
                               style={{
                                 background:'#ffffff',border:`1.5px solid ${isDone ? '#a7f3d0' : '#e2e8f0'}`,
-                                borderRadius:'16px',overflow:'hidden',
+                                borderRadius:'14px',overflow:'hidden',
                                 boxShadow: isDone ? '0 2px 10px rgba(16,185,129,0.06)' : '0 2px 8px rgba(0,0,0,0.02)',
                                 transition:'all 0.2s ease'
                               }}
@@ -1361,46 +1384,46 @@ export default function DikshaAutomationPage() {
                               <div 
                                 onClick={() => setExpandedModuleIdxs(prev => ({ ...prev, [idx]: !prev[idx] }))}
                                 style={{
-                                  padding:'16px 20px',display:'flex',alignItems:'center',
-                                  justifyContent:'space-between',gap:'14px',cursor:'pointer',
+                                  padding:'12px 16px',display:'flex',alignItems:'center',
+                                  justifyContent:'space-between',gap:'10px',cursor:'pointer',
                                   background: isExpanded ? '#f8fafc' : '#ffffff'
                                 }}
                               >
-                                {/* LEFT SERIAL BADGE (1, 2, 3, 4, ✓) */}
+                                {/* LEFT SERIAL BADGE */}
                                 <span style={{
-                                  width:'32px',height:'32px',borderRadius:'50%',
+                                  width:'28px',height:'28px',borderRadius:'50%',
                                   background: isDone ? '#d1fae5' : '#f1f5f9',
                                   border:`1.5px solid ${isDone ? '#34d399' : '#cbd5e1'}`,
                                   display:'flex',alignItems:'center',justifyContent:'center',
-                                  color: isDone ? '#047857' : '#475569',fontSize:'13px',fontWeight:'800',
+                                  color: isDone ? '#047857' : '#475569',fontSize:'12px',fontWeight:'800',
                                   flexShrink:0
                                 }}>
                                   {isDone ? '✓' : idx + 1}
                                 </span>
 
                                 <div style={{flex:1,minWidth:0}}>
-                                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
-                                    <p style={{margin:0,fontSize:'14px',fontWeight:'800',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
+                                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
+                                    <p style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
                                       {m.name}
                                     </p>
-                                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
                                       <span style={{
-                                        fontSize:'12px',fontWeight:'800',
+                                        fontSize:'11px',fontWeight:'800',
                                         color: isDone ? '#059669' : '#4f46e5',
                                         background: isDone ? '#ecfdf5' : '#eff6ff',
-                                        padding:'2px 10px',borderRadius:'12px',
+                                        padding:'2px 8px',borderRadius:'10px',
                                         border: `1px solid ${isDone ? '#a7f3d0' : '#bfdbfe'}`
                                       }}>
                                         {displayPct}%
                                       </span>
-                                      <span style={{fontSize:'12px',color:'#94a3b8',fontWeight:'800',width:'14px',textAlign:'center'}}>
+                                      <span style={{fontSize:'11px',color:'#94a3b8',fontWeight:'800',width:'12px',textAlign:'center'}}>
                                         {isExpanded ? '▲' : '▼'}
                                       </span>
                                     </div>
                                   </div>
 
-                                  <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                                    <div style={{flex:1,background:'#e2e8f0',height:'7px',borderRadius:'10px',overflow:'hidden'}}>
+                                  <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                    <div style={{flex:1,background:'#e2e8f0',height:'6px',borderRadius:'10px',overflow:'hidden'}}>
                                       <div style={{
                                         width:`${displayPct}%`,height:'100%',
                                         background: isDone ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',
@@ -1414,8 +1437,8 @@ export default function DikshaAutomationPage() {
                               {/* EXPANDABLE MODULE CONTENTS (PDF & VIDEO DETAILS) */}
                               {isExpanded && (
                                 <div style={{
-                                  padding:'16px 20px',borderTop:'1.5px solid #e2e8f0',
-                                  background:'#f8fafc',display:'flex',flexDirection:'column',gap:'12px'
+                                  padding:'14px 16px',borderTop:'1.5px solid #e2e8f0',
+                                  background:'#f8fafc',display:'flex',flexDirection:'column',gap:'10px'
                                 }}>
                                   <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>
                                     Module Resources & Content Breakdown
