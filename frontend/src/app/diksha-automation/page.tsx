@@ -102,6 +102,12 @@ const IconScan = () => (
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
   </svg>
 );
+const IconTerminal = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 17 10 11 4 5"/>
+    <line x1="12" y1="19" x2="20" y2="19"/>
+  </svg>
+);
 const IconPlay = ({ size = 12 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -928,7 +934,7 @@ export default function DikshaAutomationPage() {
           <div className="glass-card-light" style={{borderRadius:'20px',padding:'24px',display:'flex',flexDirection:'column',gap:'14px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'8px'}}>
-                💻 Live Server Output Logs
+                <IconTerminal /> Live Server Output Logs
                 <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
