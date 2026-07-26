@@ -438,13 +438,13 @@ export default function DikshaAutomationPage() {
 
                 <div>
                   <label style={{display:'block',fontSize:'12px',fontWeight:'800',color:'#475569',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.06em'}}>
-                    🔑 Admin Security PIN (6 Digits)
+                    Admin Security PIN
                   </label>
                   <input
                     type="password"
                     maxLength={6}
                     required
-                    placeholder="Enter 6-Digit PIN (e.g. 452389)"
+                    placeholder="••••••"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     className="input-field"
