@@ -60,13 +60,13 @@ const IconGraduate = () => (
   </svg>
 );
 const IconEye = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-    <circle cx="12" cy="12" r="3"/>
+    <circle cx="12" cy="12" r="3.5" fill="#e0e7ff"/>
   </svg>
 );
 const IconEyeOff = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-10-7-10-7a19.4 19.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a19.5 19.5 0 0 1-4.29 5.34"/>
     <line x1="1" y1="1" x2="23" y2="23"/>
   </svg>
@@ -399,7 +399,7 @@ export default function DikshaAutomationPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. teacher@example.com"
+                    placeholder="teacher@example.com"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="input-field"
@@ -418,15 +418,16 @@ export default function DikshaAutomationPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
-                      style={{paddingRight:'48px'}}
+                      style={{paddingRight:'52px'}}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPass(!showPass)}
                       style={{
-                        position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',
-                        background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',
-                        cursor:'pointer',padding:'6px 8px',display:'flex',alignItems:'center',justifyContent:'center',
+                        position:'absolute',right:'10px',top:'50%',transform:'translateY(-50%)',
+                        background:'#ffffff',border:'1.5px solid #e2e8f0',borderRadius:'10px',
+                        cursor:'pointer',padding:'7px 10px',display:'flex',alignItems:'center',justifyContent:'center',
+                        boxShadow:'0 2px 8px rgba(79,70,229,0.08)',
                         transition:'all 0.2s ease'
                       }}
                       title={showPass ? "Hide password" : "Show password"}
@@ -444,7 +445,7 @@ export default function DikshaAutomationPage() {
                     type="password"
                     maxLength={6}
                     required
-                    placeholder="••••••"
+                    placeholder="••••••••••••"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     className="input-field"
