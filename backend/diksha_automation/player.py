@@ -142,13 +142,70 @@ class VideoPlayer:
         """
         if self.api and self._course_id and self._section_id:
             api_modules = self.api.get_module_progress(self._course_id, self._section_id, page=self.page)
-            if api_modules:
+            if api_modules and any(m.get("progress", 0) > 0 or m.get("iscompleted") for m in api_modules):
                 logger.info(f"Using live API module list ({len(api_modules)} modules).")
                 return api_modules
 
+        # DOM fallback: parse module checkmarks directly from page DOM
+        logger.info("API progress data unpopulated — checking DOM checkmarks on page...")
+        dom_modules = self._parse_module_list_from_dom()
+        if dom_modules and any(m.get("iscompleted") for m in dom_modules):
+            return dom_modules
+
         # Fallback: hardcoded module IDs for course 1186
-        logger.info("API unavailable — using hardcoded fallback module list.")
+        logger.info("Using hardcoded fallback module list.")
         return COURSE_1186_MODULES
+
+    def _parse_module_list_from_dom(self) -> list:
+        try:
+            modules = []
+            for item in COURSE_1186_MODULES:
+                mod_id = item["id"]
+                mod_name = item["name"]
+                is_done = False
+                
+                for sel in [
+                    f"#nav-modules [data-id='{mod_id}']",
+                    f"#nav-modules [id*='{mod_id}']",
+                    f"[data-id='{mod_id}']",
+                ]:
+                    try:
+                        el = self.page.query_selector(sel)
+                        if el:
+                            parent = el.evaluate_handle("""(node) => {
+                                let p = node;
+                                while (p && p.tagName !== 'BODY') {
+                                    if (p.classList.contains('panel') || 
+                                        p.classList.contains('card') || 
+                                        p.classList.contains('section')) return p;
+                                    p = p.parentElement;
+                                }
+                                return node;
+                            }""").as_element()
+                            if parent:
+                                checkmark = parent.query_selector(
+                                    ".fa-check, .fa-check-circle, .micon-check_circle, "
+                                    ".check-icon, .p100, [title='100%'], [class*='check'], [class*='complete']"
+                                )
+                                if checkmark and checkmark.is_visible():
+                                    is_done = True
+                                    break
+                    except Exception:
+                        pass
+                
+                modules.append({
+                    "id": mod_id,
+                    "name": mod_name,
+                    "progress": 100 if is_done else 0,
+                    "iscompleted": is_done,
+                })
+            
+            completed_count = sum(1 for m in modules if m["iscompleted"])
+            logger.info(f"DOM parse found {completed_count} completed module(s) on page.")
+            return modules
+        except Exception as e:
+            logger.warning(f"DOM module list parse note: {e}")
+            return COURSE_1186_MODULES
 
     def _build_module_url(self, course_url: str, module_id: str) -> str:
         """Build the direct URL for a module section."""
@@ -426,25 +483,32 @@ class VideoPlayer:
         current_url = self.page.url
         logger.info(f"  Activity URL: {current_url[:80]}")
 
-        # ── 1. Video (check main page and all frames) ──────────────────────
+        # ── 1. Video (retry loop up to 15s for iframe player to load) ──────
         video_element = None
         video_frame = None
-        try:
-            if self.page.query_selector("video"):
-                video_element = self.page.query_selector("video")
-                video_frame = self.page
-        except Exception:
-            pass
+        wait_start = time.time()
+        while (time.time() - wait_start) < 15:
+            self._inject_speed_override()
+            try:
+                if self.page.query_selector("video"):
+                    video_element = self.page.query_selector("video")
+                    video_frame = self.page
+                    break
+            except Exception:
+                pass
 
-        if not video_element:
-            for frame in self.page.frames:
-                try:
-                    if frame.query_selector("video"):
-                        video_element = frame.query_selector("video")
-                        video_frame = frame
-                        break
-                except Exception:
-                    pass
+            if not video_element:
+                for frame in self.page.frames:
+                    try:
+                        if frame.query_selector("video"):
+                            video_element = frame.query_selector("video")
+                            video_frame = frame
+                            break
+                    except Exception:
+                        pass
+            if video_element:
+                break
+            time.sleep(1.5)
 
         if video_element:
             logger.info("  Video detected — running 6x speed (up to 600s real-time)...")
