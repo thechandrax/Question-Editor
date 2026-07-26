@@ -117,11 +117,18 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         if display_modules:
             for m in display_modules:
                 mod_id = str(m.get("id", ""))
-                is_done = m.get("iscompleted") or int(m.get("progress", 0)) >= 100 or mod_id in player.completed_module_ids or not mod_id
-                pct  = "100%" if is_done else f"{int(m.get('progress', 0)):3d}%"
-                tick = "✔" if is_done else " "
+                prog_val = int(m.get("progress", 0))
+                is_done = bool(m.get("iscompleted")) or prog_val >= 100 or (bool(mod_id) and mod_id in player.completed_module_ids)
+                
+                if is_done:
+                    pct_str = "100%"
+                    tick = "✔"
+                else:
+                    pct_str = f"{prog_val:3d}%"
+                    tick = " "
+                
                 name = m.get("name", "?")[:55]
-                logger.info(f"  [{tick}] {pct}  {name}")
+                logger.info(f"  [{tick}] {pct_str}  {name}")
         else:
             logger.info("  [✔] 100%  All modules processed successfully!")
         logger.info("──────────────────────────────────────────────────────")
