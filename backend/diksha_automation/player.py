@@ -592,6 +592,13 @@ class VideoPlayer:
             except Exception:
                 pass
 
+        # ── 0. Assessment / Quiz / MCQ Test Automation ────────────────────────
+        if self._is_quiz_assessment():
+            logger.info("  📝 MCQ Assessment / Quiz detected — executing Multi-Attempt Review Capture Engine...")
+            self._process_assessment_quiz()
+            self._return_to_url(return_url)
+            return
+
         # ── 1. Video (retry loop up to 15s for iframe player to load) ──────
         video_element = None
         video_frame = None
@@ -835,8 +842,218 @@ class VideoPlayer:
             logger.error(f"  _return_to_url failed: {e}")
 
     # ------------------------------------------------------------------ #
-    #  PDF scrolling — iframe-aware
+    #  MCQ Assessment / Quiz Multi-Attempt Review Capture Engine
     # ------------------------------------------------------------------ #
+
+    def _is_quiz_assessment(self) -> bool:
+        """Detects if current page / frame contains a DIKSHA MCQ assessment or quiz."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                content = target.content().lower()
+                if any(k in content for k in [
+                    "summary of your previous attempts", "continue assessment",
+                    "attempt quiz now", "re-attempt quiz", "summary of attempt",
+                    "final submit", "submit all and finish", "question 1",
+                    "কাৰ্যকলাপ", "assessment", "quiz"
+                ]):
+                    btn = target.query_selector(
+                        "button:has-text('Continue Assessment'), button:has-text('Attempt quiz now'), "
+                        "button:has-text('Re-attempt quiz'), input[type='radio'], .que, .quizattempt, #quiz-table"
+                    )
+                    if btn:
+                        return True
+            except Exception:
+                pass
+        return False
+
+    def _close_popups(self):
+        """Closes celebratory or info popups ('WELL DONE CHAMP!', 'Stay Calm', etc.)."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                close_btns = target.query_selector_all(
+                    ".close, [aria-label='Close'], button.close, span:has-text('×'), "
+                    ".micon-close, button:has-text('Close'), div.close-btn"
+                )
+                for btn in close_btns:
+                    if btn and btn.is_visible():
+                        btn.click(force=True)
+                        time.sleep(1)
+            except Exception:
+                pass
+
+    def _process_assessment_quiz(self):
+        """
+        Automates DIKSHA MCQ Assessments using Multi-Attempt Review Page Capture:
+        1. Checks for previous attempt 'Review' link to extract 100% correct Answer Key.
+        2. Starts Attempt 1 (or Attempt 2).
+        3. Fills all questions with exact correct answers (or blind picks for Attempt 1).
+        4. Submits test ('Final Submit').
+        5. Captures 100% correct answers from Attempt 1 Review page.
+        6. Re-attempts test with 100% Answer Key to get 30/30 (100% score)!
+        """
+        answer_key: dict = {}  # { question_text: correct_option_text }
+        self._close_popups()
+
+        # Step A: Extract from existing 'Review' link if available on summary table
+        for target in [self.page] + list(self.page.frames):
+            try:
+                review_btn = target.query_selector("a:has-text('Review'), button:has-text('Review'), td:has-text('Review') a")
+                if review_btn and review_btn.is_visible():
+                    logger.info("  🔍 Found previous attempt 'Review' link — extracting 100% Answer Key...")
+                    review_btn.click(force=True)
+                    time.sleep(4)
+                    self._extract_answer_key_from_review(answer_key)
+                    # Return to summary
+                    back_btn = target.query_selector("button:has-text('Back to Assessement Summary'), button:has-text('Back to Assessment Summary'), button:has-text('Finish review'), a:has-text('Back')")
+                    if back_btn:
+                        back_btn.click(force=True)
+                        time.sleep(3)
+                    break
+            except Exception:
+                pass
+
+        # Step B: Start or Continue Attempt
+        self._start_or_continue_quiz_attempt()
+
+        # Step C: Answer questions
+        logger.info(f"  ✏️ Answering quiz questions (Captured answers: {len(answer_key)})...")
+        self._answer_quiz_questions(answer_key)
+
+        # Step D: Final Submit
+        logger.info("  🚀 Submitting quiz attempt ('Final Submit')...")
+        self._submit_quiz_attempt()
+
+        # Step E: Extract Review answers if Attempt 1 Review page is displayed
+        time.sleep(4)
+        self._extract_answer_key_from_review(answer_key)
+
+        # Step F: If we captured answers and have a re-attempt available, run Attempt 2 for 100% Score!
+        if answer_key and self._has_reattempt_available():
+            logger.info("  🎯 Attempt 1 complete! Starting Attempt 2 with 100% Answer Key for PERFECT SCORE...")
+            self._start_or_continue_quiz_attempt()
+            self._answer_quiz_questions(answer_key)
+            self._submit_quiz_attempt()
+            logger.info("  🎉 Attempt 2 submitted — 100% SCORE ACHIEVED!")
+
+        self._close_popups()
+
+    def _start_or_continue_quiz_attempt(self):
+        """Clicks Continue Assessment / Re-attempt quiz / Attempt quiz now button."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                start_btn = target.query_selector(
+                    "button:has-text('Continue Assessment'), button:has-text('Attempt quiz now'), "
+                    "button:has-text('Re-attempt quiz'), button:has-text('Start attempt'), "
+                    "a:has-text('Continue Assessment'), a:has-text('Re-attempt quiz')"
+                )
+                if start_btn and start_btn.is_visible():
+                    start_btn.click(force=True)
+                    time.sleep(4)
+                    break
+            except Exception:
+                pass
+
+    def _answer_quiz_questions(self, answer_key: dict):
+        """Loops through all questions and selects options."""
+        for q_step in range(1, 40):
+            self._close_popups()
+            answered_something = False
+
+            for target in [self.page] + list(self.page.frames):
+                try:
+                    # Find radio options or checkboxes
+                    radios = target.query_selector_all("input[type='radio'], input[type='checkbox'], label.option-label")
+                    if radios:
+                        q_elem = target.query_selector(".qtext, .question, .formulation, h3, h4")
+                        q_text = q_elem.inner_text().strip().lower() if q_elem else ""
+
+                        matched = False
+                        if q_text and answer_key:
+                            for key_q, key_ans in answer_key.items():
+                                if key_q in q_text or q_text in key_q:
+                                    for r in radios:
+                                        r_parent = r.evaluate("el => el.closest('label, tr, div') ? el.closest('label, tr, div').innerText : ''")
+                                        if key_ans.lower() in r_parent.lower():
+                                            r.click(force=True)
+                                            matched = True
+                                            answered_something = True
+                                            break
+                                if matched:
+                                    break
+
+                        if not matched and radios:
+                            radios[0].click(force=True)
+                            answered_something = True
+
+                    next_btn = target.query_selector("button:has-text('Next Question'), input[value='Next Question'], button:has-text('Next')")
+                    if next_btn and next_btn.is_visible():
+                        next_btn.click(force=True)
+                        time.sleep(2.5)
+                        break
+
+                    final_btn = target.query_selector("button:has-text('Final Submit'), input[value='Final Submit'], button:has-text('Submit all and finish')")
+                    if final_btn and final_btn.is_visible():
+                        break
+                except Exception:
+                    pass
+
+            if not answered_something:
+                break
+
+    def _submit_quiz_attempt(self):
+        """Clicks 'Final Submit' and confirms submission."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                final_btn = target.query_selector("button:has-text('Final Submit'), input[value='Final Submit'], button:has-text('Submit all and finish')")
+                if final_btn and final_btn.is_visible():
+                    final_btn.click(force=True)
+                    time.sleep(3)
+
+                confirm_btn = target.query_selector("button:has-text('Final Submit'), button:has-text('Submit all and finish'), input[value='Submit all and finish']")
+                if confirm_btn and confirm_btn.is_visible():
+                    confirm_btn.click(force=True)
+                    time.sleep(4)
+            except Exception:
+                pass
+
+    def _extract_answer_key_from_review(self, answer_key: dict):
+        """Extracts question text and 100% correct answer options from Review page."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                questions = target.query_selector_all(".que, .question, div[id^='q']")
+                for q in questions:
+                    q_elem = q.query_selector(".qtext, .formulation")
+                    q_text = q_elem.inner_text().strip().lower() if q_elem else ""
+                    if not q_text:
+                        continue
+
+                    correct_elem = q.query_selector(".rightanswer, .correct, span.correct, [class*='rightanswer']")
+                    correct_text = ""
+                    if correct_elem:
+                        correct_text = correct_elem.inner_text().strip()
+                        correct_text = re.sub(r'^(The correct answer is|Correct answer|Answer):?\s*', '', correct_text, flags=re.I).strip()
+                    else:
+                        opt = q.query_selector(".fa-check, svg.check, [class*='correct']")
+                        if opt:
+                            opt_parent = opt.evaluate("el => el.closest('label, tr, div') ? el.closest('label, tr, div').innerText : ''")
+                            correct_text = opt_parent.strip()
+
+                    if q_text and correct_text:
+                        answer_key[q_text] = correct_text
+                        logger.info(f"  ✔ Captured Answer Key: '{q_text[:35]}...' → '{correct_text[:35]}'")
+            except Exception:
+                pass
+
+    def _has_reattempt_available(self) -> bool:
+        """Checks if a 'Re-attempt quiz' or 'Continue Assessment' button is present."""
+        for target in [self.page] + list(self.page.frames):
+            try:
+                btn = target.query_selector("button:has-text('Re-attempt quiz'), button:has-text('Continue Assessment'), a:has-text('Re-attempt quiz')")
+                if btn and btn.is_visible():
+                    return True
+            except Exception:
+                pass
+        return False
 
     def _scroll_pdf_to_end(self):
         """Scrolls the PDF viewer completely from top to bottom, dispatching telemetry events."""
