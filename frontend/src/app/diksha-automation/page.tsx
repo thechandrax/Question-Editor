@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -26,6 +26,7 @@ interface StatusType {
   started_at: string | null;
   courses: Course[];
   current_course: string | null;
+  current_module?: string;
   logs: string[];
 }
 
@@ -845,6 +846,42 @@ export default function DikshaAutomationPage() {
   const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
   const logsList = status?.logs || [];
 
+  const activeModule = useMemo(() => {
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      if (line.includes("Module:") || line.includes("Processing Module")) {
+        const match = line.match(/Module:\s*'([^']+)'/) || line.match(/Module\s*\d+[^:']*/);
+        if (match) return match[1] || match[0];
+      }
+    }
+    return status?.current_module || "";
+  }, [logsList, status]);
+
+  const activeTopic = useMemo(() => {
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      if (line.includes("→ Opening:") || line.includes("Opening:")) {
+        const match = line.match(/Opening:\s*'([^']+)'/);
+        if (match) return match[1];
+      }
+    }
+    return "";
+  }, [logsList]);
+
+  const topicProgress = useMemo(() => {
+    if (isDone) return 100;
+    for (let i = logsList.length - 1; i >= 0; i--) {
+      const line = logsList[i];
+      const vidMatch = line.match(/Video progress:.*\((\d+)%\)/);
+      if (vidMatch) return parseInt(vidMatch[1], 10);
+      if (line.includes("[✔] Processed") || line.includes("Video done")) return 100;
+      if (line.includes("PDF scrolled")) return 90;
+      if (line.includes("PDF / Resource Document detected")) return 30;
+      if (line.includes("→ Opening:")) return 1;
+    }
+    return isRunning ? 5 : 0;
+  }, [logsList, isRunning, isDone]);
+
   const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
   const finishedCourses = courses.filter((c) => c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
@@ -1080,8 +1117,8 @@ export default function DikshaAutomationPage() {
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'10px',overflow:'hidden',width:'100%'}}>
+              {/* Overall Progress bar */}
+              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'8px',overflow:'hidden',width:'100%'}}>
                 <div
                   className={isRunning && !isPaused ? 'progress-bar-animated' : ''}
                   style={{
@@ -1098,6 +1135,56 @@ export default function DikshaAutomationPage() {
                   }}
                 />
               </div>
+
+              {/* Real-time Topic / File Progress Block */}
+              {(activeModule || activeTopic || isRunning) && (
+                <div style={{
+                  marginTop: '16px',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '16px',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  {/* Module Badge */}
+                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px'}}>
+                    <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: '#4338ca', background: '#e0e7ff', padding: '4px 10px', borderRadius: '8px'}}>
+                      📁 {activeModule || "Active Module"}
+                    </div>
+                    <span style={{fontSize: '11px', fontWeight: '800', color: '#4f46e5', fontFamily: 'JetBrains Mono, monospace'}}>
+                      Live Topic: {topicProgress}%
+                    </span>
+                  </div>
+
+                  {/* Active File / Topic Name */}
+                  <div style={{minWidth: 0}}>
+                    <p style={{margin: 0, fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em'}}>
+                      Currently Automating File / Topic:
+                    </p>
+                    <h4 style={{margin: '2px 0 0', fontSize: '13.5px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                      {activeTopic ? `▶ ${activeTopic}` : "Loading topic / activity..."}
+                    </h4>
+                  </div>
+
+                  {/* Topic Live Progress Bar (1% -> 100%) */}
+                  <div>
+                    <div style={{background: '#cbd5e1', borderRadius: '100px', height: '8px', overflow: 'hidden', width: '100%'}}>
+                      <div
+                        className={isRunning && !isPaused ? "progress-bar-animated" : ""}
+                        style={{
+                          height: '100%',
+                          width: `${topicProgress}%`,
+                          borderRadius: '100px',
+                          transition: 'width 0.4s ease',
+                          background: 'linear-gradient(90deg, #4f46e5 0%, #8b5cf6 100%)'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
