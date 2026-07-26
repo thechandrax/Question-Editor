@@ -135,10 +135,10 @@ class VideoPlayer:
             logger.info(f"Navigating to module URL: {module_url}")
 
             try:
-                self.page.goto(module_url, wait_until="domcontentloaded", timeout=30000)
+                self.page.goto(module_url, wait_until="domcontentloaded", timeout=60000)
             except Exception as e:
                 logger.warning(f"Module page navigation note (proceeding anyway): {e}")
-            time.sleep(3)
+            time.sleep(5)
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
             # Process all activities inside this module
@@ -383,10 +383,10 @@ class VideoPlayer:
             # Always start from the clean module page
             if self.page.url.split("?")[0] != module_url.split("?")[0]:
                 try:
-                    self.page.goto(module_url, wait_until="domcontentloaded", timeout=25000)
+                    self.page.goto(module_url, wait_until="domcontentloaded", timeout=60000)
                 except Exception as e:
                     logger.warning(f"Activity loop page navigation note (proceeding anyway): {e}")
-                time.sleep(3)
+                time.sleep(5)
 
             # Find active module container to scope the buttons search
             scope = self._get_active_module_container(mod_id, mod_name)
@@ -508,14 +508,14 @@ class VideoPlayer:
                     continue
 
             if not unlocked_btn:
-                # If activities are locked by prerequisite telemetry right after finishing an activity, wait 5s and retry!
-                if has_locked_prereqs and retry_prereq_attempts < 2:
+                # If activities are locked by prerequisite telemetry right after finishing an activity, wait 10s and retry (up to 4 attempts = 40s)!
+                if has_locked_prereqs and retry_prereq_attempts < 4:
                     retry_prereq_attempts += 1
-                    logger.info(f"  Waiting 5s for DIKSHA server telemetry sync to unlock next activity (retry {retry_prereq_attempts}/2)...")
-                    time.sleep(5)
+                    logger.info(f"  Waiting 10s for DIKSHA server telemetry sync to unlock next activity (retry {retry_prereq_attempts}/4)...")
+                    time.sleep(10)
                     try:
-                        self.page.reload(wait_until="domcontentloaded", timeout=15000)
-                        time.sleep(3)
+                        self.page.reload(wait_until="domcontentloaded", timeout=30000)
+                        time.sleep(5)
                     except Exception:
                         pass
                     continue
@@ -541,8 +541,8 @@ class VideoPlayer:
 
             completed_titles.add(item_title)
             completed_count += 1
-            logger.info("  Waiting 4s for server checkmark sync...")
-            time.sleep(4)
+            logger.info("  Waiting 7s for server checkmark sync...")
+            time.sleep(7)
 
         return completed_count
 
