@@ -345,10 +345,10 @@ export default function DikshaAutomationPage() {
                 </div>
               </div>
               <h1 style={{fontSize:'32px',fontWeight:'800',color:'#0f172a',margin:'0 0 8px',letterSpacing:'-0.5px'}}>
-                DIKSHA Automation
+                DIKSHA COURSES
               </h1>
               <p style={{color:'#64748b',fontSize:'15px',margin:0,lineHeight:'1.6',fontWeight:'600'}}>
-                Ultra Pro Course Automation Platform
+                Complete your courses automatically
               </p>
             </div>
 
@@ -531,7 +531,7 @@ export default function DikshaAutomationPage() {
               </div>
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>DIKSHA Automation Portal</h1>
+                  <h1 style={{margin:0,fontSize:'17px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.3px'}}>DIKSHA COURSES</h1>
                   <span style={{fontSize:'11px',fontWeight:'700',color:'#4f46e5',background:'rgba(99,102,241,0.1)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:'20px',padding:'3px 10px'}}>
                     {username || "User"}
                   </span>
