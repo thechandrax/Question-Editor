@@ -317,7 +317,10 @@ export default function DikshaAutomationPage() {
     }).catch(() => {});
   };
 
+  const logsClearedRef = useRef(false);
+
   const handleClearLogs = async () => {
+    logsClearedRef.current = true;
     setStatus((prev) => (prev ? { ...prev, logs: [] } : null));
     try {
       await fetch("/api/diksha/clear-logs", { method: "POST" });
@@ -371,6 +374,13 @@ export default function DikshaAutomationPage() {
         const res = await fetch("/api/diksha/status");
         if (!res.ok) return;
         const data: StatusType = await res.json();
+        if (logsClearedRef.current) {
+          if (!data.logs || data.logs.length === 0) {
+            logsClearedRef.current = false;
+          } else {
+            data.logs = [];
+          }
+        }
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
         // Only update courses from polling if automation is actively running

@@ -166,6 +166,7 @@ async def get_status():
         "modules_total":  state.modules_total,
         "log_count":      len(state.logs),
         "last_logs":      state.logs[-30:],
+        "logs":           state.logs[-500:],
     }
 
 
