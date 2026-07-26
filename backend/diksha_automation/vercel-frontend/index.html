@@ -60,7 +60,7 @@
     input[type="url"], input[type="text"] {
       width: 100%; background: var(--surface2); border: 1px solid var(--border);
       border-radius: 10px; padding: 12px 16px; color: var(--text);
-      font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; outline: none;
+      font-family: 'JetBrains Mono', monospace; font-size: 16px; outline: none;
       transition: border-color 0.2s; margin-bottom: 16px;
     }
     input:focus { border-color: var(--orange); }
@@ -178,18 +178,17 @@
       connectStatus();
     }
 
-    // Request desktop notification permissions on first interaction
-    document.addEventListener("click", () => {
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-    }, { once: true });
+    // Unlock Web Audio API on mobile touch/click
+    function unlockMobileAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    }
+    document.addEventListener("touchstart", unlockMobileAudio, { passive: true });
+    document.addEventListener("click", unlockMobileAudio, { passive: true });
 
     function playChimeSound(isSuccess = true) {
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume();
-
+        unlockMobileAudio();
         const now = audioCtx.currentTime;
         const notes = isSuccess ? [523.25, 659.25, 783.99, 1046.50] : [440, 349.23];
         notes.forEach((freq, idx) => {
@@ -208,7 +207,17 @@
     }
 
     function triggerNotification(title, body, isSuccess = true) {
+      // 1. Play Audio Chime
       playChimeSound(isSuccess);
+
+      // 2. Mobile Haptic Vibration
+      if ("vibrate" in navigator) {
+        try {
+          navigator.vibrate(isSuccess ? [300, 150, 300, 150, 500] : [500, 200, 500]);
+        } catch(e) {}
+      }
+
+      // 3. Desktop / Mobile Push Notification
       if ("Notification" in window && Notification.permission === "granted") {
         try {
           new Notification(title, {
