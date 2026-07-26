@@ -1101,100 +1101,85 @@ export default function DikshaAutomationPage() {
             </div>
           </div>
 
-          {/* ── AUTOMATION STATUS BANNER ──────────────────────────────── */}
+          {/* ── STREAMLINED AUTOMATION PROGRESS CARD ──────────────────── */}
           {(isRunning || isDone || isStopped || isError) && (
-            <div className="glass-card-light fade-in-up mobile-card" style={{borderRadius:'20px',padding:'24px',border:`1px solid ${statusColor}40`,width:'100%'}}>
-              <div className="mobile-status-row" style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'16px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:'14px',minWidth:0}}>
-                  <div style={{width:'42px',height:'42px',borderRadius:'12px',background:`${statusColor}15`,border:`1px solid ${statusColor}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
-                    {isDone ? '🎉' : isPaused ? '⏸' : isError ? '⚠️' : isStopped ? '⏹' : '⚙️'}
+            <div className="glass-card-light fade-in-up mobile-card" style={{borderRadius:'20px',padding:'16px 20px',border:`1.5px solid ${statusColor}40`,width:'100%'}}>
+              <div style={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '16px',
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                {/* Module Badge & Live Topic % */}
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px'}}>
+                  <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: '#4338ca', background: '#e0e7ff', padding: '4px 10px', borderRadius: '8px'}}>
+                    📁 {activeModule || "Active Module"}
                   </div>
-                  <div style={{minWidth:0}}>
-                    <p style={{margin:0,fontSize:'11px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Automation Status</p>
-                    <p style={{margin:'4px 0 0',fontSize:'14px',fontWeight:'700',color:'#0f172a',wordBreak:'break-word'}}>{currentStepMsg}</p>
+                  <span style={{fontSize: '11px', fontWeight: '800', color: '#4f46e5', fontFamily: 'JetBrains Mono, monospace'}}>
+                    Live Topic: {topicProgress}%
+                  </span>
+                </div>
+
+                {/* Active File / Topic Name */}
+                <div style={{minWidth: 0}}>
+                  <p style={{margin: 0, fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em'}}>
+                    Currently Automating File / Topic:
+                  </p>
+                  <h4 style={{margin: '2px 0 0', fontSize: '13.5px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                    {activeTopic ? `▶ ${activeTopic}` : "Loading topic / activity..."}
+                  </h4>
+                </div>
+
+                {/* Topic Live Progress Bar (1% -> 100%) */}
+                <div>
+                  <div style={{background: '#cbd5e1', borderRadius: '100px', height: '8px', overflow: 'hidden', width: '100%'}}>
+                    <div
+                      className={isRunning && !isPaused ? "progress-bar-animated" : ""}
+                      style={{
+                        height: '100%',
+                        width: `${topicProgress}%`,
+                        borderRadius: '100px',
+                        transition: 'width 0.4s ease',
+                        background: 'linear-gradient(90deg, #4f46e5 0%, #8b5cf6 100%)'
+                      }}
+                    />
                   </div>
                 </div>
 
-                <div className="mobile-stat-pills" style={{display:'flex',alignItems:'center',gap:'20px'}}>
-                  <div style={{textAlign:'left',background:'#f8fafc',padding:'8px 14px',borderRadius:'12px',border:'1px solid #e2e8f0',flex:1}}>
-                    <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Elapsed</p>
-                    <p style={{margin:'2px 0 0',fontSize:'16px',fontWeight:'800',color:'#0f172a',fontFamily:'JetBrains Mono, monospace'}}>{formatTime(elapsed)}</p>
+                {/* Integrated Below Row: Elapsed Time & Overall Course Progress */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'4px',paddingTop:'10px',borderTop:'1px solid #cbd5e1',flexWrap:'wrap',gap:'10px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:'800',color:'#475569'}}>
+                    <span>⏱️ Elapsed:</span>
+                    <span style={{fontFamily:'JetBrains Mono, monospace',color:'#0f172a',background:'#ffffff',padding:'2px 8px',borderRadius:'6px',border:'1px solid #cbd5e1'}}>{formatTime(elapsed)}</span>
                   </div>
-                  <div style={{textAlign:'left',background:'#f8fafc',padding:'8px 14px',borderRadius:'12px',border:'1px solid #e2e8f0',flex:1}}>
-                    <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase'}}>Progress</p>
-                    <p style={{margin:'2px 0 0',fontSize:'22px',fontWeight:'800',color:statusColor,lineHeight:1}}>{overallProgress}%</p>
+                  <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:'800',color:'#475569'}}>
+                    <span>📊 Overall Progress:</span>
+                    <span style={{fontFamily:'JetBrains Mono, monospace',color:statusColor,background:'#ffffff',padding:'2px 8px',borderRadius:'6px',border:'1px solid #cbd5e1'}}>{overallProgress}%</span>
                   </div>
+                </div>
+
+                {/* Overall Course Progress Bar */}
+                <div style={{background:'#cbd5e1',borderRadius:'100px',height:'7px',overflow:'hidden',width:'100%'}}>
+                  <div
+                    className={isRunning && !isPaused ? 'progress-bar-animated' : ''}
+                    style={{
+                      height:'100%',
+                      width:`${overallProgress}%`,
+                      borderRadius:'100px',
+                      transition:'width 0.7s ease',
+                      background: !isRunning || isPaused
+                        ? isDone ? 'linear-gradient(90deg,#10b981,#059669)'
+                          : isPaused ? '#f59e0b'
+                          : isError ? '#ef4444'
+                          : '#64748b'
+                        : undefined
+                    }}
+                  />
                 </div>
               </div>
-
-              {/* Overall Progress bar */}
-              <div style={{background:'#e2e8f0',borderRadius:'100px',height:'8px',overflow:'hidden',width:'100%'}}>
-                <div
-                  className={isRunning && !isPaused ? 'progress-bar-animated' : ''}
-                  style={{
-                    height:'100%',
-                    width:`${overallProgress}%`,
-                    borderRadius:'100px',
-                    transition:'width 0.7s ease',
-                    background: !isRunning || isPaused
-                      ? isDone ? 'linear-gradient(90deg,#10b981,#059669)'
-                        : isPaused ? '#f59e0b'
-                        : isError ? '#ef4444'
-                        : '#64748b'
-                      : undefined
-                  }}
-                />
-              </div>
-
-              {/* Real-time Topic / File Progress Block */}
-              {(activeModule || activeTopic || isRunning) && (
-                <div style={{
-                  marginTop: '16px',
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
-                  border: '1.5px solid #cbd5e1',
-                  borderRadius: '16px',
-                  padding: '14px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px'
-                }}>
-                  {/* Module Badge */}
-                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px'}}>
-                    <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: '#4338ca', background: '#e0e7ff', padding: '4px 10px', borderRadius: '8px'}}>
-                      📁 {activeModule || "Active Module"}
-                    </div>
-                    <span style={{fontSize: '11px', fontWeight: '800', color: '#4f46e5', fontFamily: 'JetBrains Mono, monospace'}}>
-                      Live Topic: {topicProgress}%
-                    </span>
-                  </div>
-
-                  {/* Active File / Topic Name */}
-                  <div style={{minWidth: 0}}>
-                    <p style={{margin: 0, fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em'}}>
-                      Currently Automating File / Topic:
-                    </p>
-                    <h4 style={{margin: '2px 0 0', fontSize: '13.5px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                      {activeTopic ? `▶ ${activeTopic}` : "Loading topic / activity..."}
-                    </h4>
-                  </div>
-
-                  {/* Topic Live Progress Bar (1% -> 100%) */}
-                  <div>
-                    <div style={{background: '#cbd5e1', borderRadius: '100px', height: '8px', overflow: 'hidden', width: '100%'}}>
-                      <div
-                        className={isRunning && !isPaused ? "progress-bar-animated" : ""}
-                        style={{
-                          height: '100%',
-                          width: `${topicProgress}%`,
-                          borderRadius: '100px',
-                          transition: 'width 0.4s ease',
-                          background: 'linear-gradient(90deg, #4f46e5 0%, #8b5cf6 100%)'
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
