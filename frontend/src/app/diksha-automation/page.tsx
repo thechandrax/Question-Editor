@@ -333,7 +333,8 @@ export default function DikshaAutomationPage() {
         const data: StatusType = await res.json();
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
-        if (data.courses && data.courses.length > 0) {
+        // Only update courses from polling if automation is actively running
+        if (data.running && data.courses && data.courses.length > 0) {
           setCourses(data.courses);
           setHasScanned(true);
         }
@@ -368,12 +369,17 @@ export default function DikshaAutomationPage() {
       const data = await res.json();
       if (data.valid) {
         setLoginVerified(true);
-        // Brief success flash before opening dashboard
+        // Clear old session state on new login
+        try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
         setTimeout(() => {
           setLoginLoading(false);
           setLoginVerified(false);
           setStage("dashboard");
           setElapsed(0);
+          setCourses([]);
+          setHasScanned(false);
+          setStatus(null);
+          setScanMessage("");
         }, 600);
       } else {
         setLoginLoading(false);
@@ -397,10 +403,23 @@ export default function DikshaAutomationPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Scan request failed.");
 
-      if (Array.isArray(data) && data.length > 0) {
-        setCourses(data);
+      let fetchedCourses: Course[] = [];
+      if (Array.isArray(data)) {
+        fetchedCourses = data;
+      } else if (data && typeof data === "object") {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          fetchedCourses = data.courses;
+        } else if (Array.isArray(data.ongoing) || Array.isArray(data.finished)) {
+          const ongoing = Array.isArray(data.ongoing) ? data.ongoing : [];
+          const finished = Array.isArray(data.finished) ? data.finished : [];
+          fetchedCourses = [...ongoing, ...finished];
+        }
+      }
+
+      if (fetchedCourses.length > 0) {
+        setCourses(fetchedCourses);
         setHasScanned(true);
-        setScanMessage(`✔ Successfully scanned ${data.length} course(s).`);
+        setScanMessage(`✔ Successfully scanned ${fetchedCourses.length} course(s).`);
       } else {
         setCourses([]);
         setHasScanned(true);
@@ -480,12 +499,14 @@ export default function DikshaAutomationPage() {
       cancelText: "Cancel",
       variant: "danger",
       icon: "🚪",
-      onConfirm: () => {
+      onConfirm: async () => {
         setConfirmModal(null);
+        try { await fetch("/api/diksha/reset", { method: "POST" }); } catch {}
         setStage("login");
         setCourses([]);
         setHasScanned(false);
         setStatus(null);
+        setScanMessage("");
         stopPolling();
       }
     });

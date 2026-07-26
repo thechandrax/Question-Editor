@@ -773,6 +773,23 @@ async def stop_diksha_automation():
     _diksha["step"] = "Automation stopped."
     return {"status": "success", "message": "Automation stopping..."}
 
+@app.post("/api/diksha/reset")
+async def reset_diksha_state():
+    _stop_event.set()
+    _pause_event.set()
+    _diksha.update({
+        "running": False,
+        "status": "idle",
+        "step": "",
+        "progress": 0,
+        "logs": [],
+        "started_at": None,
+        "paused": False,
+        "courses": [],
+        "current_course": None,
+    })
+    return {"status": "success", "message": "DIKSHA backend state cleared."}
+
 @app.get("/api/diksha/status")
 async def get_diksha_status():
     return {
