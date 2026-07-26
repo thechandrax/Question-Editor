@@ -237,7 +237,7 @@ export default function DikshaAutomationPage() {
 
   const handleScanCourses = async () => {
     setScanning(true);
-    setScanMessage("🔐 Authenticating & scanning DIKSHA account... (may take 60-90 seconds)");
+    setScanMessage("Authenticating & scanning DIKSHA account... (may take 60-90 seconds)");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 150000); // 150s timeout
     try {
