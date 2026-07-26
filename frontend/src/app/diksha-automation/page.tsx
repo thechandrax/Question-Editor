@@ -163,6 +163,16 @@ export default function DikshaAutomationPage() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  // Auto clear scan toast message after 30 seconds
+  useEffect(() => {
+    if (scanMessage && !scanning) {
+      const timer = setTimeout(() => {
+        setScanMessage("");
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [scanMessage, scanning]);
+
   useEffect(() => {
     if (stage !== "dashboard") return;
     timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
@@ -248,7 +258,7 @@ export default function DikshaAutomationPage() {
       if (fetchedList.length === 0) {
         setScanMessage("⚠️ Scan complete but no courses found. Check Railway logs for details.");
       } else {
-        setScanMessage(`✅ Scan complete! Found ${ongoing.length} ongoing + ${finished.length} finished course(s).`);
+        setScanMessage(`Scan complete! Found ${ongoing.length} ongoing + ${finished.length} finished course(s).`);
       }
     } catch (err: unknown) {
       clearTimeout(timeout);
@@ -729,7 +739,7 @@ export default function DikshaAutomationPage() {
                 border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecaca' : '#a7f3d0'}`,
                 color: scanning ? '#1d4ed8' : scanMessage.includes('Error') ? '#dc2626' : '#047857'
               }}>
-                <span>{scanning ? '⚙️' : scanMessage.includes('Error') ? '❌' : '✅'}</span>
+                {(scanning || scanMessage.includes('Error')) && <span>{scanning ? '⚙️' : '❌'}</span>}
                 {scanMessage}
               </div>
             )}
