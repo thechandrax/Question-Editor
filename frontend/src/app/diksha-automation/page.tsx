@@ -855,6 +855,7 @@ export default function DikshaAutomationPage() {
           .mobile-btn-group { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 0 !important; }
           .mobile-btn, .mobile-status-badge { width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-full-grid { grid-column: 1 / -1 !important; }
+          .mobile-course-actions { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
           .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
@@ -864,7 +865,7 @@ export default function DikshaAutomationPage() {
           .mobile-course-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
           .mobile-modal-content { padding: 14px !important; grid-template-columns: 1fr !important; gap: 14px !important; }
           .mobile-modal-box { width: 95vw !important; max-width: 95vw !important; height: 92vh !important; border-radius: 18px !important; }
-          .mobile-full-btn { width: 100% !important; }
+          .mobile-full-btn { width: 100% !important; white-space: nowrap !important; padding: 12px 16px !important; font-size: 13px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
         }
       `}</style>
 
@@ -1045,7 +1046,7 @@ export default function DikshaAutomationPage() {
                 <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'500'}}>Enrolled courses · Progress tracking · Automation</p>
               </div>
 
-              <div className="mobile-btn-group" style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
+              <div className="mobile-course-actions" style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
                 <button
                   onClick={handleScanCourses}
                   disabled={scanning || isRunning}
