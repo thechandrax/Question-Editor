@@ -831,6 +831,21 @@ export default function DikshaAutomationPage() {
         .progress-bar-animated {
           background-size: 200% 100%;
           background-image: linear-gradient(90deg, #4f46e5 0%, #8b5cf6 40%, #4f46e5 80%, #8b5cf6 100%);
+        }
+        .btn {
+          border: none;
+          cursor: pointer;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          font-weight: 700;
+          border-radius: 12px;
+          transition: all 0.2s ease;
+          white-space: nowrap !important;
+          font-family: 'Cambria', Georgia, serif !important;
+        }
+        .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; filter:none; }
         .tab-active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(79,70,229,0.3) !important; }
@@ -839,21 +854,29 @@ export default function DikshaAutomationPage() {
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius:4px; }
 
+        @media (min-width: 641px) {
+          .mobile-brand-block { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 16px !important; width: auto !important; }
+          .mobile-email-wrapper { width: auto !important; margin: 0 !important; }
+          .mobile-email-pill { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 6px 16px !important; font-size: 12px !important; border-radius: 20px !important; }
+          .mobile-full-btn { width: auto !important; max-width: none !important; white-space: nowrap !important; padding: 12px 24px !important; font-size: 13px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
+        }
+
         @media (max-width: 640px) {
-          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
-          .mobile-login-box { margin: 0 !important; }
+          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px 12px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
+          .mobile-login-box { margin: 0 !important; width: 100% !important; max-width: 100% !important; }
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
-          .mobile-card { padding: 14px 12px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; gap: 8px !important; }
+          .mobile-card { padding: 16px 14px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; gap: 10px !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
-          .mobile-brand-block { width: 100% !important; gap: 8px !important; }
+          .mobile-brand-block { width: 100% !important; gap: 10px !important; flex-direction: column !important; }
           .mobile-subtitle { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 11px !important; width: 100% !important; }
-          .mobile-email-wrapper { width: 100% !important; display: flex !important; margin-top: 0 !important; margin-bottom: 0 !important; }
-          .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 40px !important; min-height: 40px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-email-wrapper { width: 100% !important; display: flex !important; margin-top: 2px !important; margin-bottom: 0 !important; }
+          .mobile-email-pill { width: 100% !important; max-width: 100% !important; height: 42px !important; min-height: 42px !important; justify-content: center !important; text-align: center !important; padding: 0 14px !important; font-size: 12px !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-email-text { max-width: 85% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
-          .mobile-btn-group { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 0 !important; }
-          .mobile-btn, .mobile-status-badge { width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-btn-group { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 2px !important; }
+          .mobile-btn, .mobile-status-badge { width: 100% !important; height: 42px !important; min-height: 42px !important; padding: 0 10px !important; font-size: 12px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
           .mobile-full-grid { grid-column: 1 / -1 !important; }
-          .mobile-course-actions { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }
+          .mobile-course-actions { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; margin-top: 4px !important; }
+          .mobile-log-controls { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; margin-top: 6px !important; }
           .mobile-grid-2 { grid-template-columns: 1fr !important; }
           .mobile-tabs { width: 100% !important; display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .mobile-tab-btn { padding: 10px 6px !important; font-size: 11px !important; width: 100% !important; justify-content: center !important; }
@@ -863,7 +886,7 @@ export default function DikshaAutomationPage() {
           .mobile-course-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
           .mobile-modal-content { padding: 14px !important; grid-template-columns: 1fr !important; gap: 14px !important; }
           .mobile-modal-box { width: 95vw !important; max-width: 95vw !important; height: 92vh !important; border-radius: 18px !important; }
-          .mobile-full-btn { width: 100% !important; white-space: nowrap !important; padding: 12px 16px !important; font-size: 13px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; }
+          .mobile-full-btn { width: 100% !important; max-width: 100% !important; white-space: nowrap !important; padding: 12px 16px !important; font-size: 13px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; display: flex !important; align-items: center !important; gap: 8px !important; }
         }
       `}</style>
 
@@ -1288,7 +1311,7 @@ export default function DikshaAutomationPage() {
                 <IconTerminal /> Live Server Output Logs
                 <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
               </h3>
-              <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+              <div className="mobile-log-controls" style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
                 <div style={{
                   fontSize:'11px',
                   fontWeight:'700',
