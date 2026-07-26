@@ -631,7 +631,7 @@ export default function DikshaAutomationPage() {
           {/* Grid pattern overlay */}
           <div style={{position:'absolute',inset:0,backgroundImage:'linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px)',backgroundSize:'48px 48px',pointerEvents:'none'}}/>
 
-          <div style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
+          <div className="mobile-login-box" style={{width:'100%',maxWidth:'440px',position:'relative',zIndex:10}}>
             {/* Logo & Title */}
             <div style={{textAlign:'center',marginBottom:'14px'}}>
               <div style={{
@@ -831,10 +831,6 @@ export default function DikshaAutomationPage() {
         .progress-bar-animated {
           background-size: 200% 100%;
           background-image: linear-gradient(90deg, #4f46e5 0%, #8b5cf6 40%, #4f46e5 80%, #8b5cf6 100%);
-          animation: progress-shine 2s linear infinite;
-        }
-        .btn { border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:700; border-radius:10px; transition:all 0.2s ease; font-family:'Cambria',Georgia,serif !important; }
-        .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; filter:none; }
         .tab-active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(79,70,229,0.3) !important; }
@@ -844,6 +840,8 @@ export default function DikshaAutomationPage() {
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius:4px; }
 
         @media (max-width: 640px) {
+          .diksha-root { min-height: 100vh !important; min-height: 100dvh !important; padding: 16px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; }
+          .mobile-login-box { margin: 0 !important; }
           .dash-root { padding: 12px 10px !important; overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
           .mobile-card { padding: 14px 12px !important; border-radius: 18px !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; gap: 8px !important; }
           .mobile-header-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
