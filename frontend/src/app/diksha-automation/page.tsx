@@ -978,30 +978,30 @@ export default function DikshaAutomationPage() {
       {showDetailsModal && (
         <div style={{
           position:'fixed',inset:0,zIndex:9999,
-          background:'rgba(15,23,42,0.6)',backdropFilter:'blur(10px)',
-          display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'
+          background:'rgba(15,23,42,0.65)',backdropFilter:'blur(12px)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'
         }}>
           <div className="glass-card-light fade-in-up" style={{
-            width:'100%',maxWidth:'820px',borderRadius:'24px',overflow:'hidden',
-            display:'flex',flexDirection:'column',maxHeight:'85vh',
-            boxShadow:'0 25px 50px -12px rgba(0,0,0,0.15)',
+            width:'100%',maxWidth:'1040px',borderRadius:'24px',overflow:'hidden',
+            display:'flex',flexDirection:'column',maxHeight:'90vh',
+            boxShadow:'0 25px 60px -15px rgba(0,0,0,0.25)',
             border:'1px solid #e2e8f0'
           }}>
             {/* Header */}
             <div style={{
-              padding:'20px 24px',borderBottom:'1px solid #e2e8f0',
+              padding:'22px 30px',borderBottom:'1px solid #e2e8f0',
               display:'flex',alignItems:'center',justifyContent:'space-between',
-              background:'#f8fafc'
+              background:'#ffffff'
             }}>
               <div>
                 <span style={{fontSize:'11px',fontWeight:'800',color:'#4f46e5',textTransform:'uppercase',letterSpacing:'0.06em'}}>DIKSHA Course Details</span>
-                <h2 style={{margin:'4px 0 0',fontSize:'18px',fontWeight:'800',color:'#0f172a'}}>{selectedCourse?.title}</h2>
+                <h2 style={{margin:'4px 0 0',fontSize:'20px',fontWeight:'800',color:'#0f172a'}}>{selectedCourse?.title}</h2>
               </div>
               <button 
                 onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
                 style={{
-                  background:'#ffffff',border:'1px solid #cbd5e1',
-                  color:'#475569',borderRadius:'50%',width:'34px',height:'34px',
+                  background:'#f1f5f9',border:'1px solid #cbd5e1',
+                  color:'#475569',borderRadius:'50%',width:'36px',height:'36px',
                   display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
                   cursor:'pointer',fontWeight:'700',transition:'all 0.2s'
                 }}
@@ -1011,7 +1011,7 @@ export default function DikshaAutomationPage() {
             </div>
 
             {/* Content Area */}
-            <div style={{padding:'24px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
+            <div style={{padding:'28px 30px',overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'20px'}}>
               {detailsLoading ? (
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 0',gap:'16px'}}>
                   <IconSpinner />
@@ -1026,34 +1026,38 @@ export default function DikshaAutomationPage() {
                   </p>
                 </div>
               ) : courseDetails ? (
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'24px',alignItems:'start'}}>
+                <div style={{display:'grid',gridTemplateColumns:'400px 1fr',gap:'28px',alignItems:'start'}}>
                   
                   {/* Left Column: Info & Description */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
                     <div>
-                      <h4 style={{margin:'0 0 8px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>About this Course</h4>
-                      <p style={{
-                        margin:0,fontSize:'13px',color:'#334155',
-                        lineHeight:'1.6',whiteSpace:'pre-wrap',background:'#f8fafc',
-                        padding:'16px',borderRadius:'14px',border:'1px solid #e2e8f0',
-                        maxHeight:'320px',overflowY:'auto',fontWeight:'500'
+                      <h4 style={{margin:'0 0 10px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>About this Course</h4>
+                      <div style={{
+                        background:'#f8fafc',padding:'18px',borderRadius:'16px',border:'1px solid #e2e8f0',
+                        maxHeight:'380px',overflowY:'auto'
                       }}>
-                        {courseDetails.description || "No description provided by the DIKSHA portal."}
-                      </p>
+                        <p style={{
+                          margin:0,fontSize:'13px',color:'#334155',
+                          lineHeight:'1.7',whiteSpace:'pre-wrap',fontWeight:'500'
+                        }}>
+                          {courseDetails.description || "No description provided by the DIKSHA portal."}
+                        </p>
+                      </div>
                     </div>
 
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'14px',padding:'14px 18px'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'16px',padding:'16px 20px'}}>
                       <div>
-                        <p style={{margin:0,fontSize:'11px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase'}}>Course Status</p>
-                        <p style={{margin:0,fontSize:'15px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
+                        <p style={{margin:0,fontSize:'11px',color:'#1d4ed8',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}>Course Status</p>
+                        <p style={{margin:'2px 0 0',fontSize:'16px',color:'#0f172a',fontWeight:'800'}}>{selectedCourse?.progress}% Complete</p>
                       </div>
                       <button
                         onClick={() => { setShowDetailsModal(false); handleStartAutomation(selectedCourse?.url); }}
                         disabled={isRunning || actionLoading || selectedCourse?.progress === 100}
                         style={{
                           background:'linear-gradient(135deg,#ea580c,#f59e0b)',
-                          color:'white',border:'none',padding:'10px 18px',borderRadius:'10px',
-                          fontSize:'12px',fontWeight:'800',cursor:'pointer',
+                          color:'white',border:'none',padding:'11px 20px',borderRadius:'12px',
+                          fontSize:'13px',fontWeight:'800',cursor:'pointer',
+                          boxShadow:'0 4px 14px rgba(234,88,12,0.25)',
                           opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
                         }}
                       >
@@ -1063,39 +1067,56 @@ export default function DikshaAutomationPage() {
                   </div>
 
                   {/* Right Column: Lessons / Modules */}
-                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                    <h4 style={{margin:'0 0 4px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.04em'}}>Course Lessons & Modules</h4>
+                  <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
+                    <h4 style={{margin:'0 0 4px',fontSize:'12px',fontWeight:'800',color:'#64748b',textTransform:'uppercase',letterSpacing:'0.06em'}}>Course Lessons & Modules</h4>
                     <div style={{
-                      display:'flex',flexDirection:'column',gap:'10px',
-                      maxHeight:'400px',overflowY:'auto',paddingRight:'4px'
+                      display:'flex',flexDirection:'column',gap:'12px',
+                      maxHeight:'460px',overflowY:'auto',paddingRight:'4px'
                     }}>
                       {courseDetails.modules && courseDetails.modules.length > 0 ? (
                         courseDetails.modules.map((m: any, idx: number) => {
-                          const pct = m.progress ?? 0;
-                          const isDone = m.iscompleted || pct === 100;
+                          const rawPct = m.progress ?? 0;
+                          const isDone = m.iscompleted || rawPct === 100 || selectedCourse?.progress === 100;
+                          const displayPct = isDone ? 100 : rawPct;
                           return (
                             <div key={idx} style={{
-                              background:'#f8fafc',border:'1px solid #e2e8f0',
-                              borderRadius:'12px',padding:'12px 16px',display:'flex',alignItems:'center',
-                              justifyContent:'space-between',gap:'12px'
+                              background:'#ffffff',border:`1.5px solid ${isDone ? '#a7f3d0' : '#e2e8f0'}`,
+                              borderRadius:'14px',padding:'14px 18px',display:'flex',alignItems:'center',
+                              justifyContent:'space-between',gap:'14px',
+                              boxShadow: isDone ? '0 2px 10px rgba(16,185,129,0.06)' : '0 2px 6px rgba(0,0,0,0.02)'
                             }}>
                               <div style={{flex:1,minWidth:0}}>
-                                <p style={{margin:'0 0 6px',fontSize:'13px',fontWeight:'700',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
-                                  {m.name}
-                                </p>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                                  <p style={{margin:0,fontSize:'14px',fontWeight:'700',color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={m.name}>
+                                    {m.name}
+                                  </p>
+                                  <span style={{
+                                    fontSize:'12px',fontWeight:'800',
+                                    color: isDone ? '#059669' : '#4f46e5',
+                                    background: isDone ? '#ecfdf5' : '#eff6ff',
+                                    padding:'2px 8px',borderRadius:'12px',
+                                    border: `1px solid ${isDone ? '#a7f3d0' : '#bfdbfe'}`
+                                  }}>
+                                    {displayPct}%
+                                  </span>
+                                </div>
                                 <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                                  <div style={{flex:1,background:'#e2e8f0',height:'5px',borderRadius:'10px',overflow:'hidden'}}>
-                                    <div style={{width:`${pct}%`,height:'100%',background: isDone ? '#10b981' : '#4f46e5'}} />
+                                  <div style={{flex:1,background:'#e2e8f0',height:'7px',borderRadius:'10px',overflow:'hidden'}}>
+                                    <div style={{
+                                      width:`${displayPct}%`,height:'100%',
+                                      background: isDone ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#4f46e5,#6366f1)',
+                                      borderRadius:'10px',transition:'width 0.3s ease'
+                                    }} />
                                   </div>
-                                  <span style={{fontSize:'11px',fontWeight:'800',color: isDone ? '#10b981' : '#64748b'}}>{pct}%</span>
                                 </div>
                               </div>
                               <span style={{
-                                width:'24px',height:'24px',borderRadius:'50%',
-                                background: isDone ? '#d1fae5' : '#e2e8f0',
-                                border:`1px solid ${isDone ? '#6ee7b7' : '#cbd5e1'}`,
+                                width:'28px',height:'28px',borderRadius:'50%',
+                                background: isDone ? '#d1fae5' : '#f1f5f9',
+                                border:`1.5px solid ${isDone ? '#34d399' : '#cbd5e1'}`,
                                 display:'flex',alignItems:'center',justifyContent:'center',
-                                color: isDone ? '#047857' : '#64748b',fontSize:'11px',fontWeight:'bold'
+                                color: isDone ? '#047857' : '#64748b',fontSize:'12px',fontWeight:'800',
+                                flexShrink:0
                               }}>
                                 {isDone ? '✓' : idx + 1}
                               </span>
@@ -1116,15 +1137,15 @@ export default function DikshaAutomationPage() {
             
             {/* Footer */}
             <div style={{
-              padding:'16px 24px',borderTop:'1px solid #e2e8f0',
-              display:'flex',justifyContent:'flex-end',background:'#f8fafc'
+              padding:'18px 30px',borderTop:'1px solid #e2e8f0',
+              display:'flex',justifyContent:'flex-end',background:'#ffffff'
             }}>
               <button 
                 onClick={() => { setShowDetailsModal(false); setSelectedCourse(null); setCourseDetails(null); }}
                 style={{
-                  background:'#ffffff',border:'1px solid #cbd5e1',
-                  color:'#334155',borderRadius:'10px',padding:'8px 18px',fontSize:'12px',
-                  fontWeight:'700',cursor:'pointer'
+                  background:'#f8fafc',border:'1.5px solid #cbd5e1',
+                  color:'#334155',borderRadius:'12px',padding:'10px 22px',fontSize:'13px',
+                  fontWeight:'800',cursor:'pointer',transition:'all 0.2s'
                 }}
               >
                 Close Details
