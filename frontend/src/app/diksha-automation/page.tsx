@@ -419,7 +419,7 @@ export default function DikshaAutomationPage() {
       if (fetchedCourses.length > 0) {
         setCourses(fetchedCourses);
         setHasScanned(true);
-        setScanMessage(`✔ Successfully scanned ${fetchedCourses.length} course(s).`);
+        setScanMessage(`Successfully scanned ${fetchedCourses.length} course(s).`);
       } else {
         setCourses([]);
         setHasScanned(true);
@@ -1080,7 +1080,7 @@ export default function DikshaAutomationPage() {
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 )}
-                <span>{scanMessage}</span>
+                <span>{scanMessage.replace(/^✔\s*/, '')}</span>
               </div>
             )}
 
