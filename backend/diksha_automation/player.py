@@ -520,7 +520,7 @@ class VideoPlayer:
             time.sleep(1.5)
 
         if video_element:
-            logger.info("  Video detected — running 6x speed (up to 600s real-time)...")
+            logger.info("  Video detected — running 16x speed (up to 600s real-time)...")
             start = time.time()
             last_log_time = 0.0
             last_time = -1.0
@@ -739,9 +739,9 @@ class VideoPlayer:
                         if (v.duration && (v.duration - v.currentTime <= 10)) {
                             v.playbackRate = 1.0;
                             v.defaultPlaybackRate = 1.0;
-                        } else if (v.playbackRate !== 6.0) {
-                            v.playbackRate = 6.0;
-                            v.defaultPlaybackRate = 6.0;
+                        } else if (v.playbackRate !== 16.0) {
+                            v.playbackRate = 16.0;
+                            v.defaultPlaybackRate = 16.0;
                         }
                         if (v.paused && (!v.duration || (v.duration - v.currentTime > 1))) {
                             v.play().catch(() => {});
