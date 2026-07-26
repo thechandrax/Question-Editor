@@ -76,6 +76,11 @@ const IconLogin = () => (
     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
   </svg>
 );
+const IconLogout = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+);
 const IconScan = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -575,11 +580,13 @@ export default function DikshaAutomationPage() {
             </div>
 
             <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
-              {/* Status pill */}
-              <div style={{display:'flex',alignItems:'center',gap:'8px',background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'20px',padding:'6px 14px'}}>
-                <div style={{width:'8px',height:'8px',borderRadius:'50%',background:statusColor,position:'relative',flexShrink:0}}/>
-                <span style={{fontSize:'12px',fontWeight:'700',color:statusColor}}>{statusLabel}</span>
-              </div>
+              {/* Status pill (Only shown when active/running/paused/done/error) */}
+              {statusLabel !== "Idle" && (
+                <div style={{display:'flex',alignItems:'center',gap:'8px',background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'20px',padding:'6px 14px'}}>
+                  <div style={{width:'8px',height:'8px',borderRadius:'50%',background:statusColor,position:'relative',flexShrink:0}}/>
+                  <span style={{fontSize:'12px',fontWeight:'700',color:statusColor}}>{statusLabel}</span>
+                </div>
+              )}
 
               {isRunning && (
                 <>
@@ -605,9 +612,15 @@ export default function DikshaAutomationPage() {
               <button
                 onClick={() => { setStage("login"); setCourses([]); setHasScanned(false); setStatus(null); stopPolling(); }}
                 className="btn"
-                style={{padding:'8px 16px',fontSize:'12px',background:'#f1f5f9',border:'1px solid #e2e8f0',color:'#475569'}}
+                style={{
+                  padding:'9px 18px',fontSize:'13px',fontWeight:'800',
+                  background:'#ffffff',border:'1.5px solid #e2e8f0',
+                  color:'#e11d48',borderRadius:'12px',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.04)',
+                  transition:'all 0.2s ease'
+                }}
               >
-                🚪 Logout
+                <IconLogout /> Logout
               </button>
             </div>
           </div>
