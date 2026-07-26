@@ -284,7 +284,7 @@ export default function DikshaAutomationPage() {
       <>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-          .diksha-root * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+          .diksha-root * { font-family: 'Cambria', Georgia, serif !important; box-sizing: border-box; }
           @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
           @keyframes glow-pulse { 0%,100%{opacity:0.25} 50%{opacity:0.55} }
           .float-anim { animation: float 6s ease-in-out infinite; }
@@ -483,7 +483,7 @@ export default function DikshaAutomationPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-        .dash-root * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+        .dash-root * { font-family: 'Cambria', Georgia, serif !important; box-sizing: border-box; }
         @keyframes pulse-dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.7} }
         @keyframes progress-shine { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         @keyframes fade-in-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -500,7 +500,7 @@ export default function DikshaAutomationPage() {
           background-image: linear-gradient(90deg, #4f46e5 0%, #8b5cf6 40%, #4f46e5 80%, #8b5cf6 100%);
           animation: progress-shine 2s linear infinite;
         }
-        .btn { border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:700; border-radius:10px; transition:all 0.2s ease; font-family:'Plus Jakarta Sans',sans-serif; }
+        .btn { border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:700; border-radius:10px; transition:all 0.2s ease; font-family:'Cambria',Georgia,serif !important; }
         .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; filter:none; }
