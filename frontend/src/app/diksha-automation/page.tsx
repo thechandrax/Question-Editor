@@ -108,6 +108,12 @@ const IconTerminal = () => (
     <line x1="12" y1="19" x2="20" y2="19"/>
   </svg>
 );
+const IconCopy = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+);
 const IconPlay = ({ size = 12 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -161,6 +167,16 @@ export default function DikshaAutomationPage() {
   const [detailsError, setDetailsError] = useState("");
   const [expandedModuleIdxs, setExpandedModuleIdxs] = useState<Record<number, boolean>>({});
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [copiedLogs, setCopiedLogs] = useState(false);
+
+  const handleCopyLogs = () => {
+    const text = status?.logs ? status.logs.join('\n') : "";
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedLogs(true);
+      setTimeout(() => setCopiedLogs(false), 2000);
+    }).catch(() => {});
+  };
 
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -961,13 +977,29 @@ export default function DikshaAutomationPage() {
               </h3>
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                 <span style={{fontSize:'12px',color:'#64748b',fontFamily:'JetBrains Mono, monospace',fontWeight:'600'}}>
-                  {logsList.length} lines (max 500)
+                  {logsList.length} lines
                 </span>
+                <button
+                  onClick={handleCopyLogs}
+                  disabled={logsList.length === 0}
+                  style={{
+                    fontSize:'11px',fontWeight:'700',
+                    color: copiedLogs ? '#047857' : '#475569',
+                    background: copiedLogs ? '#d1fae5' : '#f1f5f9',
+                    border: `1px solid ${copiedLogs ? '#6ee7b7' : '#cbd5e1'}`,
+                    borderRadius:'8px',padding:'4px 12px',cursor: logsList.length === 0 ? 'not-allowed' : 'pointer',
+                    display:'inline-flex',alignItems:'center',gap:'4px',
+                    transition:'all 0.2s ease',
+                    opacity: logsList.length === 0 ? 0.5 : 1
+                  }}
+                >
+                  {copiedLogs ? 'Copied! ✓' : <><IconCopy /> Copy Logs</>}
+                </button>
                 <button
                   onClick={() => setShowLogs(!showLogs)}
                   style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}
                 >
-                  {showLogs ? 'Collapse' : 'Expand (500px)'}
+                  {showLogs ? 'Collapse' : 'Expand'}
                 </button>
               </div>
             </div>
