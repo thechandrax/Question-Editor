@@ -499,12 +499,18 @@ class CourseNavigator:
         def _on_response(response):
             try:
                 url_lower = response.url.lower()
-                # Broad filter: catch Moodle AJAX, service.php, API, course/enroll patterns
-                if response.status == 200 and any(kw in url_lower for kw in [
-                    'course', 'enroll', 'listing', 'learn', 'my_course',
-                    'service.php', 'ajax', 'api/', 'webservice', 'token', 'moodle'
+                # Exclude static/binary files — they'll never contain course data
+                is_static = any(url_lower.endswith(ext) for ext in [
+                    '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.webp',
+                    '.woff', '.woff2', '.ttf', '.eot', '.otf',
+                    '.css', '.js', '.map', '.mp4', '.mp3',
+                ])
+                # Also exclude pix/ directory (course icons, thumbnails)
+                is_static = is_static or '/pix/' in url_lower or '/pluginfile.php' in url_lower
+                if not is_static and response.status == 200 and any(kw in url_lower for kw in [
+                    'course_listing', 'course_library', 'enroll', 'my_course',
+                    'service.php', 'ajax', 'api/', 'webservice', 'coursedata',
                 ]):
-                    # Don't block — just record the URL; body read after navigation
                     captured.append({'url': response.url, 'body': None})
             except Exception:
                 pass
