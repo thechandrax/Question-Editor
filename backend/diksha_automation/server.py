@@ -115,11 +115,18 @@ def _automation_worker(course_url: str):
         if course_url:
             os.environ["COURSE_URL"] = course_url
 
+        # Username/password must be in env vars (set by /api/run request body or Railway secrets)
+        _username = os.getenv("DIKSHA_USERNAME", "")
+        _password = os.getenv("DIKSHA_PASSWORD", "")
+        if not _username or not _password:
+            raise ValueError("DIKSHA_USERNAME and DIKSHA_PASSWORD env vars are required")
+
         # Import fresh (avoids stale module state across runs)
         import importlib
         import orchestrator as _orch
         importlib.reload(_orch)
-        _orch.run_automation()
+        _orch.run_automation(username=_username, password=_password, headless=True,
+                             target_course_url=course_url if course_url else None)
 
         state.status   = "done"
         state.progress = 100
@@ -184,6 +191,12 @@ async def start_run(request: Request):
 async def stop_run():
     state.running = False
     state.status  = "idle"
+    # Signal the running automation thread to stop gracefully
+    try:
+        from utils import STOP_EVENT
+        STOP_EVENT.set()
+    except Exception:
+        pass
     return {"status": "stopped"}
 
 
