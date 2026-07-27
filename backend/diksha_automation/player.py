@@ -303,8 +303,7 @@ class VideoPlayer:
 
                     seen_ids.add(mod_id)
 
-                    # Check checkmark completion status
-                    is_done = False
+                    # Walk up DOM to the module's parent container
                     parent = tr.evaluate_handle("""(node) => {
                         let p = node;
                         while (p && p.tagName !== 'BODY') {
@@ -317,26 +316,62 @@ class VideoPlayer:
                         return node;
                     }""").as_element()
 
+                    # ── Read ACTUAL percentage from DIKSHA DOM badge ─────────────
+                    # DIKSHA shows real server-side % on each module header badge
+                    # e.g. "43%", "0%", or a checkmark when 100%.
+                    # We read this exact value — NO hardcoding.
+                    actual_progress = None
+                    is_done = False
+
                     if parent:
+                        # 1. Try reading numeric % badge text from the module header
+                        pct_el = parent.query_selector(
+                            ".completion-badge, .progress-badge, "
+                            ".modules_progress, .progress-circle, "
+                            ".completion-info, [class*='progress'], "
+                            "[title$='%'], [data-original-title$='%']"
+                        )
+                        if pct_el:
+                            import re as _re
+                            raw = (
+                                pct_el.get_attribute("title") or
+                                pct_el.get_attribute("data-original-title") or
+                                pct_el.inner_text()
+                            ).strip()
+                            m_pct = _re.search(r'(\d+)', raw)
+                            if m_pct:
+                                actual_progress = int(m_pct.group(1))
+
+                        # 2. Checkmark icon = server confirmed 100%
                         checkmark = parent.query_selector(
                             ".fa-check, .fa-check-circle, .micon-check_circle, "
-                            ".check-icon, .p100, [title='100%'], [class*='check'], [class*='complete']"
+                            ".check-icon, .p100, [title='100%']"
                         )
                         if checkmark and checkmark.is_visible():
                             is_done = True
+                            if actual_progress is None:
+                                actual_progress = 100  # checkmark present, confirmed 100%
+
+                    # No badge and no checkmark = 0% (genuinely not started)
+                    if actual_progress is None:
+                        actual_progress = 0
 
                     modules.append({
                         "id": mod_id,
                         "name": mod_name,
-                        "progress": 100 if is_done else 0,
-                        "iscompleted": is_done,
+                        "progress": actual_progress,   # REAL value from DOM
+                        "iscompleted": is_done or actual_progress >= 100,
                     })
                 except Exception:
                     pass
 
             if modules:
                 completed_count = sum(1 for m in modules if m["iscompleted"])
-                logger.info(f"Dynamic DOM parse found {len(modules)} module(s) ({completed_count} completed).")
+                logger.info(
+                    f"Dynamic DOM parse: {len(modules)} modules, "
+                    f"{completed_count} completed. "
+                    f"Progress: {[(m['name'][:18], str(m['progress'])+'%') for m in modules]}"
+                )
                 return modules
         except Exception as e:
             logger.warning(f"DOM module list parse note: {e}")
