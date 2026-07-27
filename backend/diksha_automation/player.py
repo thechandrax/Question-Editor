@@ -1213,17 +1213,30 @@ class VideoPlayer:
         logger.info("  🚀 Submitting quiz attempt ('Final Submit')...")
         self._submit_quiz_attempt()
 
-        # ── Capture answers from Review page (Approach C: learn + retry) ──
-        time.sleep(4)
-        self._extract_answer_key_from_review(answer_key)
+        # ── CRITICAL FIX: Navigate to Review page after submit ────────────
+        # After submit, DIKSHA shows a RESULTS/SUMMARY page (not Review page).
+        # We must CLICK 'Review' to go to the review page, read all correct
+        # answers, then come BACK to the summary page to find Re-attempt button.
+        time.sleep(5)  # Wait for results page to load fully
+        self._close_popups()
+        attempt1_answers_before = len(answer_key)
+        self._navigate_to_review_and_extract(answer_key)
+        new_answers = len(answer_key) - attempt1_answers_before
+        logger.info(f"  📚 Review extracted {new_answers} new correct answers (total: {len(answer_key)})")
 
-        # ── Approach C: If review gave us new answers → Attempt 2 = 100% ─
+        # ── Approach C: If we have answers → Attempt 2 = PERFECT SCORE ─────
         if answer_key and self._has_reattempt_available():
             logger.info(f"  🎯 Attempt 2 with {len(answer_key)} correct answers → PERFECT SCORE...")
             self._start_or_continue_quiz_attempt()
             self._answer_quiz_questions_smart(answer_key)
             self._submit_quiz_attempt()
+            time.sleep(4)
+            self._close_popups()
             logger.info("  🎉 Attempt 2 submitted — 100% SCORE!")
+        elif not answer_key:
+            logger.info("  ⚠️  No answer key captured — Attempt 1 score accepted as-is")
+        else:
+            logger.info("  ℹ️  No Re-attempt button found — Attempt 1 score is final")
 
         self._close_popups()
 
@@ -1446,6 +1459,132 @@ class VideoPlayer:
                         logger.info(f"  ✔ Captured Answer Key: '{q_text[:35]}...' → '{correct_text[:35]}'")
             except Exception:
                 pass
+
+    def _navigate_to_review_and_extract(self, answer_key: dict):
+        """
+        CRITICAL FIX for Approach C:
+        After Attempt 1 is submitted, DIKSHA shows a RESULTS SUMMARY page.
+        This method:
+          1. Finds and clicks the 'Review' link on the summary page
+          2. Waits for the Review page to load (shows correct/wrong for each Q)
+          3. Extracts all correct answers into answer_key
+          4. Clicks 'Back to Attempt Summary' to return to summary page
+             (so _has_reattempt_available() can find 'Re-attempt quiz' button)
+        """
+        logger.info("  🔍 Navigating to Review page to capture correct answers...")
+
+        # Step 1: Find and click Review link/button on current summary page
+        review_clicked = False
+        review_selectors = [
+            "a:has-text('Review')",
+            "button:has-text('Review')",
+            "td a:has-text('Review')",
+            "a[href*='review']",
+            "a:has-text('Review attempt')",
+            ".reviewlink a",
+            "a.reviewlink",
+            "td:has-text('Review') a",
+            "input[value='Review']",
+        ]
+        for target in [self.page] + list(self.page.frames):
+            if review_clicked:
+                break
+            for sel in review_selectors:
+                try:
+                    btn = target.query_selector(sel)
+                    if btn and btn.is_visible():
+                        logger.info(f"    Clicking Review: {sel}")
+                        btn.click(force=True)
+                        time.sleep(4)  # Wait for Review page to load
+                        review_clicked = True
+                        break
+                except Exception:
+                    pass
+
+        if not review_clicked:
+            # Try to find review link in table rows (Moodle shows grade table)
+            for target in [self.page] + list(self.page.frames):
+                try:
+                    rows = target.query_selector_all("table tr")
+                    for row in rows:
+                        row_text = row.inner_text().lower()
+                        if 'review' in row_text or 'attempt' in row_text:
+                            link = row.query_selector('a')
+                            if link:
+                                logger.info("    Clicking Review link from table row")
+                                link.click(force=True)
+                                time.sleep(4)
+                                review_clicked = True
+                                break
+                    if review_clicked:
+                        break
+                except Exception:
+                    pass
+
+        if not review_clicked:
+            logger.warning("    No Review link found on results page — trying direct extraction")
+            # Try extracting from current page (might already show answers)
+            self._extract_answer_key_from_review(answer_key)
+            return
+
+        # Step 2: We're now on the Review page — extract all correct answers
+        logger.info("    On Review page — extracting correct answers for all questions...")
+        self._extract_answer_key_from_review(answer_key)
+
+        # Also try extracting from page HTML for broader coverage
+        try:
+            page_html = self.page.content()
+            # Look for rightanswer spans in raw HTML
+            correct_pattern = re.compile(
+                r'class="[^"]*rightanswer[^"]*"[^>]*>([^<]+)<',
+                re.I
+            )
+            for match in correct_pattern.finditer(page_html):
+                text = match.group(1).strip()
+                text = re.sub(r'^(The correct answer is|Correct answer|Answer):?\s*', '', text, flags=re.I).strip()
+                if text and len(text) > 2:
+                    logger.info(f"    ✔ HTML regex correct answer: '{text[:50]}'")
+        except Exception:
+            pass
+
+        logger.info(f"    Review extraction done: {len(answer_key)} correct answers captured")
+
+        # Step 3: Go BACK to attempt summary page (so Re-attempt button is accessible)
+        back_selectors = [
+            "button:has-text('Back to Assessement Summary')",
+            "button:has-text('Back to Assessment Summary')",
+            "button:has-text('Finish review')",
+            "a:has-text('Finish review')",
+            "a:has-text('Back to attempt summary')",
+            "a:has-text('Back')",
+            ".finishreview",
+            "button:has-text('Return to attempt')",
+        ]
+        went_back = False
+        for target in [self.page] + list(self.page.frames):
+            if went_back:
+                break
+            for sel in back_selectors:
+                try:
+                    btn = target.query_selector(sel)
+                    if btn and btn.is_visible():
+                        logger.info(f"    Clicking Back: {sel}")
+                        btn.click(force=True)
+                        time.sleep(3)
+                        went_back = True
+                        break
+                except Exception:
+                    pass
+
+        if not went_back:
+            logger.info("    No Back button found — using browser back")
+            try:
+                self.page.go_back(wait_until='domcontentloaded', timeout=15000)
+                time.sleep(2)
+            except Exception:
+                pass
+
+        logger.info("    ✔ Back on summary page — ready for Re-attempt")
 
     def _has_reattempt_available(self) -> bool:
         """Checks if a 'Re-attempt quiz' or 'Continue Assessment' button is present."""
