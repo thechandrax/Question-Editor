@@ -508,10 +508,13 @@ class CourseNavigator:
                 # Also exclude pix/ directory (course icons, thumbnails)
                 is_static = is_static or '/pix/' in url_lower or '/pluginfile.php' in url_lower
                 if not is_static and response.status == 200 and any(kw in url_lower for kw in [
-                    'course_listing', 'course_library', 'enroll', 'my_course',
+                    'course_listing', 'enroll', 'my_course',
                     'service.php', 'ajax', 'api/', 'webservice', 'coursedata',
                 ]):
-                    captured.append({'url': response.url, 'body': None})
+                    # Skip the main library page HTML itself — only useful AJAX endpoints
+                    is_main_page = url_lower.endswith('course_library.php') or url_lower.endswith('course_listing.php')
+                    if not is_main_page:
+                        captured.append({'url': response.url, 'body': None})
             except Exception:
                 pass
 
@@ -546,8 +549,16 @@ class CourseNavigator:
 
             self.sesskey = _extract_sesskey(self.page)
 
+            # Deduplicate captured URLs (same URL may be captured multiple times)
+            seen_urls = set()
+            unique_captured = []
+            for cap in captured:
+                if cap['url'] not in seen_urls:
+                    seen_urls.add(cap['url'])
+                    unique_captured.append(cap)
+
             # Re-fetch captured URLs via in-browser fetch (has cookies)
-            for cap in captured[:10]:  # Limit to first 10 interesting URLs
+            for cap in unique_captured[:8]:  # Limit to first 8 unique AJAX URLs
                 try:
                     url = cap['url']
                     logger.info(f'  Strategy E re-fetch: {url[:80]}')
