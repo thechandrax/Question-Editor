@@ -44,6 +44,38 @@ class VideoPlayer:
         self.use_telemetry_fallback = False
 
     # ------------------------------------------------------------------ #
+    #  Browser crash recovery
+    # ------------------------------------------------------------------ #
+
+    def _recover_crashed_page(self, navigate_to: str = "") -> bool:
+        """
+        Playwright 'Page crashed' recovery.
+        Creates a fresh page in the same browser context and navigates to
+        navigate_to (if provided). Replaces self.page with the new page.
+        Returns True if recovery succeeded, False otherwise.
+        """
+        logger.warning("[CRASH RECOVERY] Page crashed — creating new page in same browser context...")
+        try:
+            ctx = self.page.context
+            new_page = ctx.new_page()
+            if navigate_to:
+                try:
+                    new_page.goto(navigate_to, wait_until="domcontentloaded", timeout=40000)
+                    time.sleep(4)
+                    logger.info(f"[CRASH RECOVERY] ✅ Recovered! New page at: {new_page.url[:80]}")
+                except Exception as nav_err:
+                    logger.warning(f"[CRASH RECOVERY] Navigation after recovery note: {nav_err}")
+            try:
+                self.page.close()
+            except Exception:
+                pass
+            self.page = new_page
+            return True
+        except Exception as ex:
+            logger.error(f"[CRASH RECOVERY] Failed to create new page: {ex}")
+            return False
+
+    # ------------------------------------------------------------------ #
     #  Public step methods
     # ------------------------------------------------------------------ #
 
@@ -161,7 +193,12 @@ class VideoPlayer:
             try:
                 self.page.goto(module_url, wait_until="domcontentloaded", timeout=60000)
             except Exception as e:
-                logger.warning(f"Module page navigation note (proceeding anyway): {e}")
+                nav_err_str = str(e).lower()
+                if 'page crashed' in nav_err_str or 'target crashed' in nav_err_str:
+                    logger.warning(f"[CRASH DETECTED] Module navigation crashed — recovering...")
+                    self._recover_crashed_page(module_url)
+                else:
+                    logger.warning(f"Module page navigation note (proceeding anyway): {e}")
             time.sleep(5)
             take_screenshot_sync(self.page, f"module_{mod_id}_opened")
 
@@ -459,11 +496,20 @@ class VideoPlayer:
             try:
                 view_buttons = scope.query_selector_all(selectors)
             except Exception as query_err:
+                err_str = str(query_err).lower()
                 logger.warning(f"  DOM query note ({query_err}) — refreshing page...")
-                try:
-                    self.page.reload(wait_until="domcontentloaded", timeout=20000)
-                    time.sleep(3)
+                if 'page crashed' in err_str or 'target crashed' in err_str:
+                    logger.warning("  [CRASH] DOM query on crashed page — recovering...")
+                    self._recover_crashed_page(module_url)
                     scope = self._get_active_module_container(mod_id, mod_name)
+                else:
+                    try:
+                        self.page.reload(wait_until="domcontentloaded", timeout=20000)
+                        time.sleep(3)
+                        scope = self._get_active_module_container(mod_id, mod_name)
+                    except Exception:
+                        pass
+                try:
                     view_buttons = scope.query_selector_all(selectors)
                 except Exception:
                     view_buttons = []
@@ -854,8 +900,9 @@ class VideoPlayer:
         """
         Verifies if all visible activities inside a module have checkmarks.
         Scopes the check to the active module container only.
-        Returns True if 0 uncompleted activities remain (or if the module
-        container is not found — treat as OK and let API re-fetch decide).
+        Returns True if 0 uncompleted activities remain.
+        Returns False on error (page crashed, Target crashed, etc.) —
+        NEVER returns True on exception (that caused false '100% VERIFIED COMPLETE').
         """
         try:
             # Scope check to just this module's container to avoid cross-module false reads
@@ -867,10 +914,10 @@ class VideoPlayer:
             )
 
             # If the module container has no activity elements at all,
-            # we cannot say it's incomplete — return True to let the flow continue.
+            # we cannot verify — return False so the module is NOT falsely marked complete.
             if not elements:
-                logger.info(f"  Module '{mod_name[:35]}' verification: no activity elements found — treating as OK.")
-                return True
+                logger.info(f"  Module '{mod_name[:35]}' verification: no activity elements found — treating as INCOMPLETE.")
+                return False
 
             uncompleted_count = 0
             for elem in elements:
@@ -894,9 +941,15 @@ class VideoPlayer:
 
             logger.info(f"  Module '{mod_name[:35]}' verification: {uncompleted_count} uncompleted activity(ies) remaining.")
             return uncompleted_count == 0
-        except Exception:
-            # On error, return True so we don't block the course loop unnecessarily
-            return True
+        except Exception as e:
+            err_str = str(e).lower()
+            if 'page crashed' in err_str or 'target crashed' in err_str:
+                logger.warning(f"  [CRASH] Page crashed during module verification — recovering...")
+                self._recover_crashed_page(self._course_url)
+            else:
+                logger.warning(f"  Module verification error: {e}")
+            # CRITICAL: Return False on ANY error — never falsely mark as complete!
+            return False
 
     # ------------------------------------------------------------------ #
     #  Navigation — reload closes overlay; goto handles new-URL activities
@@ -910,6 +963,7 @@ class VideoPlayer:
           1. page.reload()  — if we're already on target_url with an overlay (PDF modal)
           2. page.go_back() — if activity opened a different URL
           3. page.goto()    — hard fallback, always works
+          4. _recover_crashed_page() — if page is crashed
         """
         try:
             current = self.page.url
@@ -928,8 +982,12 @@ class VideoPlayer:
             if "course.php" in self.page.url:
                 return
 
-        except Exception:
-            pass
+        except Exception as e:
+            err_str = str(e).lower()
+            if 'page crashed' in err_str or 'target crashed' in err_str:
+                logger.warning("  [CRASH] Page crashed during return — recovering...")
+                if self._recover_crashed_page(target_url):
+                    return  # Recovery navigated us to target_url already
 
         # Hard fallback
         try:
@@ -937,7 +995,12 @@ class VideoPlayer:
             self.page.goto(target_url, wait_until="domcontentloaded", timeout=20000)
             time.sleep(3)
         except Exception as e:
-            logger.error(f"  _return_to_url failed: {e}")
+            err_str = str(e).lower()
+            if 'page crashed' in err_str or 'target crashed' in err_str:
+                logger.warning("  [CRASH] Crash during hard navigation — recovering...")
+                self._recover_crashed_page(target_url)
+            else:
+                logger.error(f"  _return_to_url failed: {e}")
 
     # ------------------------------------------------------------------ #
     # ------------------------------------------------------------------ #
