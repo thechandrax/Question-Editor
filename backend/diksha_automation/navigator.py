@@ -169,15 +169,47 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
     return courses
 
 
-def _do_ajax_post_in_browser(page: Page, payload: str, label: str) -> tuple[bool, list]:
+def _extract_sesskey(page: Page) -> str:
+    """Extract Moodle sesskey CSRF token from the current page for authenticated AJAX calls."""
+    try:
+        sesskey = page.evaluate("""
+            () => {
+                // Try window.M.cfg.sesskey (standard Moodle)
+                if (window.M && window.M.cfg && window.M.cfg.sesskey) return window.M.cfg.sesskey;
+                // Try meta tag
+                const meta = document.querySelector('meta[name="sesskey"]');
+                if (meta) return meta.getAttribute('content') || '';
+                // Try hidden input
+                const inp = document.querySelector('input[name="sesskey"]');
+                if (inp) return inp.value || '';
+                // Try data attribute
+                const el = document.querySelector('[data-sesskey]');
+                if (el) return el.getAttribute('data-sesskey') || '';
+                return '';
+            }
+        """)
+        if sesskey:
+            logger.info(f'  Extracted Moodle sesskey: {sesskey[:8]}...')
+        return sesskey or ''
+    except Exception as e:
+        logger.debug(f'sesskey extraction note: {e}')
+        return ''
+
+
+def _do_ajax_post_in_browser(page: Page, payload: str, label: str, sesskey: str = '') -> tuple[bool, list]:
     """
     Runs the AJAX POST INSIDE the browser via page.evaluate().
     This guarantees all session cookies (PHPSESSID, etc.) are included automatically.
+    Includes sesskey CSRF token if available.
     """
     status = 'finished' if 'finish' in payload or 'complet' in payload else 'ongoing'
     try:
-        # Escape payload for JS string
-        safe_payload = payload.replace("'", "\\'")
+        # Append sesskey to payload if we have it and it's not already there
+        if sesskey and 'sesskey' not in payload:
+            full_payload = f'{payload}&sesskey={sesskey}' if payload else f'sesskey={sesskey}'
+        else:
+            full_payload = payload
+        safe_payload = full_payload.replace("'", "\\'")
         result = page.evaluate(f"""
             async () => {{
                 try {{
@@ -311,32 +343,69 @@ class CourseNavigator:
 
     def __init__(self, page: Page):
         self.page = page
+        self.sesskey: str = ''  # Moodle CSRF token, extracted during session warm-up
 
     def _ensure_on_course_listing(self):
         """
-        Navigates directly to course_listing.php if not already there.
-        auth.login() already lands here after SSO sync, so this is usually a no-op.
+        Smart navigation: if SSO landed on course_library.php, warms up the
+        Moodle session there first (extracts sesskey), then goes to course_listing.php.
         """
-        target = 'https://learning.diksha.gov.in/diksha/course_listing.php'
+        library_url = 'https://learning.diksha.gov.in/diksha/course_library.php'
+        listing_url = 'https://learning.diksha.gov.in/diksha/course_listing.php'
         current = self.page.url or ''
+
         if 'course_listing.php' in current:
-            logger.info(f'Already on course_listing.php — reloading to ensure fresh data...')
+            logger.info('Already on course_listing.php — reloading for fresh data...')
             try:
                 self.page.reload(wait_until='networkidle', timeout=30000)
                 time.sleep(2)
             except Exception as e:
                 logger.warning(f'Reload note: {e}')
-        else:
-            logger.info(f'Navigating directly to: {target}')
+
+        elif 'course_library.php' in current:
+            # SSO landed here — wait for Angular/React to render, extract sesskey,
+            # then navigate to course_listing.php for AJAX strategies
+            logger.info('SSO landed on course_library.php — waiting for JS render...')
+            for sel in ['span[data-href]', 'div[data-href]', '.library-card',
+                        '[class*="card"]', 'h4', 'bdi']:
+                try:
+                    self.page.wait_for_selector(sel, timeout=8000)
+                    count = len(self.page.query_selector_all(sel))
+                    if count > 0:
+                        logger.info(f'  Library page ready: {count} elements matching "{sel}"')
+                        break
+                except Exception:
+                    pass
+            time.sleep(3)  # extra wait for Angular lazy-loading
+            self.sesskey = _extract_sesskey(self.page)
+            logger.info(f'Navigating to course_listing.php for AJAX strategies...')
             try:
-                self.page.goto(target, wait_until='networkidle', timeout=35000)
+                self.page.goto(listing_url, wait_until='networkidle', timeout=35000)
                 time.sleep(2)
             except Exception as e:
                 logger.warning(f'Navigation note: {e}')
+
+        else:
+            # Neither page — warm up via library first, then listing
+            logger.info(f'Warming up Moodle session via course_library.php...')
+            try:
+                self.page.goto(library_url, wait_until='domcontentloaded', timeout=25000)
+                time.sleep(3)
+                self.sesskey = _extract_sesskey(self.page)
+            except Exception as e:
+                logger.warning(f'Library warm-up note: {e}')
+                self.sesskey = ''
+            logger.info(f'Navigating to course_listing.php...')
+            try:
+                self.page.goto(listing_url, wait_until='networkidle', timeout=35000)
+                time.sleep(2)
+            except Exception as e:
+                logger.warning(f'Navigation note: {e}')
+
         self._check_and_recover_access_denied()
         logger.info(f'  URL: {self.page.url}')
         logger.info(f'  Title: {self.page.title()}')
-        # Wait for JS-rendered course cards
+        # Wait for JS-rendered cards
         for sel in ['span[data-href]', 'div[data-href]', '.library-card', '[class*="card"]', 'h4', 'bdi']:
             try:
                 self.page.wait_for_selector(sel, timeout=6000)
@@ -348,13 +417,130 @@ class CourseNavigator:
                 pass
         time.sleep(1)
 
+    def _fetch_from_library_page(self) -> dict:
+        """
+        Strategy E: Navigate to course_library.php, intercept all XHR/fetch
+        API calls the Angular/React SPA makes, and extract enrolled courses.
+        Falls back to DOM scraping if no JSON API data is captured.
+        """
+        result = {'ongoing': [], 'finished': [], 'all': []}
+        library_url = 'https://learning.diksha.gov.in/diksha/course_library.php'
+        captured: list = []  # [{url, body}]
+
+        def _on_response(response):
+            try:
+                url_lower = response.url.lower()
+                if response.status == 200 and any(kw in url_lower for kw in
+                        ['course', 'enroll', 'listing', 'learn', 'my_course']):
+                    # Don't block — just record the URL; body read after navigation
+                    captured.append({'url': response.url, 'body': None})
+            except Exception:
+                pass
+
+        try:
+            self.page.on('response', _on_response)
+            logger.info(f'Strategy E: Navigating to {library_url}...')
+            try:
+                self.page.goto(library_url, wait_until='networkidle', timeout=35000)
+            except Exception as e:
+                logger.warning(f'Strategy E nav note: {e}')
+
+            # Wait for Angular/React SPA to render course cards
+            for sel in ['span[data-href]', 'div[data-href]', '.library-card',
+                        '[class*="card"]', 'h4', 'bdi']:
+                try:
+                    self.page.wait_for_selector(sel, timeout=8000)
+                    break
+                except Exception:
+                    pass
+            time.sleep(4)  # Allow lazy-loaded content to appear
+
+            self.sesskey = _extract_sesskey(self.page)
+
+            # Re-fetch captured URLs via in-browser fetch (has cookies)
+            for cap in captured[:10]:  # Limit to first 10 interesting URLs
+                try:
+                    url = cap['url']
+                    logger.info(f'  Strategy E re-fetch: {url[:80]}')
+                    resp = self.page.evaluate(f"""
+                        async () => {{
+                            try {{
+                                const r = await fetch('{url}', {{credentials:'include'}});
+                                const t = await r.text();
+                                return {{ok:r.ok, status:r.status, body:t.substring(0,5000)}};
+                            }} catch(e) {{ return {{ok:false,status:0,body:''}}; }}
+                        }}
+                    """)
+                    body = (resp or {}).get('body', '')
+                    if body and len(body) > 5:
+                        logger.info(f'    Response [{resp.get("status")}] len={len(body)} preview={body[:80]!r}')
+                        # Try JSON
+                        try:
+                            data = json.loads(body)
+                            if isinstance(data, list) and data:
+                                result['ongoing'] = data
+                                logger.info(f'  ✔ Strategy E XHR JSON list: {len(data)} courses')
+                                break
+                            elif isinstance(data, dict):
+                                for key in ('ongoing', 'courses', 'data', 'list', 'items', 'result'):
+                                    if key in data and isinstance(data[key], list) and data[key]:
+                                        result['ongoing'] = data[key]
+                                        logger.info(f'  ✔ Strategy E XHR JSON [{key}]: {len(data[key])} courses')
+                                        break
+                                if result['ongoing']:
+                                    break
+                        except Exception:
+                            pass
+                        # Try HTML parse on response body
+                        parsed = parse_diksha_coursedata_html(body, status='ongoing')
+                        if parsed:
+                            result['ongoing'] = parsed
+                            logger.info(f'  ✔ Strategy E XHR HTML parse: {len(parsed)} courses')
+                            break
+                except Exception as ex:
+                    logger.debug(f'Strategy E re-fetch note: {ex}')
+
+            # If no XHR data captured, scrape current page DOM
+            if not result['ongoing']:
+                logger.info('  Strategy E: XHR empty — trying DOM scrape of current page...')
+                page_html = self.page.content()
+                logger.info(f'  Library page HTML length: {len(page_html)}')
+                parsed = parse_diksha_coursedata_html(page_html, status='ongoing')
+                if parsed:
+                    result['ongoing'] = parsed
+                    logger.info(f'  ✔ Strategy E DOM HTML parse: {len(parsed)} courses')
+                else:
+                    result['ongoing'] = self._scrape_cards_from_page(status='ongoing')
+                    logger.info(f'  Strategy E card scrape: {len(result["ongoing"])} courses')
+
+            result['all'] = result['ongoing'] + result['finished']
+        except Exception as e:
+            logger.warning(f'Strategy E error: {e}')
+        finally:
+            try:
+                self.page.remove_listener('response', _on_response)
+            except Exception:
+                pass
+        return result
+
     def fetch_from_course_listing(self) -> dict:
         """
-        Direct fetch: goes straight to course_listing.php and reads courses.
-        Used by fetch_courses_only() since auth.login() already lands there.
-        Saves ~20-30s vs fetch_all_courses() which does Steps 3, 4, 5.
+        Smart fetch: tries course_library.php DOM/XHR first (Strategy E),
+        then falls back to course_listing.php AJAX strategies.
         """
-        logger.info('=== Direct Fetch: course_listing.php ===')
+        logger.info('=== Smart Fetch: course_library.php → course_listing.php ===')
+        current = self.page.url or ''
+
+        # Strategy E: If SSO landed on course_library.php, try scraping/intercepting there first
+        if 'course_library.php' in current:
+            logger.info('SSO on course_library.php — trying Strategy E first...')
+            result_e = self._fetch_from_library_page()
+            if result_e.get('ongoing') or result_e.get('finished'):
+                logger.info(f'✔ Strategy E succeeded: {len(result_e["ongoing"])} ongoing, '
+                            f'{len(result_e["finished"])} finished')
+                return result_e
+            logger.info('Strategy E found 0 courses — falling back to course_listing.php AJAX...')
+
         self._ensure_on_course_listing()
         return self._run_fetch_strategies()
 
@@ -465,12 +651,16 @@ class CourseNavigator:
         except Exception as e:
             logger.warning(f'  Strategy B error: {e}')
 
+        # Extract sesskey for AJAX calls (from page or cached from library page warm-up)
+        sesskey = getattr(self, 'sesskey', '') or _extract_sesskey(self.page)
+        if sesskey:
+            logger.info(f'  Using Moodle sesskey for AJAX: {sesskey[:8]}...')
+
         # ── Strategy A: In-browser fetch() AJAX — only if HTML parse failed ─
-        # These typically return [] but kept as fallback for API-first portals.
         if not result['ongoing']:
-            logger.info('=== Strategy A: In-browser fetch() AJAX POST ===')
+            logger.info('=== Strategy A: In-browser fetch() AJAX POST (with sesskey) ===')
             for payload, label in ongoing_payloads:
-                ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
+                ok, courses = _do_ajax_post_in_browser(self.page, payload, label, sesskey=sesskey)
                 if ok and courses:
                     result['ongoing'] = courses
                     logger.info(f'  ✔ In-browser AJAX ongoing [{label}] → {len(courses)} courses')
@@ -485,10 +675,20 @@ class CourseNavigator:
                     logger.info(f'  ✔ page.request AJAX ongoing [{label}] → {len(courses)} courses')
                     break
 
-        # AJAX for finished (only if Strategy B didn't already find them)
+        # ── Strategy A3: course_library.php fallback (if listing.php still empty) ──
+        if not result['ongoing']:
+            logger.info('=== Strategy A3: course_library.php fallback DOM scrape ===')
+            result_e = self._fetch_from_library_page()
+            if result_e.get('ongoing'):
+                result['ongoing'] = result_e['ongoing']
+                logger.info(f'  ✔ Strategy A3 library scrape → {len(result["ongoing"])} courses')
+            if result_e.get('finished'):
+                result['finished'] = result_e['finished']
+
+        # AJAX for finished (only if not already found)
         if not result['finished']:
             for payload, label in finished_payloads:
-                ok, courses = _do_ajax_post_in_browser(self.page, payload, label)
+                ok, courses = _do_ajax_post_in_browser(self.page, payload, label, sesskey=sesskey)
                 if ok and courses:
                     result['finished'] = courses
                     logger.info(f'  ✔ In-browser AJAX finished [{label}] → {len(courses)} courses')
