@@ -357,31 +357,42 @@ class CourseNavigator:
         if 'course_listing.php' in current:
             logger.info('Already on course_listing.php — reloading for fresh data...')
             try:
-                self.page.reload(wait_until='networkidle', timeout=30000)
-                time.sleep(2)
+                # Use domcontentloaded — networkidle hangs on Moodle (background keepalive requests)
+                self.page.reload(wait_until='domcontentloaded', timeout=25000)
+                time.sleep(3)
             except Exception as e:
                 logger.warning(f'Reload note: {e}')
 
         elif 'course_library.php' in current:
-            # SSO landed here — wait for Angular/React to render, extract sesskey,
+            # SSO landed here — scroll to trigger Angular lazy-load, extract sesskey,
             # then navigate to course_listing.php for AJAX strategies
             logger.info('SSO landed on course_library.php — waiting for JS render...')
             for sel in ['span[data-href]', 'div[data-href]', '.library-card',
-                        '[class*="card"]', 'h4', 'bdi']:
+                        '[class*="card"]', 'h4', 'bdi', '.courses_modules_desc', 'article']:
                 try:
-                    self.page.wait_for_selector(sel, timeout=8000)
+                    self.page.wait_for_selector(sel, timeout=6000)
                     count = len(self.page.query_selector_all(sel))
                     if count > 0:
                         logger.info(f'  Library page ready: {count} elements matching "{sel}"')
                         break
                 except Exception:
                     pass
-            time.sleep(3)  # extra wait for Angular lazy-loading
+            # Scroll to trigger Angular lazy-loading
+            try:
+                self.page.evaluate("window.scrollTo(0, 500); window.dispatchEvent(new Event('scroll'));")
+                time.sleep(2)
+                self.page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)
+                self.page.evaluate("window.scrollTo(0, 0);")
+            except Exception:
+                pass
+            time.sleep(2)  # extra wait for Angular lazy-loading
             self.sesskey = _extract_sesskey(self.page)
             logger.info(f'Navigating to course_listing.php for AJAX strategies...')
             try:
-                self.page.goto(listing_url, wait_until='networkidle', timeout=35000)
-                time.sleep(2)
+                # domcontentloaded — NEVER use networkidle on course_listing.php (it never idles)
+                self.page.goto(listing_url, wait_until='domcontentloaded', timeout=25000)
+                time.sleep(4)  # allow Moodle AJAX to finish populating course list
             except Exception as e:
                 logger.warning(f'Navigation note: {e}')
 
@@ -390,32 +401,40 @@ class CourseNavigator:
             logger.info(f'Warming up Moodle session via course_library.php...')
             try:
                 self.page.goto(library_url, wait_until='domcontentloaded', timeout=25000)
-                time.sleep(3)
+                time.sleep(4)
                 self.sesskey = _extract_sesskey(self.page)
             except Exception as e:
                 logger.warning(f'Library warm-up note: {e}')
                 self.sesskey = ''
             logger.info(f'Navigating to course_listing.php...')
             try:
-                self.page.goto(listing_url, wait_until='networkidle', timeout=35000)
-                time.sleep(2)
+                # domcontentloaded — NEVER networkidle here (Moodle never fully idles)
+                self.page.goto(listing_url, wait_until='domcontentloaded', timeout=25000)
+                time.sleep(4)
             except Exception as e:
                 logger.warning(f'Navigation note: {e}')
 
         self._check_and_recover_access_denied()
         logger.info(f'  URL: {self.page.url}')
         logger.info(f'  Title: {self.page.title()}')
+        # Scroll to trigger lazy-loading before waiting for selectors
+        try:
+            self.page.evaluate("window.scrollTo(0, 300); window.dispatchEvent(new Event('scroll'));")
+            time.sleep(1)
+        except Exception:
+            pass
         # Wait for JS-rendered cards
-        for sel in ['span[data-href]', 'div[data-href]', '.library-card', '[class*="card"]', 'h4', 'bdi']:
+        for sel in ['span[data-href]', 'div[data-href]', '.library-card', '[class*="card"]',
+                    'h4', 'bdi', '.courses_modules_desc', 'article', '#coursedata']:
             try:
-                self.page.wait_for_selector(sel, timeout=6000)
+                self.page.wait_for_selector(sel, timeout=5000)
                 count = len(self.page.query_selector_all(sel))
                 if count > 0:
                     logger.info(f'  Ready: {count} elements matching "{sel}"')
                     break
             except Exception:
                 pass
-        time.sleep(1)
+        time.sleep(2)
 
     def _fetch_from_library_page(self) -> dict:
         """
@@ -430,8 +449,11 @@ class CourseNavigator:
         def _on_response(response):
             try:
                 url_lower = response.url.lower()
-                if response.status == 200 and any(kw in url_lower for kw in
-                        ['course', 'enroll', 'listing', 'learn', 'my_course']):
+                # Broad filter: catch Moodle AJAX, service.php, API, course/enroll patterns
+                if response.status == 200 and any(kw in url_lower for kw in [
+                    'course', 'enroll', 'listing', 'learn', 'my_course',
+                    'service.php', 'ajax', 'api/', 'webservice', 'token', 'moodle'
+                ]):
                     # Don't block — just record the URL; body read after navigation
                     captured.append({'url': response.url, 'body': None})
             except Exception:
@@ -441,19 +463,30 @@ class CourseNavigator:
             self.page.on('response', _on_response)
             logger.info(f'Strategy E: Navigating to {library_url}...')
             try:
-                self.page.goto(library_url, wait_until='networkidle', timeout=35000)
+                # Use domcontentloaded — networkidle can hang on Railway (SPA keeps polling)
+                self.page.goto(library_url, wait_until='domcontentloaded', timeout=30000)
             except Exception as e:
                 logger.warning(f'Strategy E nav note: {e}')
 
-            # Wait for Angular/React SPA to render course cards
+            # Wait up to 20s for Angular/React SPA to render course cards
             for sel in ['span[data-href]', 'div[data-href]', '.library-card',
-                        '[class*="card"]', 'h4', 'bdi']:
+                        '[class*="card"]', 'h4', 'bdi', '.courses_modules_desc', 'article']:
                 try:
-                    self.page.wait_for_selector(sel, timeout=8000)
+                    self.page.wait_for_selector(sel, timeout=6000)
                     break
                 except Exception:
                     pass
-            time.sleep(4)  # Allow lazy-loaded content to appear
+
+            # Scroll to trigger lazy-load Angular content (critical for SPA pages)
+            try:
+                self.page.evaluate("window.scrollTo(0, 500); window.dispatchEvent(new Event('scroll'));")
+                time.sleep(2)
+                self.page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)
+                self.page.evaluate("window.scrollTo(0, 0);")
+            except Exception:
+                pass
+            time.sleep(3)  # Allow lazy-loaded content to appear after scroll
 
             self.sesskey = _extract_sesskey(self.page)
 
@@ -586,8 +619,9 @@ class CourseNavigator:
         logger.info(f'Step 5: Navigating to My Learning Journey: {target}')
         logger.info('==================================================')
         try:
-            self.page.goto(target, wait_until='networkidle', timeout=35000)
-            time.sleep(2)
+            # NEVER use networkidle here — Moodle keeps background pings and never fully idles
+            self.page.goto(target, wait_until='domcontentloaded', timeout=25000)
+            time.sleep(4)  # allow Moodle AJAX to populate course list
             self._check_and_recover_access_denied()
             logger.info(f'  Page URL after load: {self.page.url}')
             logger.info(f'  Page title: {self.page.title()}')
