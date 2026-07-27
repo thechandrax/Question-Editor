@@ -458,8 +458,9 @@ class VideoPlayer:
         """
         activity_attempts: dict = {}
         completed_count = 0
-        MAX_ACTIVITIES = 20
+        MAX_ACTIVITIES = 30   # Increased: some modules have many sequential activities
         retry_prereq_attempts = 0
+        MAX_PREREQ_RETRIES = 6  # 6 × 15s = 90s max wait for DIKSHA telemetry unlock
 
         for act_num in range(1, MAX_ACTIVITIES + 1):
             # ── Check stop signal before each activity ────────────────────────
@@ -626,11 +627,16 @@ class VideoPlayer:
                     continue
 
             if not unlocked_btn:
-                # If activities are locked by prerequisite telemetry right after finishing an activity, wait 10s and retry (up to 4 attempts = 40s)!
-                if has_locked_prereqs and retry_prereq_attempts < 4:
+                # If activities are locked by prerequisite — DIKSHA server can take up to 90s
+                # to sync telemetry and unlock the next sequential activity. Wait and retry.
+                if has_locked_prereqs and retry_prereq_attempts < MAX_PREREQ_RETRIES:
                     retry_prereq_attempts += 1
-                    logger.info(f"  Waiting 10s for DIKSHA server telemetry sync to unlock next activity (retry {retry_prereq_attempts}/4)...")
-                    time.sleep(10)
+                    wait_sec = 15
+                    logger.info(
+                        f"  Waiting {wait_sec}s for DIKSHA server telemetry sync to unlock next activity "
+                        f"(retry {retry_prereq_attempts}/{MAX_PREREQ_RETRIES})..."
+                    )
+                    time.sleep(wait_sec)
                     try:
                         self.page.reload(wait_until="domcontentloaded", timeout=30000)
                         time.sleep(5)
