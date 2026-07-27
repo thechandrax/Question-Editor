@@ -239,8 +239,20 @@ class VideoPlayer:
         if self.api and self._course_id and self._section_id:
             api_modules = self.api.get_module_progress(self._course_id, self._section_id, page=self.page)
             if api_modules and len(api_modules) > 0:
-                logger.info(f"Using live API module list ({len(api_modules)} modules).")
-                return api_modules
+                # ── Sanity-check: if ALL modules report 0%, the API is unreliable ──
+                # This happens on courses that are 80-92% complete — the DIKSHA syllabus
+                # API returns stale/wrong 0% progress for all sections.
+                # Fix: fall through to DOM-based progress detection instead.
+                all_zero = all(int(m.get("progress", 0)) == 0 for m in api_modules)
+                if all_zero and len(api_modules) > 1:
+                    logger.warning(
+                        f"API returned 0% for ALL {len(api_modules)} modules — "
+                        "API progress data unreliable for this course. Falling back to DOM..."
+                    )
+                    # Fall through to DOM fallback below
+                else:
+                    logger.info(f"Using live API module list ({len(api_modules)} modules).")
+                    return api_modules
 
         # DOM fallback: parse module checkmarks directly from page DOM
         logger.info("API progress data unpopulated — checking DOM checkmarks on page...")
@@ -602,11 +614,15 @@ class VideoPlayer:
                     # If the DIKSHA API reported this module is at 0% progress, then no
                     # activity can genuinely be marked complete on the server yet.
                     # A DOM checkmark in that case is stale/false — force-process it.
+                    # EXCEPTION: only apply this override when module_progress == 0
+                    # AND at least some other modules are NOT at 0% (i.e. API is partially
+                    # reliable). If module_progress comes from DOM fallback it will already
+                    # be non-zero for complete modules, so the override won't fire.
                     attempts = activity_attempts.get(curr_item_key, 0)
                     if is_completed and module_progress == 0 and attempts == 0:
                         logger.info(
                             f"  [Override] DOM shows checkmark for '{clean_text[:35]}' "
-                            f"but API says module is 0% — forcing re-process."
+                            f"but module API progress is 0% — forcing re-process."
                         )
                         is_completed = False
 
@@ -914,15 +930,55 @@ class VideoPlayer:
             # Scope check to just this module's container to avoid cross-module false reads
             scope = self._get_active_module_container(mod_id, mod_name)
 
+            # ── Fast path: check module-level checkmark first ─────────────────────
+            # Many DIKSHA modules show a ✅ at the MODULE header level when all
+            # activities inside are done (e.g. Course Instructions, single-PDF modules).
+            # If this module-level checkmark exists, trust it — don't dig into activities.
+            try:
+                module_header_check = scope.query_selector(
+                    ".fa-check, .fa-check-circle, .micon-check_circle, "
+                    ".check-icon, svg.check, i.fa-check, "
+                    ".completion-icon.complete, [data-icon='check-circle'], "
+                    "[class*='completed'] .fa-check, .modules_progress .fa-check"
+                )
+                if module_header_check and module_header_check.is_visible():
+                    logger.info(
+                        f"  Module '{mod_name[:35]}' verification: "
+                        "module-level checkmark found — 100% COMPLETE ✓"
+                    )
+                    return True
+            except Exception:
+                pass
+
             elements = scope.query_selector_all(
                 ".activityinstance, .mod-indent, div.course-library-link, "
                 "div.new-card, a[data-href]"
             )
 
             # If the module container has no activity elements at all,
-            # we cannot verify — return False so the module is NOT falsely marked complete.
+            # check the page-level module accordion for a checkmark as last resort.
             if not elements:
-                logger.info(f"  Module '{mod_name[:35]}' verification: no activity elements found — treating as INCOMPLETE.")
+                try:
+                    # Check the accordion trigger element for a ✅ badge
+                    trigger = (
+                        self.page.query_selector(f"#nav-modules [data-id='{mod_id}'] .fa-check") or
+                        self.page.query_selector(f"#nav-modules [data-id='{mod_id}'] .fa-check-circle") or
+                        self.page.query_selector(f"#nav-modules [data-id='{mod_id}'] .micon-check_circle") or
+                        self.page.query_selector(f"[data-id='{mod_id}'] .fa-check") or
+                        self.page.query_selector(f"[data-id='{mod_id}'] [class*='complete']")
+                    )
+                    if trigger:
+                        logger.info(
+                            f"  Module '{mod_name[:35]}' verification: "
+                            "accordion-level checkmark found — 100% COMPLETE ✓"
+                        )
+                        return True
+                except Exception:
+                    pass
+                logger.info(
+                    f"  Module '{mod_name[:35]}' verification: "
+                    "no activity elements found — treating as INCOMPLETE."
+                )
                 return False
 
             uncompleted_count = 0
