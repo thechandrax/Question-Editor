@@ -383,7 +383,8 @@ export default function DikshaAutomationPage() {
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
         // Only update courses from polling if automation is actively running
-        if (data.running && data.courses && data.courses.length > 0) {
+        // AND the poll returned real course data — NEVER wipe existing courses
+        if (data.running && Array.isArray(data.courses) && data.courses.length > 0) {
           setCourses(data.courses);
           setHasScanned(true);
         }

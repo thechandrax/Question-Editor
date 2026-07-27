@@ -610,11 +610,16 @@ async def fetch_diksha_courses(req: DikshaFetchRequest):
         data = await asyncio.to_thread(fetch_courses_only, username=req.username, password=req.password, headless=True)
         ongoing_courses = data.get("ongoing", [])
         finished_courses = data.get("finished", [])
-        _diksha["courses"] = ongoing_courses
+        # Only overwrite stored courses if we got real data back
+        # (prevents a failed retry from wiping a previously good result)
+        if ongoing_courses:
+            _diksha["courses"] = ongoing_courses
+        elif not _diksha.get("courses"):  # first run, no prior data
+            _diksha["courses"] = []
         return {
             "status": "success",
-            "courses": ongoing_courses,
-            "ongoing": ongoing_courses,
+            "courses": ongoing_courses or _diksha.get("courses", []),
+            "ongoing": ongoing_courses or _diksha.get("courses", []),
             "finished": finished_courses
         }
     except Exception as e:
