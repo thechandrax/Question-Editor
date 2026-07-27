@@ -520,6 +520,7 @@ class DikshaRunRequest(BaseModel):
     password: str
     target_course_url: str | None = None
     use_telemetry_fallback: bool = False
+    gemini_api_key: str | None = None
 
 # ── Credential Verification (no browser) ──────────────────────────────────
 
@@ -711,11 +712,20 @@ async def debug_diksha_page(req: DikshaFetchRequest):
         logging.error("debug-page error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-def _run_diksha_task(username: str, password: str, target_course_url: str | None = None, use_telemetry_fallback: bool = False) -> None:
+def _run_diksha_task(username: str, password: str, target_course_url: str | None = None,
+                     use_telemetry_fallback: bool = False, gemini_api_key: str | None = None) -> None:
     """Wrapper that tracks global state around run_automation."""
     _pause_event.set()
     _stop_event.clear()
     STOP_EVENT.clear()        # ← clear any previous stop signal before new run
+    # Inject Gemini API key as env var so player.py can access it
+    import os
+    if gemini_api_key:
+        os.environ['GEMINI_API_KEY'] = gemini_api_key
+        logging.info("GEMINI_API_KEY set — MCQ AI mode enabled")
+    else:
+        os.environ.pop('GEMINI_API_KEY', None)
+        logging.info("GEMINI_API_KEY not set — MCQ Brute Force mode")
     _diksha.update({
         "running": True,
         "status": "running",
@@ -743,7 +753,7 @@ def _run_diksha_task(username: str, password: str, target_course_url: str | None
 async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
     if _diksha["running"]:
         raise HTTPException(status_code=409, detail="Automation already running. Please wait for the current session to finish.")
-    background_tasks.add_task(_run_diksha_task, req.username, req.password, req.target_course_url, req.use_telemetry_fallback)
+    background_tasks.add_task(_run_diksha_task, req.username, req.password, req.target_course_url, req.use_telemetry_fallback, req.gemini_api_key)
     return {"status": "success", "message": "Automation started successfully in the background."}
 
 @app.post("/api/diksha/pause")

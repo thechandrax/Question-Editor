@@ -308,6 +308,7 @@ export default function DikshaAutomationPage() {
   const [copiedLogs, setCopiedLogs] = useState(false);
   const [clearedLogs, setClearedLogs] = useState(false);
   const [useTelemetryFallback, setUseTelemetryFallback] = useState<boolean>(false);
+  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
 
   const handleCopyLogs = () => {
     const text = status?.logs ? status.logs.join('\n') : "";
@@ -590,7 +591,8 @@ export default function DikshaAutomationPage() {
           username,
           password,
           target_course_url: targetUrl || null,
-          use_telemetry_fallback: useTelemetryFallback
+          use_telemetry_fallback: useTelemetryFallback,
+          gemini_api_key: geminiApiKey || null
         }),
       });
       const data = await res.json();
@@ -1195,6 +1197,43 @@ export default function DikshaAutomationPage() {
                   }}/>
                 </span>
               </label>
+            </div>
+
+            {/* Gemini AI MCQ Key */}
+            <div style={{
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+              border: '1.5px solid #86efac',
+              borderRadius: '16px',
+              padding: '14px 18px',
+              width: '100%',
+            }}>
+              <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                <span style={{fontSize:'12.5px',fontWeight:'800',color:'#15803d',display:'flex',alignItems:'center',gap:'6px'}}>
+                  🤖 MCQ AI Mode — Gemini API Key (Optional)
+                </span>
+                <span style={{fontSize:'11px',color:'#4b7a5b',fontWeight:'600'}}>
+                  If set, Gemini AI will auto-answer MCQ questions. Leave blank to use Brute Force mode.
+                </span>
+                <input
+                  type="password"
+                  placeholder="AIza... (optional, enables AI-powered MCQ answering)"
+                  value={geminiApiKey}
+                  onChange={e => setGeminiApiKey(e.target.value)}
+                  style={{
+                    marginTop: '6px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #86efac',
+                    fontSize: '12px',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    background: 'white',
+                    color: '#1e293b',
+                    width: '100%',
+                    boxSizing: 'border-box' as const,
+                    outline: 'none',
+                  }}
+                />
+              </div>
             </div>
           </div>
 

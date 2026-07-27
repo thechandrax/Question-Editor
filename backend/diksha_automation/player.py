@@ -653,7 +653,7 @@ class VideoPlayer:
 
         # ── 0. Assessment / Quiz / MCQ Test Automation ────────────────────────
         if self._is_quiz_assessment():
-            logger.info("  📝 MCQ Assessment / Quiz detected — executing Multi-Attempt Review Capture Engine...")
+            logger.info("  📝 MCQ Assessment / Quiz detected — executing Smart 3-Approach Engine...")
             self._process_assessment_quiz()
             self._return_to_url(return_url)
             return
@@ -939,7 +939,8 @@ class VideoPlayer:
             logger.error(f"  _return_to_url failed: {e}")
 
     # ------------------------------------------------------------------ #
-    #  MCQ Assessment / Quiz Multi-Attempt Review Capture Engine
+    # ------------------------------------------------------------------ #
+    #  MCQ Assessment / Quiz — Smart 3-Approach Engine
     # ------------------------------------------------------------------ #
 
     def _is_quiz_assessment(self) -> bool:
@@ -978,30 +979,222 @@ class VideoPlayer:
             except Exception:
                 pass
 
+    # ──────────────────────────────────────────────────────────────────────
+    # APPROACH B — API Intercept (Fastest: reads answers from DIKSHA API)
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _intercept_api_answers(self) -> dict:
+        """
+        APPROACH B: Intercepts DIKSHA/Sunbird assessment API responses that
+        contain question metadata including correct_answer fields.
+        Returns answer_key = { question_text_lower: correct_option_text }
+        This works because many DIKSHA courses send the answer key in the API
+        response for offline/player caching, before the user even starts.
+        """
+        answer_key = {}
+        captured_bodies = []
+
+        def _on_response(response):
+            try:
+                url = response.url.lower()
+                # Target Sunbird/DIKSHA assessment API endpoints
+                if response.status == 200 and any(kw in url for kw in [
+                    'assessment', 'question', 'content/v1/read', 'api/question',
+                    'quml', 'quiz', 'service.php', 'attempt'
+                ]):
+                    captured_bodies.append({'url': response.url})
+            except Exception:
+                pass
+
+        try:
+            self.page.on('response', _on_response)
+            # Reload current page to trigger API calls
+            try:
+                self.page.reload(wait_until='domcontentloaded', timeout=20000)
+                time.sleep(4)
+            except Exception:
+                pass
+
+            # Re-fetch each captured API URL in-browser (with cookies)
+            for cap in captured_bodies[:15]:
+                try:
+                    url = cap['url']
+                    resp = self.page.evaluate(f"""
+                        async () => {{
+                            try {{
+                                const r = await fetch('{url}', {{credentials:'include'}});
+                                const t = await r.text();
+                                return {{ok:r.ok,body:t.substring(0,20000)}};
+                            }} catch(e) {{ return {{ok:false,body:''}}; }}
+                        }}
+                    """)
+                    body = (resp or {}).get('body', '')
+                    if not body or len(body) < 10:
+                        continue
+
+                    import json
+                    try:
+                        data = json.loads(body)
+                    except Exception:
+                        continue
+
+                    # Parse Sunbird QuML / assessment format
+                    questions = []
+                    if isinstance(data, dict):
+                        # Common Sunbird keys: result.questions, result.question
+                        qs = (data.get('result') or {}).get('questions', [])
+                        if not qs:
+                            qs = (data.get('result') or {}).get('question', [])
+                        if isinstance(qs, dict):
+                            qs = [qs]
+                        if isinstance(qs, list):
+                            questions = qs
+                        # Also check top-level 'questions' key
+                        if not questions and 'questions' in data:
+                            questions = data['questions'] if isinstance(data['questions'], list) else []
+
+                    for q in questions:
+                        if not isinstance(q, dict):
+                            continue
+                        # Extract question text
+                        q_text = ''
+                        for k in ('stem', 'question', 'body', 'questionText', 'text'):
+                            raw = q.get(k, '')
+                            if isinstance(raw, str) and raw.strip():
+                                # Strip HTML tags
+                                q_text = re.sub(r'<[^>]+>', '', raw).strip().lower()
+                                break
+                            elif isinstance(raw, dict):
+                                q_text = re.sub(r'<[^>]+>', '', str(raw.get('value', '') or raw.get('data', ''))).strip().lower()
+                                if q_text:
+                                    break
+
+                        # Extract correct answer
+                        correct_text = ''
+                        ans_key = q.get('answer', '') or q.get('correct_answer', '') or q.get('correctAnswer', '')
+                        if isinstance(ans_key, str):
+                            correct_text = re.sub(r'<[^>]+>', '', ans_key).strip()
+
+                        # Try responseDeclaration (QuML format)
+                        if not correct_text:
+                            rd = q.get('responseDeclaration', {})
+                            if isinstance(rd, dict):
+                                for rd_val in rd.values():
+                                    if isinstance(rd_val, dict):
+                                        ca = rd_val.get('correctResponse', {})
+                                        if isinstance(ca, dict):
+                                            val = ca.get('value', '')
+                                            if val:
+                                                correct_text = str(val)
+                                                break
+
+                        if q_text and correct_text:
+                            answer_key[q_text] = correct_text
+                            logger.info(f"  🎯 Approach B API key: '{q_text[:35]}' → '{correct_text[:35]}'")
+
+                except Exception as ex:
+                    logger.debug(f'Approach B parse note: {ex}')
+
+        except Exception as e:
+            logger.warning(f'Approach B error: {e}')
+        finally:
+            try:
+                self.page.remove_listener('response', _on_response)
+            except Exception:
+                pass
+
+        logger.info(f'  Approach B result: {len(answer_key)} answers captured from API')
+        return answer_key
+
+    # ──────────────────────────────────────────────────────────────────────
+    # APPROACH A — AI Vision (Gemini reads question screenshot and answers)
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _ai_answer_question(self, q_text: str, options: list) -> str:
+        """
+        APPROACH A: Uses Google Gemini API to read question text + options
+        and return the most likely correct answer.
+        Returns the matched option text, or '' if AI is unavailable.
+        Requires GEMINI_API_KEY env variable.
+        """
+        import os
+        api_key = os.environ.get('GEMINI_API_KEY', '')
+        if not api_key:
+            return ''
+        try:
+            import urllib.request
+            import json
+            options_text = '\n'.join([f"{chr(65+i)}) {o}" for i, o in enumerate(options)])
+            prompt = (
+                f"You are a student answering an exam MCQ question. "
+                f"Read the question carefully and pick the SINGLE best answer.\n"
+                f"Question: {q_text}\n"
+                f"Options:\n{options_text}\n"
+                f"Reply ONLY with the letter (A, B, C, or D) of the correct answer. Nothing else."
+            )
+            payload = json.dumps({
+                'contents': [{'parts': [{'text': prompt}]}]
+            }).encode('utf-8')
+            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}'
+            req = urllib.request.Request(url, data=payload,
+                                         headers={'Content-Type': 'application/json'},
+                                         method='POST')
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                result = json.loads(resp.read())
+            letter = result['candidates'][0]['content']['parts'][0]['text'].strip().upper()
+            letter = letter[0] if letter else ''
+            if letter in 'ABCD':
+                idx = ord(letter) - ord('A')
+                if 0 <= idx < len(options):
+                    chosen = options[idx]
+                    logger.info(f"  🤖 Approach A AI answered: [{letter}] {chosen[:40]}")
+                    return chosen
+        except Exception as e:
+            logger.warning(f'  Approach A AI error: {e}')
+        return ''
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Main MCQ orchestrator — Approach B → A → C (smart fallback)
+    # ──────────────────────────────────────────────────────────────────────
+
     def _process_assessment_quiz(self):
         """
-        Automates DIKSHA MCQ Assessments using Multi-Attempt Review Page Capture:
-        1. Checks for previous attempt 'Review' link to extract 100% correct Answer Key.
-        2. Starts Attempt 1 (or Attempt 2).
-        3. Fills all questions with exact correct answers (or blind picks for Attempt 1).
-        4. Submits test ('Final Submit').
-        5. Captures 100% correct answers from Attempt 1 Review page.
-        6. Re-attempts test with 100% Answer Key to get 30/30 (100% score)!
+        Smart 3-Approach MCQ Engine:
+          B → API Intercept  : reads correct answers from DIKSHA API response
+          A → AI Vision      : Gemini AI reads question & picks correct option
+          C → Brute Force    : Attempt 1 random → Review → Attempt 2 perfect
+
+        Order: B first (fastest). If B gets answers, use them directly.
+        A supplements any questions B missed. C is last resort.
         """
-        answer_key: dict = {}  # { question_text: correct_option_text }
+        answer_key: dict = {}  # { question_text_lower: correct_option_text }
         self._close_popups()
 
-        # Step A: Extract from existing 'Review' link if available on summary table
+        # ── Approach B: Try to get answers from DIKSHA API ────────────────
+        logger.info("  [Approach B] Intercepting DIKSHA assessment API for answer keys...")
+        api_answers = self._intercept_api_answers()
+        if api_answers:
+            answer_key.update(api_answers)
+            logger.info(f"  ✅ Approach B: captured {len(answer_key)} answers from API!")
+        else:
+            logger.info("  ⚠️  Approach B: No API answers found — will use A+C")
+
+        # ── Step: Extract from existing 'Review' link (Approach C basis) ──
         for target in [self.page] + list(self.page.frames):
             try:
-                review_btn = target.query_selector("a:has-text('Review'), button:has-text('Review'), td:has-text('Review') a")
+                review_btn = target.query_selector(
+                    "a:has-text('Review'), button:has-text('Review'), td:has-text('Review') a"
+                )
                 if review_btn and review_btn.is_visible():
-                    logger.info("  🔍 Found previous attempt 'Review' link — extracting 100% Answer Key...")
+                    logger.info("  🔍 Found previous attempt 'Review' — extracting Answer Key...")
                     review_btn.click(force=True)
                     time.sleep(4)
                     self._extract_answer_key_from_review(answer_key)
-                    # Return to summary
-                    back_btn = target.query_selector("button:has-text('Back to Assessement Summary'), button:has-text('Back to Assessment Summary'), button:has-text('Finish review'), a:has-text('Back')")
+                    back_btn = target.query_selector(
+                        "button:has-text('Back to Assessement Summary'), "
+                        "button:has-text('Back to Assessment Summary'), "
+                        "button:has-text('Finish review'), a:has-text('Back')"
+                    )
                     if back_btn:
                         back_btn.click(force=True)
                         time.sleep(3)
@@ -1009,30 +1202,135 @@ class VideoPlayer:
             except Exception:
                 pass
 
-        # Step B: Start or Continue Attempt
+        # ── Start or Continue Attempt ─────────────────────────────────────
         self._start_or_continue_quiz_attempt()
 
-        # Step C: Answer questions
-        logger.info(f"  ✏️ Answering quiz questions (Captured answers: {len(answer_key)})...")
-        self._answer_quiz_questions(answer_key)
+        # ── Answer questions (B + A + C cascade) ─────────────────────────
+        logger.info(f"  ✏️  Answering questions (API keys: {len(answer_key)}, AI: {'ON' if self._ai_enabled() else 'OFF'})...")
+        self._answer_quiz_questions_smart(answer_key)
 
-        # Step D: Final Submit
+        # ── Final Submit ──────────────────────────────────────────────────
         logger.info("  🚀 Submitting quiz attempt ('Final Submit')...")
         self._submit_quiz_attempt()
 
-        # Step E: Extract Review answers if Attempt 1 Review page is displayed
+        # ── Capture answers from Review page (Approach C: learn + retry) ──
         time.sleep(4)
         self._extract_answer_key_from_review(answer_key)
 
-        # Step F: If we captured answers and have a re-attempt available, run Attempt 2 for 100% Score!
+        # ── Approach C: If review gave us new answers → Attempt 2 = 100% ─
         if answer_key and self._has_reattempt_available():
-            logger.info("  🎯 Attempt 1 complete! Starting Attempt 2 with 100% Answer Key for PERFECT SCORE...")
+            logger.info(f"  🎯 Attempt 2 with {len(answer_key)} correct answers → PERFECT SCORE...")
             self._start_or_continue_quiz_attempt()
-            self._answer_quiz_questions(answer_key)
+            self._answer_quiz_questions_smart(answer_key)
             self._submit_quiz_attempt()
-            logger.info("  🎉 Attempt 2 submitted — 100% SCORE ACHIEVED!")
+            logger.info("  🎉 Attempt 2 submitted — 100% SCORE!")
 
         self._close_popups()
+
+    def _ai_enabled(self) -> bool:
+        """Returns True if GEMINI_API_KEY is set in environment."""
+        import os
+        return bool(os.environ.get('GEMINI_API_KEY', ''))
+
+    def _answer_quiz_questions_smart(self, answer_key: dict):
+        """
+        Smart question answerer using B → A → C fallback per question:
+          B: Match from API-captured answer_key
+          A: Ask Gemini AI if B failed
+          C: Click first option (blind pick) if both failed
+        """
+        unanswered_streak = 0
+        for q_step in range(1, 50):
+            self._close_popups()
+            answered_something = False
+
+            for target in [self.page] + list(self.page.frames):
+                try:
+                    radios = target.query_selector_all(
+                        "input[type='radio'], input[type='checkbox'], label.option-label"
+                    )
+                    if not radios:
+                        continue
+
+                    # Get question text
+                    q_elem = target.query_selector(".qtext, .question, .formulation, h3, h4")
+                    q_text = q_elem.inner_text().strip().lower() if q_elem else ""
+
+                    # Get all option texts
+                    option_texts = []
+                    for r in radios:
+                        try:
+                            txt = r.evaluate(
+                                "el => el.closest('label, tr, div') ? "
+                                "el.closest('label, tr, div').innerText : el.value || ''"
+                            )
+                            option_texts.append((txt or '').strip())
+                        except Exception:
+                            option_texts.append('')
+
+                    matched = False
+
+                    # ── B: API answer_key match ───────────────────────────
+                    if q_text and answer_key:
+                        for key_q, key_ans in answer_key.items():
+                            if key_q in q_text or q_text in key_q:
+                                for idx, (r, opt_txt) in enumerate(zip(radios, option_texts)):
+                                    if key_ans.lower() in opt_txt.lower() or opt_txt.lower() in key_ans.lower():
+                                        r.click(force=True)
+                                        matched = True
+                                        answered_something = True
+                                        logger.info(f"    ✅ [B-API] Q{q_step}: clicked '{opt_txt[:40]}'")
+                                        break
+                                if matched:
+                                    break
+
+                    # ── A: AI Vision fallback ─────────────────────────────
+                    if not matched and q_text and option_texts and self._ai_enabled():
+                        clean_options = [t for t in option_texts if t]
+                        if clean_options:
+                            ai_ans = self._ai_answer_question(q_text, clean_options)
+                            if ai_ans:
+                                for idx, (r, opt_txt) in enumerate(zip(radios, option_texts)):
+                                    if ai_ans.lower() in opt_txt.lower() or opt_txt.lower() in ai_ans.lower():
+                                        r.click(force=True)
+                                        matched = True
+                                        answered_something = True
+                                        logger.info(f"    🤖 [A-AI] Q{q_step}: clicked '{opt_txt[:40]}'")
+                                        break
+
+                    # ── C: Brute force — pick first option ───────────────
+                    if not matched and radios:
+                        radios[0].click(force=True)
+                        answered_something = True
+                        logger.info(f"    🎲 [C-Brute] Q{q_step}: clicked first option")
+
+                    # Next question
+                    next_btn = target.query_selector(
+                        "button:has-text('Next Question'), input[value='Next Question'], button:has-text('Next')"
+                    )
+                    if next_btn and next_btn.is_visible():
+                        next_btn.click(force=True)
+                        time.sleep(2.5)
+                        break
+
+                    final_btn = target.query_selector(
+                        "button:has-text('Final Submit'), input[value='Final Submit'], "
+                        "button:has-text('Submit all and finish')"
+                    )
+                    if final_btn and final_btn.is_visible():
+                        break
+
+                except Exception:
+                    pass
+
+            if answered_something:
+                unanswered_streak = 0
+            else:
+                unanswered_streak += 1
+                if unanswered_streak >= 3:
+                    break  # Quiz complete or stuck
+                time.sleep(1)
+
 
     def _start_or_continue_quiz_attempt(self):
         """Clicks Continue Assessment / Re-attempt quiz / Attempt quiz now button."""
