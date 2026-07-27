@@ -9,10 +9,50 @@ from utils import logger
 
 # ── HTML/JSON parsing helpers ──────────────────────────────────────────────
 
+# ── Enrollment filter — the single source of truth ──────────────────────────
+
+def _is_enrolled_course(elem_html: str, url: str, elem_text: str) -> bool:
+    """
+    Returns True ONLY if this course card belongs to the user's enrolled courses.
+
+    DIKSHA enrolled course cards ALWAYS have at least one of:
+      1. URL contains 'course.php'  (enrolled course detail page)
+      2. A progress bar / '% Completed' text  (even 0%)
+      3. 'Ends on' deadline date  (only enrolled courses show this)
+
+    Non-enrolled catalog / recommended / popular courses have NONE of these.
+    This single function is the permanent gate for all course parsing paths.
+    """
+    # Gate 1: URL check (strongest signal)
+    if url and 'course.php' in url.lower():
+        return True
+
+    # Gate 2: Progress indicator in HTML
+    elem_lower = elem_html.lower()
+    if any(k in elem_lower for k in [
+        'completed', '% completed', 'progress-bar', 'progressbar',
+        'width:', 'moodle-progress',
+    ]):
+        # Make sure it's a real progress value, not just the word in a description
+        if re.search(r'\d+%|width:\s*\d+%', elem_lower):
+            return True
+
+    # Gate 3: 'Ends on' deadline text (only enrolled courses have a deadline shown)
+    if re.search(r'ends\s+on', elem_lower):
+        return True
+
+    # Gate 4: Text indicators from the card content
+    text_lower = elem_text.lower()
+    if any(k in text_lower for k in ['ends on', '% completed', 'resume', 'continue learning']):
+        return True
+
+    return False
+
+
 def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> list:
     """
     Parses the HTML fragment returned by DIKSHA's course_listing.php AJAX endpoint.
-    Handles multiple possible HTML structures DIKSHA uses.
+    Only returns courses the user is actually enrolled in.
     """
     courses = []
     if not html_content or len(html_content.strip()) < 20:
@@ -111,6 +151,16 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
                 if url and not url.startswith('http'):
                     url = 'https://learning.diksha.gov.in/diksha/' + url.lstrip('/')
 
+                # ══ ENROLLMENT GATE ═══════════════════════════════════════════
+                # MANDATORY: Skip any course that doesn't pass enrollment check.
+                # Non-enrolled catalog/recommended courses will NEVER pass this.
+                elem_html_str = str(elem)
+                elem_text_full = elem.get_text()
+                if not _is_enrolled_course(elem_html_str, url, elem_text_full):
+                    logger.debug(f"  [SKIP non-enrolled card]: '{elem_text_full[:50].strip()}'")
+                    continue
+                # ══════════════════════════════════════════════════════════════
+
                 img_tag = elem.find('img')
                 img_url = (img_tag.get('src') or '') if img_tag else ''
                 if img_url and not img_url.startswith('http'):
@@ -160,7 +210,7 @@ def parse_diksha_coursedata_html(html_content: str, status: str = "ongoing") -> 
                     'status': status,
                     'image_url': img_url,
                 })
-                logger.info(f"  ✔ Parsed [{status}]: '{title[:55]}' → {pct}%")
+                logger.info(f"  ✔ Parsed [{status}] ENROLLED: '{title[:55]}' → {pct}%")
             except Exception as ex:
                 logger.debug(f'Element parse note: {ex}')
     except Exception as e:
@@ -655,18 +705,22 @@ class CourseNavigator:
         result = {'ongoing': [], 'finished': [], 'all': []}
 
         ongoing_payloads = [
-            ('tab_type=ongoing', 'tab_type=ongoing'),
-            ('tab_type=1',       'tab_type=1'),
-            ('type=ongoing',     'type=ongoing'),
-            ('tab=ongoing',      'tab=ongoing'),
-            ('',                 'empty-body'),
+            # Explicit enrolled-only AJAX actions (most specific first)
+            ('action=get_enrolled_courses&tab_type=ongoing', 'action=get_enrolled'),
+            ('tab_type=ongoing&action=enrolled',             'tab_type+action=enrolled'),
+            ('tab_type=ongoing',                             'tab_type=ongoing'),
+            ('tab_type=1',                                   'tab_type=1'),
+            ('type=ongoing',                                 'type=ongoing'),
+            ('tab=ongoing',                                  'tab=ongoing'),
+            ('',                                             'empty-body'),
         ]
         finished_payloads = [
-            ('tab_type=finished',   'tab_type=finished'),
-            ('tab_type=2',          'tab_type=2'),
-            ('tab_type=completed',  'tab_type=completed'),
-            ('type=finished',       'type=finished'),
-            ('tab=finished',        'tab=finished'),
+            ('action=get_enrolled_courses&tab_type=finished', 'action=get_enrolled_finished'),
+            ('tab_type=finished',                             'tab_type=finished'),
+            ('tab_type=2',                                    'tab_type=2'),
+            ('tab_type=completed',                            'tab_type=completed'),
+            ('type=finished',                                 'type=finished'),
+            ('tab=finished',                                  'tab=finished'),
         ]
 
         # ── Strategy B: Parse full rendered page HTML (FASTEST — try first) ─
@@ -830,7 +884,7 @@ class CourseNavigator:
         return self._run_fetch_strategies()
 
     def _scrape_cards_from_page(self, status: str = 'ongoing') -> list:
-        """DOM-level card scraping fallback."""
+        """DOM-level card scraping fallback — only returns ENROLLED courses."""
         courses = []
         try:
             selectors = [
@@ -852,6 +906,22 @@ class CourseNavigator:
                     text_content = card.inner_text().strip()
                     if not text_content:
                         continue
+
+                    # ══ ENROLLMENT GATE ═══════════════════════════════════════
+                    # Get URL first for enrollment check
+                    url = card.get_attribute('data-href') or ''
+                    if not url:
+                        a_el = card.query_selector('a[href*="course.php"]')
+                        if a_el:
+                            url = a_el.get_attribute('href') or ''
+                    if url and not url.startswith('http'):
+                        url = 'https://learning.diksha.gov.in/diksha/' + url.lstrip('/')
+
+                    card_html = card.inner_html() if hasattr(card, 'inner_html') else ''
+                    if not _is_enrolled_course(card_html, url, text_content):
+                        logger.debug(f"  [SKIP non-enrolled DOM card]: '{text_content[:50]}'")
+                        continue
+                    # ══════════════════════════════════════════════════════════
 
                     title = ''
                     title_match = re.search(r'Course Title\s*:\s*(.+)', text_content)
@@ -875,14 +945,6 @@ class CourseNavigator:
                     if pm:
                         pct = int(pm.group(1))
 
-                    # URL
-                    url = card.get_attribute('data-href') or ''
-                    if not url:
-                        a_el = card.query_selector('a[href*="course.php"]')
-                        if a_el:
-                            url = a_el.get_attribute('href') or ''
-                    if url and not url.startswith('http'):
-                        url = 'https://learning.diksha.gov.in/diksha/' + url.lstrip('/')
                     if not url:
                         url = 'https://learning.diksha.gov.in/diksha/course_listing.php'
 
@@ -900,7 +962,7 @@ class CourseNavigator:
                         'status': status,
                         'image_url': img_url,
                     })
-                    logger.info(f'  DOM card [{status}]: {title[:55]} → {pct}%')
+                    logger.info(f'  DOM card [{status}] ENROLLED: {title[:55]} → {pct}%')
                 except Exception as ex:
                     logger.debug(f'Card parse note: {ex}')
         except Exception as e:
