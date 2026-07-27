@@ -8,6 +8,7 @@ ARCHITECTURE:
 """
 
 import re
+import json
 import time
 import random
 from urllib.parse import urlparse, parse_qs
@@ -1361,59 +1362,6 @@ class VideoPlayer:
             except Exception:
                 pass
 
-    def _answer_quiz_questions(self, answer_key: dict):
-        """Loops through all questions and selects options."""
-        unanswered_streak = 0  # count consecutive steps where nothing was answered
-        for q_step in range(1, 40):
-            self._close_popups()
-            answered_something = False
-
-            for target in [self.page] + list(self.page.frames):
-                try:
-                    # Find radio options or checkboxes
-                    radios = target.query_selector_all("input[type='radio'], input[type='checkbox'], label.option-label")
-                    if radios:
-                        q_elem = target.query_selector(".qtext, .question, .formulation, h3, h4")
-                        q_text = q_elem.inner_text().strip().lower() if q_elem else ""
-
-                        matched = False
-                        if q_text and answer_key:
-                            for key_q, key_ans in answer_key.items():
-                                if key_q in q_text or q_text in key_q:
-                                    for r in radios:
-                                        r_parent = r.evaluate("el => el.closest('label, tr, div') ? el.closest('label, tr, div').innerText : ''")
-                                        if key_ans.lower() in r_parent.lower():
-                                            r.click(force=True)
-                                            matched = True
-                                            answered_something = True
-                                            break
-                                if matched:
-                                    break
-
-                        if not matched and radios:
-                            radios[0].click(force=True)
-                            answered_something = True
-
-                    next_btn = target.query_selector("button:has-text('Next Question'), input[value='Next Question'], button:has-text('Next')")
-                    if next_btn and next_btn.is_visible():
-                        next_btn.click(force=True)
-                        time.sleep(2.5)
-                        break
-
-                    final_btn = target.query_selector("button:has-text('Final Submit'), input[value='Final Submit'], button:has-text('Submit all and finish')")
-                    if final_btn and final_btn.is_visible():
-                        break
-                except Exception:
-                    pass
-
-            if answered_something:
-                unanswered_streak = 0
-            else:
-                unanswered_streak += 1
-                if unanswered_streak >= 3:
-                    # 3 consecutive steps with nothing to answer — quiz is done or stuck
-                    break
-                time.sleep(1)
 
 
     def _submit_quiz_attempt(self):

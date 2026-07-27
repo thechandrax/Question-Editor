@@ -234,13 +234,7 @@ class DikshaAPIClient:
                     f"{BASE}/diksha/course.php?id={course_id}&section={section_id}&modeActive="
                 )
 
-                # payload may be a raw string or a dict
-                if isinstance(payload, str):
-                    resp = self.session.post(
-                        url, data=payload, headers=headers, timeout=15
-                    )
-                else:
-                    resp = self.session.post(
+                resp = self.session.post(
                         url, data=payload, headers=headers, timeout=15
                     )
 

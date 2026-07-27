@@ -564,7 +564,7 @@ class CourseNavigator:
         logger.info('==================================================')
         logger.info(f'Step 3: Navigating to DIKSHA Courses: {target}')
         logger.info('==================================================')
-        self.page.goto(target, wait_until='domcontentloaded')
+        self.page.goto(target, wait_until='domcontentloaded', timeout=30000)
         time.sleep(2)
         self._check_and_recover_access_denied()
 

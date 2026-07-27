@@ -17,7 +17,7 @@ class DikshaAuthenticator:
     
     def __init__(self, headless: bool = False, username: str = None, password: str = None):
         env_headless = os.getenv("HEADLESS", "False").lower() == "true"
-        self.headless = headless if headless is not False else env_headless
+        self.headless = headless  # Use exactly what caller passed (True/False)
         self.playwright = None
         self.browser = None
         self.context = None
