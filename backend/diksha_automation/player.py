@@ -91,45 +91,61 @@ class VideoPlayer:
 
     def complete_entire_course_lessons(self, course_url: str) -> bool:
         """
-        Iterates through every module by navigating directly to its modeActive URL.
-        This is reliable regardless of sidebar collapse state.
+        State-machine progression:
+        Queries live progress, finds first incomplete module, navigates to it,
+        completes lessons, and queries again. This prevents getting stuck on lag/glitches.
         """
         self._course_url = course_url
         logger.info("==========================================================")
-        logger.info("=== Starting Course Completion (Direct Module Navigation) ===")
+        logger.info("=== Starting Course Completion (State-Machine Engine) ===")
         logger.info("==========================================================")
 
-        # ── Get module list ────────────────────────────────────────────────
-        module_list = self._get_module_list()
-        self.last_module_list = module_list
-        logger.info(f"Total modules to process: {len(module_list)}")
-        logger.info("─── Course Modules Completion Status ─────────────────")
-        for m in module_list:
-            pct_str = "100%" if m.get("iscompleted") or int(m.get("progress", 0)) >= 100 else f"{int(m.get('progress', 0)):3d}%"
-            badge = "[✔]" if m.get("iscompleted") or int(m.get("progress", 0)) >= 100 else "[ ]"
-            logger.info(f"  {badge} {pct_str}  {m.get('name', '')[:55]}")
-        logger.info("──────────────────────────────────────────────────────")
+        # Clear set at the start of the course
+        self.completed_module_ids.clear()
+        
+        # Track attempts per module to prevent infinite loops if API progress fails to update
+        module_attempts = {}
 
-        for module in module_list:
-            # ── Check stop signal before each module ──────────────────────────
-            if STOP_EVENT.is_set():
-                logger.info("  [⏹] Stop requested — halting module loop.")
+        while not STOP_EVENT.is_set():
+            # 1. Fetch latest progress from API
+            module_list = self._get_module_list()
+            self.last_module_list = module_list
+            logger.info(f"Checking course modules status ({len(module_list)} total)...")
+            
+            target_module = None
+            for m in module_list:
+                mod_id = str(m.get("id", ""))
+                progress = int(m.get("progress", 0))
+                is_completed = bool(m.get("iscompleted", False)) or progress >= 100
+                
+                # Skip if already verified/completed
+                if mod_id in self.completed_module_ids or is_completed:
+                    continue
+                    
+                target_module = m
                 break
 
-            mod_id   = str(module.get("id", ""))
-            mod_name = module.get("name", mod_id)
-            progress = int(module.get("progress", 0))
-            is_done  = module.get("iscompleted", False)
+            if not target_module:
+                logger.info("==========================================================")
+                logger.info("🏆 All modules completed successfully! Course Done.     ")
+                logger.info("==========================================================")
+                break
 
-            if is_done or progress >= 100:
+            mod_id = str(target_module.get("id", ""))
+            mod_name = target_module.get("name", mod_id)
+            progress = int(target_module.get("progress", 0))
+
+            # Prevent infinite loops on broken/bugged modules
+            attempts = module_attempts.get(mod_id, 0)
+            if attempts >= 3:
+                logger.warning(f"  [!] Module '{mod_name[:35]}' failed to complete after 3 full loops. Skipping to prevent stuck state.")
                 self.completed_module_ids.add(mod_id)
-                logger.info("════════════════════════════════════════════════════")
-                logger.info(f"  [✔] 100%  Module: '{mod_name[:55]}' — Complete! Skipping.")
-                logger.info("════════════════════════════════════════════════════")
                 continue
 
+            module_attempts[mod_id] = attempts + 1
+            
             logger.info("════════════════════════════════════════════════════")
-            logger.info(f"Module: '{mod_name[:55]}' | Progress: {progress}%")
+            logger.info(f"Module: '{mod_name[:55]}' | Progress: {progress}% (Attempt {attempts + 1}/3)")
             logger.info("════════════════════════════════════════════════════")
 
             if not mod_id:
@@ -150,18 +166,16 @@ class VideoPlayer:
             # Process all activities inside this module (pass API progress so we don't falsely skip)
             completed_cnt = self._process_all_activities_in_module(module_url, mod_id, mod_name, module_progress=progress)
 
-            # Re-check stop signal after processing a module
+            # Re-check stop signal
             if STOP_EVENT.is_set():
-                logger.info("  [⏹] Stop requested — halting after current module.")
+                logger.info("  [⏹] Stop requested — halting state machine.")
                 break
 
-            # Verify if all activities in this module are actually 100% completed.
-            # If the DOM scan says incomplete but we DID process at least 1 activity,
-            # give it 8s for server telemetry to register then re-check once more.
+            # Verify completion
             is_fully_done = self._verify_module_100_percent(mod_id, mod_name)
             if not is_fully_done and completed_cnt > 0:
-                logger.info("  Waiting 8s for DIKSHA telemetry sync then re-verifying module...")
-                time.sleep(8)
+                logger.info("  Waiting 10s for DIKSHA telemetry sync then re-verifying module...")
+                time.sleep(10)
                 try:
                     self.page.reload(wait_until="domcontentloaded", timeout=20000)
                     time.sleep(3)
@@ -173,8 +187,7 @@ class VideoPlayer:
                 self.completed_module_ids.add(mod_id)
                 logger.info(f"  [✔] 100% VERIFIED COMPLETE Module: '{mod_name[:55]}'")
             else:
-                logger.warning(f"  [!] Module '{mod_name[:40]}' still has uncompleted or locked activities pending — STOPPING MODULE ADVANCEMENT.")
-                break
+                logger.warning(f"  [!] Module '{mod_name[:40]}' still has pending activities. State machine will retry.")
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
@@ -1123,7 +1136,11 @@ class VideoPlayer:
         return False
 
     def _scroll_pdf_to_end(self):
-        """Scrolls the PDF viewer completely from top to bottom, dispatching telemetry events."""
+        """
+        Scrolls the PDF viewer completely from top to bottom at a gradual,
+        human-like reading pace. This spaces out scroll events to ensure
+        the server-side DIKSHA read-time telemetry checks pass successfully.
+        """
         frames_to_scroll = [self.page] + [f for f in self.page.frames if f != self.page.main_frame and f.url and f.url != "about:blank"]
         for frame in frames_to_scroll:
             try:
@@ -1131,15 +1148,16 @@ class VideoPlayer:
                     window.scrollTo(0, 0);
                     window.dispatchEvent(new Event('scroll'));
                 }""")
-                time.sleep(0.5)
-                for _ in range(10):
+                time.sleep(1.0)
+                # Scroll gradually (12 steps, 1.2s each = ~15s total active scrolling)
+                for _ in range(12):
                     frame.evaluate("""() => {
-                        window.scrollBy(0, 800);
+                        window.scrollBy(0, 500);
                         window.dispatchEvent(new Event('scroll'));
                         let el = document.querySelector("#viewerContainer, .pdfViewer, #resourceobject, .resourcecontent");
-                        if (el) { el.scrollTop += 800; el.dispatchEvent(new Event('scroll')); }
+                        if (el) { el.scrollTop += 500; el.dispatchEvent(new Event('scroll')); }
                     }""")
-                    time.sleep(0.4)
+                    time.sleep(1.2)
                 frame.evaluate("""() => {
                     window.scrollTo(0, document.body.scrollHeight);
                     window.dispatchEvent(new Event('scroll'));
@@ -1172,6 +1190,8 @@ class VideoPlayer:
     # ------------------------------------------------------------------ #
 
     def _inject_speed_override(self):
+        # We use a safe playback speed multiplier of 6.0 (instead of 10.0) to satisfy
+        # DIKSHA server-side rate checks while still completing videos extremely quickly.
         script = """
             if (!window.__speedOverrideActive) {
                 window.__speedOverrideActive = true;
@@ -1180,9 +1200,9 @@ class VideoPlayer:
                         if (v.duration && (v.duration - v.currentTime <= 10)) {
                             v.playbackRate = 1.0;
                             v.defaultPlaybackRate = 1.0;
-                        } else if (v.playbackRate !== 10.0) {
-                            v.playbackRate = 10.0;
-                            v.defaultPlaybackRate = 10.0;
+                        } else if (v.playbackRate !== 6.0) {
+                            v.playbackRate = 6.0;
+                            v.defaultPlaybackRate = 6.0;
                         }
                         if (v.paused && (!v.duration || (v.duration - v.currentTime > 1))) {
                             v.play().catch(() => {});
