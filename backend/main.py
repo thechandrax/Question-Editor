@@ -793,6 +793,12 @@ async def reset_diksha_state():
     })
     return {"status": "success", "message": "DIKSHA backend state cleared."}
 
+@app.post("/api/diksha/clear-logs")
+async def clear_diksha_logs():
+    _diksha["logs"].clear()
+    return {"status": "success", "message": "DIKSHA backend logs cleared."}
+
+
 @app.get("/api/diksha/status")
 async def get_diksha_status():
     return {

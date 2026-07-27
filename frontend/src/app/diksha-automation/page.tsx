@@ -375,11 +375,8 @@ export default function DikshaAutomationPage() {
         if (!res.ok) return;
         const data: StatusType = await res.json();
         if (logsClearedRef.current) {
-          if (!data.logs || data.logs.length === 0) {
-            logsClearedRef.current = false;
-          } else {
-            data.logs = [];
-          }
+          logsClearedRef.current = false;
+          data.logs = [];
         }
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
