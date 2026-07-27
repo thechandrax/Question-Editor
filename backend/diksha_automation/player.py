@@ -1129,9 +1129,11 @@ class VideoPlayer:
             # Moodle quiz attempt buttons
             "button:has-text('Attempt quiz now'), "
             "button:has-text('Re-attempt quiz'), "
+            "button:has-text('Re-attempt Assessment'), "
             "button:has-text('Continue Assessment'), "
             "a:has-text('Attempt quiz now'), "
             "a:has-text('Re-attempt quiz'), "
+            "a:has-text('Re-attempt Assessment'), "
             # Quiz in-progress markers
             "button:has-text('Final Submit'), "
             "button:has-text('Submit all and finish'), "
@@ -1158,10 +1160,15 @@ class VideoPlayer:
             "summary of attempt",
             "attempt quiz now",
             "re-attempt quiz",
+            "re-attempt assessment",
+            "continue assessment",
             "final submit",
             "submit all and finish",
-            "question 1 of ",          # "Question 1 of 10"
-            "time left",               # countdown timer in quiz
+            "question 1 of ",
+            "time left",
+            "passing score",
+            "grading method",
+            "attempts allowed",
         ]
         for target in [self.page] + list(self.page.frames):
             try:
@@ -1556,15 +1563,24 @@ class VideoPlayer:
 
 
     def _start_or_continue_quiz_attempt(self):
-        """Clicks Continue Assessment / Re-attempt quiz / Attempt quiz now button."""
+        """Clicks Re-attempt Assessment / Continue Assessment / Re-attempt quiz / Attempt quiz now."""
+        START_SELECTORS = (
+            "button:has-text('Re-attempt Assessment'), "
+            "a:has-text('Re-attempt Assessment'), "
+            "button:has-text('Re-attempt quiz'), "
+            "a:has-text('Re-attempt quiz'), "
+            "button:has-text('Continue Assessment'), "
+            "a:has-text('Continue Assessment'), "
+            "button:has-text('Attempt quiz now'), "
+            "button:has-text('Start attempt'), "
+            "a:has-text('Attempt quiz now'), "
+            "input[value*='attempt' i]"
+        )
         for target in [self.page] + list(self.page.frames):
             try:
-                start_btn = target.query_selector(
-                    "button:has-text('Continue Assessment'), button:has-text('Attempt quiz now'), "
-                    "button:has-text('Re-attempt quiz'), button:has-text('Start attempt'), "
-                    "a:has-text('Continue Assessment'), a:has-text('Re-attempt quiz')"
-                )
+                start_btn = target.query_selector(START_SELECTORS)
                 if start_btn and start_btn.is_visible():
+                    logger.info(f"    Clicking: '{start_btn.inner_text().strip()[:40]}'")
                     start_btn.click(force=True)
                     time.sleep(4)
                     break
@@ -1782,10 +1798,20 @@ class VideoPlayer:
         logger.info("    ✔ Back on summary page — ready for Re-attempt")
 
     def _has_reattempt_available(self) -> bool:
-        """Checks if a 'Re-attempt quiz' or 'Continue Assessment' button is present."""
+        """Checks if a Re-attempt or Continue Assessment button is present."""
+        REATTEMPT_SELECTORS = (
+            "button:has-text('Re-attempt quiz'), "
+            "button:has-text('Re-attempt Assessment'), "
+            "button:has-text('Continue Assessment'), "
+            "a:has-text('Re-attempt quiz'), "
+            "a:has-text('Re-attempt Assessment'), "
+            "a:has-text('Continue Assessment'), "
+            "input[value*='Re-attempt'], "
+            "input[value*='reattempt']"
+        )
         for target in [self.page] + list(self.page.frames):
             try:
-                btn = target.query_selector("button:has-text('Re-attempt quiz'), button:has-text('Continue Assessment'), a:has-text('Re-attempt quiz')")
+                btn = target.query_selector(REATTEMPT_SELECTORS)
                 if btn and btn.is_visible():
                     return True
             except Exception:
