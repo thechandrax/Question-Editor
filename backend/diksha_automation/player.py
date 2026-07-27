@@ -1008,25 +1008,66 @@ class VideoPlayer:
     # ------------------------------------------------------------------ #
 
     def _is_quiz_assessment(self) -> bool:
-        """Detects if current page / frame contains a DIKSHA MCQ assessment or quiz."""
+        """
+        Detects if the current page is an ACTUAL DIKSHA MCQ quiz/assessment.
+
+        IMPORTANT: 'assessment' and 'quiz' appear in DIKSHA navigation menus
+        on EVERY course page — do NOT use them as text keywords or every
+        activity gets falsely detected as a quiz.
+
+        Instead: check for quiz-SPECIFIC DOM elements that ONLY exist on
+        real quiz pages (attempt buttons, radio inputs inside quiz containers,
+        quiz table, etc.).
+        """
+        # ── Stage 1: High-confidence DOM elements (quiz-exclusive) ────────
+        QUIZ_SELECTORS = (
+            # Moodle quiz attempt buttons
+            "button:has-text('Attempt quiz now'), "
+            "button:has-text('Re-attempt quiz'), "
+            "button:has-text('Continue Assessment'), "
+            "a:has-text('Attempt quiz now'), "
+            "a:has-text('Re-attempt quiz'), "
+            # Quiz in-progress markers
+            "button:has-text('Final Submit'), "
+            "button:has-text('Submit all and finish'), "
+            "input[type='submit'][value*='Submit'], "
+            # Quiz DOM containers (Moodle-specific)
+            ".quizattempt, #quiz-table, .que, #responseform, "
+            "#quizform, .quizreviewsummary, "
+            # Summary of previous attempts (quiz results page)
+            "table.generaltable:has(th:has-text('Grade')), "
+            ".quizsummaryofattempts"
+        )
+        for target in [self.page] + list(self.page.frames):
+            try:
+                el = target.query_selector(QUIZ_SELECTORS)
+                if el and el.is_visible():
+                    return True
+            except Exception:
+                pass
+
+        # ── Stage 2: High-confidence TEXT patterns (very specific phrases) ─
+        # These phrases NEVER appear in menus — they are quiz-page-only text.
+        QUIZ_TEXT_SIGNALS = [
+            "summary of your previous attempts",
+            "summary of attempt",
+            "attempt quiz now",
+            "re-attempt quiz",
+            "final submit",
+            "submit all and finish",
+            "question 1 of ",          # "Question 1 of 10"
+            "time left",               # countdown timer in quiz
+        ]
         for target in [self.page] + list(self.page.frames):
             try:
                 content = target.content().lower()
-                if any(k in content for k in [
-                    "summary of your previous attempts", "continue assessment",
-                    "attempt quiz now", "re-attempt quiz", "summary of attempt",
-                    "final submit", "submit all and finish", "question 1",
-                    "কাৰ্যকলাপ", "assessment", "quiz"
-                ]):
-                    btn = target.query_selector(
-                        "button:has-text('Continue Assessment'), button:has-text('Attempt quiz now'), "
-                        "button:has-text('Re-attempt quiz'), input[type='radio'], .que, .quizattempt, #quiz-table"
-                    )
-                    if btn:
-                        return True
+                if any(sig in content for sig in QUIZ_TEXT_SIGNALS):
+                    return True
             except Exception:
                 pass
+
         return False
+
 
     def _close_popups(self):
         """Closes celebratory or info popups ('WELL DONE CHAMP!', 'Stay Calm', etc.)."""
