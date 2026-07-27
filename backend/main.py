@@ -268,11 +268,10 @@ def bypass_url(url, scraper, depth=0, visited=None):
         logging.error(f"Error at depth {depth}: {e}")
         return url
 
-import PyBypass
-
 def full_bypass(shortlink):
     # Try the new PyBypass Github package first!
     try:
+        import PyBypass  # optional dependency — gracefully skip if not installed
         bypassed_url = PyBypass.bypass(shortlink)
         if bypassed_url and bypassed_url != shortlink and 'http' in bypassed_url:
             # Check if PyBypass returned an ad-view lock URL
@@ -282,8 +281,8 @@ def full_bypass(shortlink):
     except ValueError:
         raise  # Re-raise ad-view lock errors
     except Exception:
-        pass  # PyBypass couldn't handle it, fallback to our custom scraper
-        
+        pass  # PyBypass not installed or couldn't handle it — fallback to our custom scraper
+
     scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
     return unquote(bypass_url(shortlink, scraper))
 
@@ -656,13 +655,13 @@ def _debug_page_sync(username: str, password: str) -> dict:
         try:
             page.goto("https://learning.diksha.gov.in/diksha/course_library.php",
                       wait_until="domcontentloaded", timeout=20000)
-            import time as _t; _t.sleep(2)
+            time.sleep(2)
         except Exception:
             pass
 
         page.goto("https://learning.diksha.gov.in/diksha/course_listing.php",
                   wait_until="networkidle", timeout=30000)
-        import time as _t; _t.sleep(4)
+        time.sleep(4)
 
         page_html = page.content()
         page_url  = page.url
