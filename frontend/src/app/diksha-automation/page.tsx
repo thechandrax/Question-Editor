@@ -307,6 +307,7 @@ export default function DikshaAutomationPage() {
   const [confirmModal, setConfirmModal] = useState<ModalConfig | null>(null);
   const [copiedLogs, setCopiedLogs] = useState(false);
   const [clearedLogs, setClearedLogs] = useState(false);
+  const [useTelemetryFallback, setUseTelemetryFallback] = useState<boolean>(false);
 
   const handleCopyLogs = () => {
     const text = status?.logs ? status.logs.join('\n') : "";
@@ -585,7 +586,12 @@ export default function DikshaAutomationPage() {
       const res = await fetch("/api/diksha/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, target_course_url: targetUrl || null }),
+        body: JSON.stringify({
+          username,
+          password,
+          target_course_url: targetUrl || null,
+          use_telemetry_fallback: useTelemetryFallback
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start automation.");
@@ -1148,6 +1154,47 @@ export default function DikshaAutomationPage() {
               >
                 <IconLogout /> Logout
               </button>
+            </div>
+
+            {/* Method 2 Telemetry Fallback Toggle */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '16px',
+              padding: '12px 18px',
+              width: '100%',
+              boxShadow: '0 4px 12px rgba(15,23,42,0.02)'
+            }}>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
+                <span style={{fontSize: '12.5px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  ⚡ Method 2: API Telemetry Fallback Engine
+                </span>
+                <span style={{fontSize: '11px', color: '#64748b', fontWeight: '600'}}>
+                  Intercepts & replays HTTP telemetry sessions if browser video/PDF playback is blocked.
+                </span>
+              </div>
+              <label style={{position: 'relative', display: 'inline-block', width: '44px', height: '24px', flexShrink: 0, cursor: 'pointer'}}>
+                <input
+                  type="checkbox"
+                  checked={useTelemetryFallback}
+                  onChange={(e) => setUseTelemetryFallback(e.target.checked)}
+                  style={{opacity: 0, width: 0, height: 0}}
+                />
+                <span style={{
+                  position: 'absolute', inset: 0,
+                  backgroundColor: useTelemetryFallback ? '#4f46e5' : '#cbd5e1',
+                  borderRadius: '24px', transition: '0.3s'
+                }}>
+                  <span style={{
+                    position: 'absolute', content: '""', height: '18px', width: '18px',
+                    left: useTelemetryFallback ? '22px' : '3px', bottom: '3px',
+                    backgroundColor: 'white', borderRadius: '50%', transition: '0.3s'
+                  }}/>
+                </span>
+              </label>
             </div>
           </div>
 

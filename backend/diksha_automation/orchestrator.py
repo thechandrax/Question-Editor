@@ -34,7 +34,7 @@ def fetch_courses_only(username=None, password=None, headless=True):
         auth.close()
 
 
-def run_automation(username=None, password=None, headless=False, target_course_url=None):
+def run_automation(username=None, password=None, headless=False, target_course_url=None, use_telemetry_fallback=False):
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger.info("=================================================")
     logger.info("=== Starting Complete DIKSHA Course Automation ===")
@@ -54,6 +54,7 @@ def run_automation(username=None, password=None, headless=False, target_course_u
 
         navigator = CourseNavigator(page)
         player    = VideoPlayer(page, api_client=api)
+        player.use_telemetry_fallback = use_telemetry_fallback
 
         if not target_course_url:
             # Steps 3–5: Navigate to course listing

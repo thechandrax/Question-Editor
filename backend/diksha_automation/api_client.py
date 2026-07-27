@@ -21,6 +21,7 @@ class DikshaAPIClient:
         self.session = requests.Session()
         self._captured_payload: str = ""   # auto-set by intercept
         self._captured_api_url: str = ""
+        self.captured_telemetry: dict = {}  # Stores captured completion/telemetry templates
         self._sync_cookies(context)
         self.session.headers.update({
             "User-Agent": (
@@ -65,33 +66,83 @@ class DikshaAPIClient:
     def setup_interception(self, page: Page, course_id: str, section_id: str):
         """
         Attaches a Playwright request listener to `page` that captures the
-        exact POST payload the browser sends to course.php.
-
-        Call this BEFORE navigating to the course page.  The captured payload
-        is stored in self._captured_payload and used by get_module_progress().
-
-        Usage:
-            api.setup_interception(page, "1186", "2486")
-            page.goto("https://learning.diksha.gov.in/diksha/course.php?id=1186&section=2486")
-            modules = api.get_module_progress("1186", "2486")
+        exact POST payload the browser sends to course.php, as well as any
+        telemetry or AJAX completion requests.
         """
         target_url_fragment = f"course.php?id={course_id}&section={section_id}"
 
         def on_request(request):
             try:
+                url_lower = request.url.lower()
+                # 1. Capture course syllabus payload
                 if target_url_fragment in request.url and request.method == "POST":
                     payload = request.post_data or ""
                     if payload and not self._captured_payload:
                         self._captured_payload = payload
                         self._captured_api_url = request.url
                         logger.info(
-                            f"✔ Captured API payload ({len(payload)} bytes): {payload[:80]}"
+                            f"✔ Captured syllabus API payload ({len(payload)} bytes): {payload[:80]}"
                         )
+                
+                # 2. Capture telemetry or Moodle/Sunbird completion AJAX requests
+                if request.method == "POST" and any(k in url_lower for k in ["telemetry", "service.php", "ping.php", "completion"]):
+                    payload = request.post_data or ""
+                    headers = request.headers or {}
+                    
+                    # Extract page ID from current URL
+                    from urllib.parse import urlparse, parse_qs
+                    current_id = ""
+                    try:
+                        qs = parse_qs(urlparse(page.url).query)
+                        current_id = qs.get("id", [""])[0] or qs.get("cmid", [""])[0]
+                    except Exception:
+                        pass
+                        
+                    category = "telemetry" if "telemetry" in url_lower else ("service" if "service.php" in url_lower else "generic")
+                    if category not in self.captured_telemetry:
+                        self.captured_telemetry[category] = {
+                            "url": request.url,
+                            "headers": {k: v for k, v in headers.items() if k.lower() in ["authorization", "content-type", "x-requested-with"]},
+                            "body": payload,
+                            "capture_id": current_id
+                        }
+                        logger.info(f"✔ Intercepted completion template ({category}) with ID {current_id}: {request.url[:60]}")
             except Exception:
                 pass
 
         page.on("request", on_request)
         logger.info(f"Request interception active for: {target_url_fragment}")
+
+    def replay_telemetry_request(self, category: str, current_id: str = None) -> bool:
+        """Replays a captured telemetry/ajax request, swapping the activity ID if needed."""
+        req_info = self.captured_telemetry.get(category)
+        if not req_info:
+            logger.warning(f"No captured telemetry template found for: {category}")
+            return False
+            
+        url = req_info["url"]
+        headers = dict(self.session.headers)
+        headers.update(req_info.get("headers", {}))
+        body = req_info.get("body", "")
+        capture_id = req_info.get("capture_id", "")
+        
+        # Replace capture_id with current_id in URL and body
+        if capture_id and current_id and capture_id != current_id:
+            logger.info(f"  [Method 2] Swapping template ID {capture_id} → {current_id}")
+            url = url.replace(capture_id, current_id)
+            if isinstance(body, str):
+                body = body.replace(capture_id, current_id)
+            elif isinstance(body, bytes):
+                body = body.replace(capture_id.encode(), current_id.encode())
+        
+        try:
+            logger.info(f"  Replaying telemetry ({category}) to {url[:50]}...")
+            resp = self.session.post(url, data=body, headers=headers, timeout=15)
+            logger.info(f"  Replay response: {resp.status_code}")
+            return resp.status_code == 200
+        except Exception as e:
+            logger.error(f"  Failed to replay telemetry request: {e}")
+            return False
 
     # ------------------------------------------------------------------ #
     #  Module progress API

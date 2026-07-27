@@ -519,6 +519,7 @@ class DikshaRunRequest(BaseModel):
     username: str
     password: str
     target_course_url: str | None = None
+    use_telemetry_fallback: bool = False
 
 # ── Credential Verification (no browser) ──────────────────────────────────
 
@@ -710,7 +711,7 @@ async def debug_diksha_page(req: DikshaFetchRequest):
         logging.error("debug-page error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-def _run_diksha_task(username: str, password: str, target_course_url: str | None = None) -> None:
+def _run_diksha_task(username: str, password: str, target_course_url: str | None = None, use_telemetry_fallback: bool = False) -> None:
     """Wrapper that tracks global state around run_automation."""
     _pause_event.set()
     _stop_event.clear()
@@ -726,7 +727,7 @@ def _run_diksha_task(username: str, password: str, target_course_url: str | None
         "started_at": datetime.now().isoformat(),
     })
     try:
-        run_automation(username=username, password=password, headless=True, target_course_url=target_course_url)
+        run_automation(username=username, password=password, headless=True, target_course_url=target_course_url, use_telemetry_fallback=use_telemetry_fallback)
         if _stop_event.is_set():
             _diksha.update({"running": False, "status": "stopped", "step": "Automation stopped by user.", "progress": _diksha["progress"], "paused": False})
         else:
@@ -742,7 +743,7 @@ def _run_diksha_task(username: str, password: str, target_course_url: str | None
 async def run_diksha_automation(req: DikshaRunRequest, background_tasks: BackgroundTasks):
     if _diksha["running"]:
         raise HTTPException(status_code=409, detail="Automation already running. Please wait for the current session to finish.")
-    background_tasks.add_task(_run_diksha_task, req.username, req.password, req.target_course_url)
+    background_tasks.add_task(_run_diksha_task, req.username, req.password, req.target_course_url, req.use_telemetry_fallback)
     return {"status": "success", "message": "Automation started successfully in the background."}
 
 @app.post("/api/diksha/pause")

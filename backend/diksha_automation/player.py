@@ -40,6 +40,7 @@ class VideoPlayer:
         self._section_id = "2486"
         self.completed_module_ids = set()
         self.last_module_list = []
+        self.use_telemetry_fallback = False
 
     # ------------------------------------------------------------------ #
     #  Public step methods
@@ -656,6 +657,30 @@ class VideoPlayer:
             self._process_assessment_quiz()
             self._return_to_url(return_url)
             return
+
+        # ── Method 2: API Telemetry Fallback Injection ────────────────────────
+        if self.use_telemetry_fallback and self.api and self.api.captured_telemetry:
+            current_id = ""
+            try:
+                qs = parse_qs(urlparse(self.page.url).query)
+                current_id = qs.get("id", [""])[0] or qs.get("cmid", [""])[0]
+            except Exception:
+                pass
+            
+            logger.info("  [Method 2] Attempting API Telemetry Fallback Injection...")
+            replayed = False
+            for category in list(self.api.captured_telemetry.keys()):
+                success = self.api.replay_telemetry_request(category, current_id=current_id)
+                if success:
+                    replayed = True
+                    
+            if replayed:
+                logger.info("  [Method 2] Telemetry injection sent! Waiting 8 seconds for server checkmark sync...")
+                time.sleep(8)
+                self._return_to_url(return_url)
+                return
+            else:
+                logger.warning("  [Method 2] No templates succeeded. Falling back to Method 1 (Browser Simulation).")
 
         # ── 1. Video (retry loop up to 15s for iframe player to load) ──────
         video_element = None
