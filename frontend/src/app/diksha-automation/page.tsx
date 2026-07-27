@@ -1493,18 +1493,20 @@ export default function DikshaAutomationPage() {
                           </div>
                         )}
 
-                        {/* Status badge */}
-                        <div style={{position:'absolute',top:'10px',right:'10px'}}>
-                          <span style={{
-                            fontSize:'10px',fontWeight:'800',padding:'3px 10px',borderRadius:'20px',
-                            background: isFinished ? '#d1fae5' : isCurrent ? '#e0e7ff' : '#fef3c7',
-                            border: `1px solid ${isFinished ? '#6ee7b7' : isCurrent ? '#818cf8' : '#fcd34d'}`,
-                            color: isFinished ? '#047857' : isCurrent ? '#4338ca' : '#b45309',
-                            display:'flex',alignItems:'center',gap:'4px'
-                          }}>
-                            {isFinished ? <><IconCheck/> 100% Done</> : isCurrent ? '⚡ Automating' : `${pct}% In Progress`}
-                          </span>
-                        </div>
+                        {/* Status badge — only show for special states (Done / Automating) */}
+                        {(isFinished || isCurrent) && (
+                          <div style={{position:'absolute',top:'10px',right:'10px'}}>
+                            <span style={{
+                              fontSize:'10px',fontWeight:'800',padding:'3px 10px',borderRadius:'20px',
+                              background: isFinished ? '#d1fae5' : '#e0e7ff',
+                              border: `1px solid ${isFinished ? '#6ee7b7' : '#818cf8'}`,
+                              color: isFinished ? '#047857' : '#4338ca',
+                              display:'flex',alignItems:'center',gap:'4px'
+                            }}>
+                              {isFinished ? <><IconCheck/> 100% Done</> : '⚡ Automating'}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Body */}
