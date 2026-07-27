@@ -272,6 +272,7 @@ class VideoPlayer:
         try:
             modules = []
             seen_ids = set()
+            seen_names = set()  # prevents duplicate modules when accordion is expanded
 
             # Find all section triggers on the page with data-id or section id
             triggers = self.page.query_selector_all(
@@ -302,6 +303,13 @@ class VideoPlayer:
                         continue
 
                     seen_ids.add(mod_id)
+
+                    # Normalize module name for duplicate detection
+                    # (DOM sometimes shows same module twice when accordion is open)
+                    norm_name = mod_name.strip().lower()[:30]
+                    if norm_name in seen_names:
+                        continue
+                    seen_names.add(norm_name)
 
                     # Walk up DOM to the module's parent container
                     parent = tr.evaluate_handle("""(node) => {
@@ -1611,19 +1619,17 @@ class VideoPlayer:
 
     def _navigate_to_review_and_extract(self, answer_key: dict):
         """
-        CRITICAL FIX for Approach C:
-        After Attempt 1 is submitted, DIKSHA shows a RESULTS SUMMARY page.
-        This method:
-          1. Finds and clicks the 'Review' link on the summary page
-          2. Waits for the Review page to load (shows correct/wrong for each Q)
-          3. Extracts all correct answers into answer_key
-          4. Clicks 'Back to Attempt Summary' to return to summary page
-             (so _has_reattempt_available() can find 'Re-attempt quiz' button)
+        After Attempt 1 submit, DIKSHA shows a RESULTS SUMMARY page.
+        Strategy:
+          1. Try clicking 'Review' button/link on summary page
+          2. If not found, build review URL directly from current URL
+          3. Extract all correct answers from review page
         """
         logger.info("  🔍 Navigating to Review page to capture correct answers...")
 
-        # Step 1: Find and click Review link/button on current summary page
         review_clicked = False
+
+        # Strategy 1: Try all known Review selectors
         review_selectors = [
             "a:has-text('Review')",
             "button:has-text('Review')",
@@ -1634,6 +1640,8 @@ class VideoPlayer:
             "a.reviewlink",
             "td:has-text('Review') a",
             "input[value='Review']",
+            "a[href*='attempt']",
+            "a:has-text('Attempt')",
         ]
         for target in [self.page] + list(self.page.frames):
             if review_clicked:
@@ -1644,14 +1652,14 @@ class VideoPlayer:
                     if btn and btn.is_visible():
                         logger.info(f"    Clicking Review: {sel}")
                         btn.click(force=True)
-                        time.sleep(4)  # Wait for Review page to load
+                        time.sleep(4)
                         review_clicked = True
                         break
                 except Exception:
                     pass
 
+        # Strategy 2: Table row scan
         if not review_clicked:
-            # Try to find review link in table rows (Moodle shows grade table)
             for target in [self.page] + list(self.page.frames):
                 try:
                     rows = target.query_selector_all("table tr")
@@ -1670,20 +1678,58 @@ class VideoPlayer:
                 except Exception:
                     pass
 
+        # Strategy 3: Build review URL directly from current page URL
+        # DIKSHA quiz summary URL: mod/quiz/summary.php?attempt=XXXX&cmid=YYYY
+        # Review URL:              mod/quiz/review.php?attempt=XXXX&cmid=YYYY
         if not review_clicked:
-            logger.warning("    No Review link found on results page — trying direct extraction")
-            # Try extracting from current page (might already show answers)
+            try:
+                current_url = self.page.url
+                logger.info(f"    Building review URL from: {current_url}")
+                # Try summary.php → review.php
+                if 'summary.php' in current_url:
+                    review_url = current_url.replace('summary.php', 'review.php')
+                    logger.info(f"    → Navigating direct to review: {review_url}")
+                    self.page.goto(review_url, wait_until='domcontentloaded', timeout=15000)
+                    time.sleep(3)
+                    review_clicked = True
+                # Try attempt.php → review.php
+                elif 'attempt.php' in current_url:
+                    review_url = current_url.replace('attempt.php', 'review.php')
+                    logger.info(f"    → Navigating direct to review: {review_url}")
+                    self.page.goto(review_url, wait_until='domcontentloaded', timeout=15000)
+                    time.sleep(3)
+                    review_clicked = True
+                else:
+                    # Extract attempt ID from any quiz URL
+                    m_att = re.search(r'attempt=?(\d+)', current_url)
+                    m_cmi = re.search(r'cmid=?(\d+)', current_url)
+                    if m_att:
+                        att_id = m_att.group(1)
+                        cmid = m_cmi.group(1) if m_cmi else ''
+                        base = current_url.split('/mod/quiz')[0]
+                        review_url = (
+                            f"{base}/mod/quiz/review.php?attempt={att_id}"
+                            + (f"&cmid={cmid}" if cmid else "")
+                        )
+                        logger.info(f"    → Navigating direct to review: {review_url}")
+                        self.page.goto(review_url, wait_until='domcontentloaded', timeout=15000)
+                        time.sleep(3)
+                        review_clicked = True
+            except Exception as e:
+                logger.warning(f"    Direct review URL navigation failed: {e}")
+
+        if not review_clicked:
+            logger.warning("    No Review link found and URL strategy failed — extracting from current page")
             self._extract_answer_key_from_review(answer_key)
             return
 
-        # Step 2: We're now on the Review page — extract all correct answers
-        logger.info("    On Review page — extracting correct answers for all questions...")
+        # Extract correct answers from the review page
+        logger.info("    On Review page — extracting correct answers...")
         self._extract_answer_key_from_review(answer_key)
 
-        # Also try extracting from page HTML for broader coverage
+        # Also scan raw HTML for rightanswer spans
         try:
             page_html = self.page.content()
-            # Look for rightanswer spans in raw HTML
             correct_pattern = re.compile(
                 r'class="[^"]*rightanswer[^"]*"[^>]*>([^<]+)<',
                 re.I
