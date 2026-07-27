@@ -251,6 +251,77 @@ class DikshaAuthenticator:
                 except PlaywrightTimeoutError:
                     logger.info("SSO sync: Keycloak auto-approved (no form visible)")
 
+            # ── FALLBACK 3: SSO landed on "explore" page (no token generated) ─
+            # This happens when diksha.gov.in/resources?lms=diksha2 loads the
+            # DIKSHA explore portal but does NOT generate an SSO token redirect.
+            # Title will be "explore" and URL stays on diksha.gov.in — 18 cookies
+            # are captured but NONE of them are Moodle PHPSESSID cookies.
+            # Fix: navigate directly to learning.diksha.gov.in/diksha/login.php
+            # and click the SSO link again to force token generation.
+            title_lower = title_now.lower()
+            url_lower   = url_now.lower()
+            is_explore_fail = (
+                'explore' in title_lower or
+                ('diksha.gov.in/resources' in url_lower and 'learning.diksha.gov.in' not in url_lower)
+            )
+            if is_explore_fail:
+                logger.warning(
+                    "SSO sync: landed on 'explore' (no Moodle token generated) — "
+                    "retrying via direct Moodle login page..."
+                )
+                try:
+                    # Go directly to Moodle login page
+                    self.page.goto(
+                        'https://learning.diksha.gov.in/diksha/login.php',
+                        wait_until='domcontentloaded', timeout=25000
+                    )
+                    time.sleep(2)
+                    # Find and click the SSO link again
+                    sso_retry_links = self.page.evaluate("""() =>
+                        Array.from(document.querySelectorAll('a')).map(e => ({
+                            text: (e.innerText || '').trim(),
+                            href: e.href || ''
+                        }))
+                    """)
+                    for lnk in sso_retry_links:
+                        href = (lnk['href'] or '').lower()
+                        if 'resources' in href or 'lms=diksha' in href:
+                            logger.info(f"  Retry SSO link: {lnk['href'][:100]}")
+                            try:
+                                self.page.goto(lnk['href'], wait_until='networkidle', timeout=30000)
+                                time.sleep(3)
+                            except Exception as e2:
+                                logger.info(f"  Retry SSO nav note: {e2}")
+                                time.sleep(3)
+                            # Check if token redirect happened
+                            retry_url   = self.page.url
+                            retry_title = self.page.title()
+                            logger.info(f"  After retry SSO — URL: {retry_url}")
+                            logger.info(f"  After retry SSO — Title: {retry_title[:150]}")
+                            if 'learning.diksha.gov.in' in retry_url and 'login.php' not in retry_url:
+                                logger.info("SSO sync: ✓ session established via retry!")
+                                return
+                            # Extract token from title
+                            if 'diksha_sso.php' in retry_title or 'diksha_sso.php' in retry_url:
+                                token_m = re.search(
+                                    r'(https://\S+diksha_sso\.php[^\s"\'<>]*)', retry_title
+                                )
+                                if token_m:
+                                    token_url = _html.unescape(token_m.group(1))
+                                    logger.info(f"  Navigating to retry token: {token_url[:100]}...")
+                                    try:
+                                        self.page.goto(token_url, wait_until='networkidle', timeout=25000)
+                                        time.sleep(3)
+                                    except Exception as e3:
+                                        logger.info(f"  Token nav note: {e3}")
+                                    logger.info(f"  After retry token: {self.page.url}")
+                                    if 'learning.diksha.gov.in' in self.page.url:
+                                        logger.info("SSO sync: ✓ session established via retry token!")
+                                        return
+                            break
+                except Exception as e_retry:
+                    logger.warning(f"SSO retry failed: {e_retry}")
+
             logger.info(f"SSO sync final URL: {self.page.url}")
 
         except Exception as e:
