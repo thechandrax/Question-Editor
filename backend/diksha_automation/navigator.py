@@ -790,22 +790,20 @@ class CourseNavigator:
             if result_e.get('finished'):
                 result['finished'] = result_e['finished']
 
-        # AJAX for finished (only if not already found)
-        if not result['finished']:
-            for payload, label in finished_payloads:
+        # ── AJAX for finished ─────────────────────────────────────────────
+        # Skip AJAX for finished if we already found ongoing via Strategy B
+        # (DIKSHA's finished AJAX endpoints always return [] — Strategy D tab-click is reliable)
+        if not result['finished'] and not result['ongoing']:
+            # Only try AJAX for finished when ongoing also failed (rare fallback)
+            logger.info('=== Strategy A: AJAX for finished (ongoing also empty — rare path) ===')
+            for payload, label in finished_payloads[:2]:  # Try max 2 variants
                 ok, courses = _do_ajax_post_in_browser(self.page, payload, label, sesskey=sesskey)
                 if ok and courses:
                     result['finished'] = courses
                     logger.info(f'  ✔ In-browser AJAX finished [{label}] → {len(courses)} courses')
                     break
-
-        if not result['finished']:
-            for payload, label in finished_payloads:
-                ok, courses = _do_ajax_post(self.page, payload, label)
-                if ok and courses:
-                    result['finished'] = courses
-                    logger.info(f'  ✔ page.request AJAX finished [{label}] → {len(courses)} courses')
-                    break
+                # If first call returns [], stop — all variants will return []
+                break
 
         # ── Strategy C: Click Ongoing tab then re-parse ──────────────────
         if not result['ongoing']:
