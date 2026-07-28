@@ -1282,19 +1282,23 @@ class VideoPlayer:
 
     def _is_quiz_assessment(self) -> bool:
         """
-        Detects if the current page is an ACTUAL DIKSHA MCQ quiz/assessment.
+        Detects if the current page/modal/iframe is an ACTUAL DIKSHA MCQ quiz/assessment.
 
-        IMPORTANT: 'assessment' and 'quiz' appear in DIKSHA navigation menus
-        on EVERY course page — do NOT use them as text keywords or every
-        activity gets falsely detected as a quiz.
-
-        Instead: check for quiz-SPECIFIC DOM elements that ONLY exist on
-        real quiz pages (attempt buttons, radio inputs inside quiz containers,
-        quiz table, etc.).
+        Avoids false positives on course overview pages, syllabus lists, or resource links.
         """
-        # ── Stage 1: High-confidence DOM elements (quiz-exclusive) ────────
+        # ── 1. Check URL signals ─────────────────────────────────────────────
+        try:
+            for frame in [self.page] + list(self.page.frames):
+                url = (frame.url or "").lower()
+                if any(k in url for k in ["/mod/quiz/", "/mod/assessment/", "type=quiz", "type=assessment"]):
+                    logger.info(f"  Quiz detected via URL keyword: {url[:60]}")
+                    return True
+        except Exception:
+            pass
+
+        # ── 2. High-confidence VISIBLE DOM elements (quiz-exclusive) ─────────
         QUIZ_SELECTORS = (
-            # Moodle quiz attempt buttons
+            # Moodle/DIKSHA quiz attempt buttons
             "button:has-text('Attempt quiz now'), "
             "button:has-text('Re-attempt quiz'), "
             "button:has-text('Re-attempt Assessment'), "
@@ -1302,51 +1306,50 @@ class VideoPlayer:
             "a:has-text('Attempt quiz now'), "
             "a:has-text('Re-attempt quiz'), "
             "a:has-text('Re-attempt Assessment'), "
-            # Quiz in-progress markers
+            # Quiz in-progress / submit buttons
             "button:has-text('Final Submit'), "
             "button:has-text('Submit all and finish'), "
-            "input[type='submit'][value*='Submit'], "
-            # Quiz DOM containers (Moodle-specific)
+            "button:has-text('Submit Assessment'), "
+            # Quiz DOM containers & question elements
             ".quizattempt, #quiz-table, .que, #responseform, "
-            "#quizform, .quizreviewsummary, "
-            # Summary of previous attempts (quiz results page)
-            "table.generaltable:has(th:has-text('Grade')), "
-            ".quizsummaryofattempts"
+            "#quizform, .quizreviewsummary, .quizsummaryofattempts, "
+            # MCQ radio/checkbox inputs inside question containers
+            ".que input[type='radio'], .que input[type='checkbox'], "
+            ".question input[type='radio'], .question input[type='checkbox']"
         )
+
         for target in [self.page] + list(self.page.frames):
             try:
                 el = target.query_selector(QUIZ_SELECTORS)
                 if el and el.is_visible():
+                    logger.info("  Quiz detected via visible quiz DOM element.")
                     return True
             except Exception:
                 pass
 
-        # ── Stage 2: High-confidence TEXT patterns (very specific phrases) ─
-        # These phrases NEVER appear in menus — they are quiz-page-only text.
+        # ── 3. Check VISIBLE innerText (never raw HTML content) ─────────────
+        # Only check active visible text in frames/body (excludes hidden scripts/metadata)
         QUIZ_TEXT_SIGNALS = [
             "summary of your previous attempts",
-            "summary of attempt",
             "attempt quiz now",
             "re-attempt quiz",
             "re-attempt assessment",
             "continue assessment",
-            "final submit",
             "submit all and finish",
             "question 1 of ",
-            "time left",
-            "passing score",
-            "grading method",
-            "attempts allowed",
         ]
+
         for target in [self.page] + list(self.page.frames):
             try:
-                content = target.content().lower()
-                if any(sig in content for sig in QUIZ_TEXT_SIGNALS):
+                inner_text = target.evaluate("() => document.body ? document.body.innerText.toLowerCase() : ''")
+                if any(sig in inner_text for sig in QUIZ_TEXT_SIGNALS):
+                    logger.info("  Quiz detected via visible text signal.")
                     return True
             except Exception:
                 pass
 
         return False
+
 
 
     def _close_popups(self):

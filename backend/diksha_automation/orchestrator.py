@@ -49,7 +49,7 @@ def _start_global_screenshot_thread(cdp_url: str):
                         contexts = browser.contexts
                         if contexts and contexts[0].pages:
                             page = contexts[0].pages[-1]  # most recent page
-                            img = page.screenshot(type='jpeg', quality=60, full_page=False, timeout=5000)
+                            img = page.screenshot(type='jpeg', quality=60, full_page=False, timeout=15000)
                             _utils_module.LATEST_SCREENSHOT = _base64.b64encode(img).decode('utf-8')
                             _utils_module.LATEST_SCREENSHOT_LABEL = 'live'
                             _fail_count[0] = 0
