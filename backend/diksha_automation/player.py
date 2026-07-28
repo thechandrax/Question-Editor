@@ -1003,13 +1003,23 @@ class VideoPlayer:
                                 duration: v.duration,
                                 paused: v.paused,
                                 playbackRate: v.playbackRate,
+                                muted: v.muted,
                                 error: v.error ? v.error.code : null
                             };
                         }""")
                         if info:
-                            pct = int((info["currentTime"] / info["duration"]) * 100) if info["duration"] else 0
-                            logger.info(f"  Video progress: {int(info['currentTime'])}s / {int(info['duration'])}s ({pct}%) | rate={info['playbackRate']} | paused={info['paused']} | err={info['error']}")
-                            
+                            dur   = info["duration"] or 0
+                            cur   = info["currentTime"]
+                            pct   = int((cur / dur) * 100) if dur else 0
+                            rem   = int(dur - cur) if dur else 0
+                            phase = "🐌 FINAL 20s (1x, unmuted)" if rem <= 20 else f"⚡ FAST (6x, muted)"
+                            logger.info(
+                                f"  Video: {int(cur)}s/{int(dur)}s ({pct}%) "
+                                f"| remaining={rem}s | rate={info['playbackRate']}x "
+                                f"| muted={info['muted']} | paused={info['paused']} "
+                                f"| {phase}"
+                            )
+
                             # Stuck detection
                             current_val = info["currentTime"]
                             if current_val == last_time and not info["paused"]:
@@ -2081,21 +2091,45 @@ class VideoPlayer:
     # ------------------------------------------------------------------ #
 
     def _inject_speed_override(self):
-        # We use a safe playback speed multiplier of 6.0 (instead of 10.0) to satisfy
-        # DIKSHA server-side rate checks while still completing videos extremely quickly.
+        """
+        Video speed controller injected into every video element on the page.
+
+        Behaviour:
+          • Normal play  → 6x speed, MUTED  (fast, silent)
+          • Last 20 sec  → 1x speed, UNMUTED (normal, audible — DIKSHA syncs completion here)
+          • Auto-resumes if video pauses unexpectedly
+        """
         script = """
             if (!window.__speedOverrideActive) {
                 window.__speedOverrideActive = true;
                 setInterval(() => {
                     document.querySelectorAll('video').forEach(v => {
-                        if (v.duration && (v.duration - v.currentTime <= 10)) {
-                            v.playbackRate = 1.0;
-                            v.defaultPlaybackRate = 1.0;
-                        } else if (v.playbackRate !== 6.0) {
-                            v.playbackRate = 6.0;
-                            v.defaultPlaybackRate = 6.0;
+                        if (!v.duration) return;
+                        const remaining = v.duration - v.currentTime;
+
+                        if (remaining <= 20) {
+                            // ── LAST 20 SECONDS: slow to 1x, unmute ──────────────
+                            if (v.playbackRate !== 1.0) {
+                                v.playbackRate = 1.0;
+                                v.defaultPlaybackRate = 1.0;
+                            }
+                            if (v.muted) {
+                                v.muted = false;
+                                v.volume = 1.0;
+                            }
+                        } else {
+                            // ── FAST PHASE: 6x speed, muted ──────────────────────
+                            if (v.playbackRate !== 6.0) {
+                                v.playbackRate = 6.0;
+                                v.defaultPlaybackRate = 6.0;
+                            }
+                            if (!v.muted) {
+                                v.muted = true;
+                            }
                         }
-                        if (v.paused && (!v.duration || (v.duration - v.currentTime > 1))) {
+
+                        // Auto-resume if paused (and not at end)
+                        if (v.paused && remaining > 1) {
                             v.play().catch(() => {});
                         }
                     });
@@ -2116,6 +2150,8 @@ class VideoPlayer:
                     pass
         except Exception:
             pass
+
+
 
     def _simulate_mouse(self):
         try:
