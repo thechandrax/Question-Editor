@@ -18,18 +18,27 @@ def _start_global_screenshot_thread(page):
     Returns the stop event so caller can stop the thread.
     """
     stop = threading.Event()
+    _fail_count = [0]  # mutable counter
+
     def _loop():
+        stop.wait(3)  # wait 3s for page to stabilize after login
+        logger.info("[LiveView] 📸 Screenshot thread started")
         while not stop.is_set() and not STOP_EVENT.is_set():
             try:
-                img = page.screenshot(type='jpeg', quality=55, full_page=False)
+                img = page.screenshot(type='jpeg', quality=60, full_page=False, timeout=5000)
                 _utils_module.LATEST_SCREENSHOT = _base64.b64encode(img).decode('utf-8')
                 _utils_module.LATEST_SCREENSHOT_LABEL = 'live'
-            except Exception:
-                pass
+                _fail_count[0] = 0  # reset on success
+            except Exception as e:
+                _fail_count[0] += 1
+                if _fail_count[0] <= 3:  # only log first 3 failures
+                    logger.warning(f"[LiveView] Screenshot failed (#{_fail_count[0]}): {e}")
             stop.wait(2)
         # Clear on stop
         _utils_module.LATEST_SCREENSHOT = ''
         _utils_module.LATEST_SCREENSHOT_LABEL = ''
+        logger.info("[LiveView] Screenshot thread stopped")
+
     t = threading.Thread(target=_loop, daemon=True)
     t.start()
     return stop
