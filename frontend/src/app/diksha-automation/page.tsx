@@ -1754,39 +1754,86 @@ export default function DikshaAutomationPage() {
                 flex: '1 1 360px',
                 minWidth: 0,
                 height: '420px',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '16px',
+                background: liveScreenshot && isRunning
+                  ? 'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)'
+                  : '#ffffff',
+                border: liveScreenshot && isRunning
+                  ? '2px solid #22c55e'
+                  : '1px solid #e2e8f0',
+                borderRadius: '18px',
                 padding: '14px 16px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
                 overflow: 'hidden',
                 boxSizing: 'border-box',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                boxShadow: liveScreenshot && isRunning
+                  ? '0 0 0 4px rgba(34,197,94,0.15), 0 4px 20px rgba(34,197,94,0.12)'
+                  : '0 2px 8px rgba(0,0,0,0.04)',
+                transition: 'all 0.4s ease',
               }}>
                 {/* Header */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                  <h3 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#0f172a',
+                  <h3 style={{margin:0,fontSize:'12px',fontWeight:'800',
+                    color: liveScreenshot && isRunning ? '#15803d' : '#0f172a',
                     textTransform:'uppercase',letterSpacing:'0.07em',
-                    display:'flex',alignItems:'center',gap:'7px',whiteSpace:'nowrap'}}>
-                    <IconBook size={15} /> Live Browser View
-                    <span style={{
-                      width:'7px',height:'7px',borderRadius:'50%',flexShrink:0,
-                      display:'inline-block',
-                      background: liveScreenshot && isRunning ? '#22c55e' : '#94a3b8',
-                      boxShadow: liveScreenshot && isRunning ? '0 0 6px #22c55e' : 'none',
-                    }}/>
+                    display:'flex',alignItems:'center',gap:'8px',whiteSpace:'nowrap'}}>
+                    {/* Monitor SVG icon */}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    Live Browser View
+
+                    {/* Pulsing dot — green animated when live, gray when idle */}
+                    <span style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center',width:'12px',height:'12px',flexShrink:0}}>
+                      {liveScreenshot && isRunning ? (
+                        <>
+                          {/* Outer pulse ring */}
+                          <span style={{
+                            position:'absolute',
+                            width:'12px',height:'12px',
+                            borderRadius:'50%',
+                            background:'rgba(34,197,94,0.35)',
+                            animation:'livePulse 1.5s ease-out infinite',
+                          }}/>
+                          {/* Inner solid dot */}
+                          <span style={{
+                            position:'relative',
+                            width:'8px',height:'8px',
+                            borderRadius:'50%',
+                            background:'#22c55e',
+                            boxShadow:'0 0 6px #22c55e',
+                            display:'block',
+                          }}/>
+                        </>
+                      ) : (
+                        <span style={{
+                          width:'7px',height:'7px',borderRadius:'50%',
+                          background:'#94a3b8',display:'block',
+                        }}/>
+                      )}
+                    </span>
                   </h3>
+
+                  {/* LIVE / IDLE badge */}
                   <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
                     {liveScreenshot && isRunning ? (
-                      <span style={{fontSize:'10px',fontWeight:700,color:'#059669',
-                        background:'#d1fae5',border:'1px solid #6ee7b7',
-                        borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>LIVE</span>
+                      <span style={{
+                        fontSize:'10px',fontWeight:800,color:'#fff',
+                        background:'linear-gradient(135deg,#16a34a,#22c55e)',
+                        border:'none',
+                        borderRadius:'20px',padding:'3px 10px',whiteSpace:'nowrap',
+                        boxShadow:'0 2px 8px rgba(34,197,94,0.4)',
+                        letterSpacing:'0.06em',
+                        animation:'liveBadgePulse 2s ease-in-out infinite',
+                      }}>● LIVE</span>
                     ) : (
-                      <span style={{fontSize:'10px',color:'#94a3b8',
+                      <span style={{
+                        fontSize:'10px',fontWeight:600,color:'#94a3b8',
                         background:'#f1f5f9',border:'1px solid #e2e8f0',
-                        borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>
+                        borderRadius:'20px',padding:'3px 10px',whiteSpace:'nowrap',
+                        letterSpacing:'0.04em',
+                      }}>
                         {isRunning ? 'Loading...' : 'IDLE'}
                       </span>
                     )}
@@ -1795,9 +1842,9 @@ export default function DikshaAutomationPage() {
 
                 {/* Screenshot area */}
                 <div style={{
-                  background:'#f8fafc',
-                  border:'1px solid #e2e8f0',
-                  borderRadius:'10px',
+                  background: liveScreenshot ? '#000' : 'linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%)',
+                  border: liveScreenshot && isRunning ? '2px solid #bbf7d0' : '1px solid #e2e8f0',
+                  borderRadius:'12px',
                   overflow:'hidden',
                   flex:1,
                   minHeight:0,
@@ -1805,6 +1852,7 @@ export default function DikshaAutomationPage() {
                   alignItems:'center',
                   justifyContent:'center',
                   position:'relative',
+                  transition:'all 0.3s ease',
                 }}>
                   {liveScreenshot ? (
                     <>
@@ -1813,18 +1861,36 @@ export default function DikshaAutomationPage() {
                         alt="Live browser view"
                         style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}
                       />
-                      <div style={{position:'absolute',bottom:6,right:8,
-                        fontSize:'10px',color:'#64748b',
-                        background:'rgba(255,255,255,0.92)',
-                        border:'1px solid #e2e8f0',
-                        padding:'2px 6px',borderRadius:'6px',
-                        fontFamily:'JetBrains Mono, monospace'}}>2s interval</div>
+                      {/* Bottom overlay badge */}
+                      <div style={{
+                        position:'absolute',bottom:8,right:8,
+                        display:'flex',alignItems:'center',gap:'5px',
+                        fontSize:'10px',fontWeight:700,color:'#15803d',
+                        background:'rgba(240,253,244,0.95)',
+                        border:'1px solid #bbf7d0',
+                        padding:'3px 8px',borderRadius:'8px',
+                        fontFamily:'JetBrains Mono, monospace',
+                        backdropFilter:'blur(4px)',
+                      }}>
+                        <span style={{width:'5px',height:'5px',borderRadius:'50%',background:'#22c55e',display:'inline-block'}}/>
+                        2s refresh
+                      </div>
                     </>
                   ) : (
                     <div style={{textAlign:'center',padding:'30px 16px'}}>
-                      <div style={{fontSize:'32px',marginBottom:'10px',opacity:0.2}}><IconBook size={28} /></div>
-                      <p style={{color:'#94a3b8',fontSize:'11px',margin:0,
-                        fontFamily:'JetBrains Mono, monospace'}}>
+                      {/* Monitor icon */}
+                      <div style={{marginBottom:'14px',opacity:0.25}}>
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="3" width="20" height="14" rx="2"/>
+                          <line x1="8" y1="21" x2="16" y2="21"/>
+                          <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                      </div>
+                      <p style={{
+                        color:'#94a3b8',fontSize:'11px',margin:0,
+                        fontFamily:'JetBrains Mono, monospace',
+                        lineHeight:'1.6',
+                      }}>
                         {isRunning ? 'Waiting for first screenshot...' : 'Start automation to watch live'}
                       </p>
                     </div>
