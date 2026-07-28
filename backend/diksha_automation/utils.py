@@ -67,6 +67,19 @@ def log_error_diagnostic(e: Exception, context_msg: str = ""):
         logger.error(f"❌ Stack Trace:\n{tb_str.strip()}")
     logger.error("❌ ═══════════════════════════════════════════════════════════════")
 
+import base64 as _base64
+
+# Global: latest screenshot as base64 PNG string (empty when idle)
+LATEST_SCREENSHOT: str = ""
+LATEST_SCREENSHOT_LABEL: str = ""
+
 def take_screenshot_sync(page, name_prefix: str):
-    # Disabled screenshot saving per user preference
+    """Captures current browser page as base64 PNG and stores in memory for live streaming."""
+    global LATEST_SCREENSHOT, LATEST_SCREENSHOT_LABEL
+    try:
+        img_bytes = page.screenshot(type='jpeg', quality=60, full_page=False)
+        LATEST_SCREENSHOT = _base64.b64encode(img_bytes).decode('utf-8')
+        LATEST_SCREENSHOT_LABEL = name_prefix
+    except Exception:
+        pass  # Page might be crashed or closed — ignore silently
     return None

@@ -11,8 +11,11 @@ import re
 import json
 import time
 import random
+import threading
+import os
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import Page
+import utils as _utils_module
 from utils import logger, take_screenshot_sync, STOP_EVENT
 
 
@@ -134,6 +137,25 @@ class VideoPlayer:
         logger.info("=== Starting Course Completion (State-Machine Engine) ===")
         logger.info("==========================================================")
 
+        # ── Live Screenshot Thread ─────────────────────────────────────────
+        # Takes a screenshot every 2s so the frontend Live View panel
+        # always shows the current browser state during automation.
+        _live_stop = threading.Event()
+        def _live_screenshot_loop():
+            while not _live_stop.is_set() and not STOP_EVENT.is_set():
+                try:
+                    img_bytes = self.page.screenshot(type='jpeg', quality=55, full_page=False)
+                    import base64 as _b64
+                    _utils_module.LATEST_SCREENSHOT = _b64.b64encode(img_bytes).decode('utf-8')
+                    _utils_module.LATEST_SCREENSHOT_LABEL = "live"
+                except Exception:
+                    pass
+                _live_stop.wait(2)   # screenshot every 2 seconds
+
+        _live_thread = threading.Thread(target=_live_screenshot_loop, daemon=True)
+        _live_thread.start()
+        # ──────────────────────────────────────────────────────────────────
+
         # Clear set at the start of the course
         self.completed_module_ids.clear()
         
@@ -230,6 +252,10 @@ class VideoPlayer:
 
         take_screenshot_sync(self.page, "course_lessons_finished")
         logger.info("=== Course Completion Engine Finished! ===")
+        # Stop live screenshot thread
+        _live_stop.set()
+        _utils_module.LATEST_SCREENSHOT = ""
+        _utils_module.LATEST_SCREENSHOT_LABEL = ""
         return True
 
     def _get_module_list(self) -> list:

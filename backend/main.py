@@ -21,6 +21,7 @@ from fastapi import BackgroundTasks
 sys.path.append(os.path.join(os.path.dirname(__file__), "diksha_automation"))
 from orchestrator import run_automation, fetch_courses_only, fetch_course_details_only
 from utils import STOP_EVENT
+import utils as _utils_module   # for LATEST_SCREENSHOT access
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -827,6 +828,30 @@ async def get_diksha_status():
         "current_course": _diksha.get("current_course"),
         "logs": _diksha["logs"][-500:],
     }
+
+
+@app.get("/api/diksha/screenshot")
+async def get_live_screenshot():
+    """
+    Returns the latest browser screenshot as a base64 JPEG.
+    Frontend polls this every 2s to show live automation view.
+    """
+    screenshot_b64 = _utils_module.LATEST_SCREENSHOT
+    label = _utils_module.LATEST_SCREENSHOT_LABEL
+    if not screenshot_b64:
+        return JSONResponse({
+            "has_screenshot": False,
+            "screenshot": "",
+            "label": "",
+            "timestamp": datetime.now().isoformat(),
+        })
+    return JSONResponse({
+        "has_screenshot": True,
+        "screenshot": screenshot_b64,
+        "label": label,
+        "timestamp": datetime.now().isoformat(),
+    })
+
 
 if __name__ == "__main__":
     import uvicorn

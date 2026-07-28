@@ -309,6 +309,9 @@ export default function DikshaAutomationPage() {
   const [clearedLogs, setClearedLogs] = useState(false);
   const [useTelemetryFallback, setUseTelemetryFallback] = useState<boolean>(false);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [liveScreenshot, setLiveScreenshot] = useState<string>('');   // base64 JPEG
+  const [showLiveView, setShowLiveView] = useState<boolean>(true);
+  const [liveViewFull, setLiveViewFull] = useState<boolean>(false);
 
   const handleCopyLogs = () => {
     const text = status?.logs ? status.logs.join('\n') : "";
@@ -396,6 +399,30 @@ export default function DikshaAutomationPage() {
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
+
+  // ── Live Screenshot Polling ────────────────────────────────────────────────
+  // Polls /api/diksha/screenshot every 2s while automation is running.
+  // When stopped, clears the screenshot to show idle state.
+  const liveScreenshotRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (stage !== 'dashboard') return;
+    if (liveScreenshotRef.current) clearInterval(liveScreenshotRef.current);
+    liveScreenshotRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/diksha/screenshot');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.has_screenshot && data.screenshot) {
+          setLiveScreenshot(data.screenshot);
+        } else {
+          setLiveScreenshot('');
+        }
+      } catch { /* silent */ }
+    }, 2000);
+    return () => {
+      if (liveScreenshotRef.current) clearInterval(liveScreenshotRef.current);
+    };
+  }, [stage]);
 
   const isRunning = status?.running ?? false;
   const isPaused = status?.paused ?? false;
@@ -1674,7 +1701,111 @@ export default function DikshaAutomationPage() {
                 })
               )}
             </div>
+            </div>
           </div>
+
+          {/* ── LIVE VIEW PANEL ─────────────────────────────── */}
+          <div style={{
+            background: '#0d1117',
+            border: '1px solid #1e293b',
+            borderRadius: '16px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: liveScreenshot && isRunning ? '#22c55e' : '#475569',
+                  boxShadow: liveScreenshot && isRunning ? '0 0 8px #22c55e' : 'none',
+                  animation: liveScreenshot && isRunning ? 'pulse 1.5s infinite' : 'none',
+                }} />
+                <span style={{ fontWeight: 700, fontSize: '13px', color: '#e2e8f0', letterSpacing: '0.04em' }}>
+                  🖥️ Live Browser View
+                </span>
+                {liveScreenshot && isRunning && (
+                  <span style={{
+                    fontSize: '10px', fontWeight: 700, color: '#22c55e',
+                    background: '#052e16', border: '1px solid #166534',
+                    borderRadius: '20px', padding: '2px 8px', letterSpacing: '0.05em'
+                  }}>● LIVE</span>
+                )}
+                {!isRunning && (
+                  <span style={{
+                    fontSize: '10px', color: '#64748b',
+                    background: '#1e293b', border: '1px solid #334155',
+                    borderRadius: '20px', padding: '2px 8px'
+                  }}>IDLE — starts when automation runs</span>
+                )}
+              </div>
+              <div style={{ display:'flex', gap:'8px' }}>
+                {liveScreenshot && (
+                  <button
+                    onClick={() => setLiveViewFull(!liveViewFull)}
+                    style={{ fontSize:'11px', fontWeight:'700', color:'#94a3b8', background:'#1e293b', border:'1px solid #334155', borderRadius:'8px', padding:'4px 10px', cursor:'pointer' }}
+                  >
+                    {liveViewFull ? '⊡ Shrink' : '⛶ Expand'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowLiveView(!showLiveView)}
+                  style={{ fontSize:'11px', fontWeight:'700', color:'#475569', background:'#1e293b', border:'1px solid #334155', borderRadius:'8px', padding:'4px 10px', cursor:'pointer' }}
+                >
+                  {showLiveView ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+
+            {/* Screenshot area */}
+            {showLiveView && (
+              <div style={{
+                background: '#020617',
+                border: '1px solid #0f172a',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                minHeight: liveViewFull ? '600px' : '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                transition: 'min-height 0.3s ease',
+              }}>
+                {liveScreenshot ? (
+                  <>
+                    <img
+                      src={`data:image/jpeg;base64,${liveScreenshot}`}
+                      alt="Live browser view"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        objectFit: 'contain',
+                      }}
+                    />
+                    {/* Live timestamp badge */}
+                    <div style={{
+                      position: 'absolute', bottom: 8, right: 10,
+                      fontSize: '10px', color: '#64748b',
+                      background: 'rgba(2,6,23,0.8)',
+                      padding: '2px 6px', borderRadius: '6px',
+                      fontFamily: 'JetBrains Mono, monospace'
+                    }}>
+                      Auto-refresh 2s
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ textAlign:'center', padding:'40px 20px' }}>
+                    <div style={{ fontSize:'48px', marginBottom:'12px', opacity:0.3 }}>🖥️</div>
+                    <p style={{ color:'#334155', fontSize:'13px', margin:0, fontFamily:'JetBrains Mono, monospace' }}>
+                      {isRunning ? 'Waiting for first screenshot...' : 'Start automation to see live browser view'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* ── END LIVE VIEW PANEL ──────────────────────────── */}
 
         </div>
       </div>
