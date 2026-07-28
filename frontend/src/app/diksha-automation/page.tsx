@@ -1078,6 +1078,12 @@ export default function DikshaAutomationPage() {
           .mobile-modal-content { padding: 14px !important; grid-template-columns: 1fr !important; gap: 14px !important; }
           .mobile-modal-box { width: 95vw !important; max-width: 95vw !important; height: 92vh !important; border-radius: 18px !important; }
           .mobile-full-btn { width: 100% !important; max-width: 100% !important; white-space: nowrap !important; padding: 12px 16px !important; font-size: 13px !important; justify-content: center !important; border-radius: 14px !important; box-sizing: border-box !important; display: flex !important; align-items: center !important; gap: 8px !important; }
+          /* ── Monitor panels: stack vertically on mobile ── */
+          .monitor-panels-wrap { height: auto !important; flex-direction: column !important; }
+          .monitor-log-panel   { height: 260px !important; flex: none !important; width: 100% !important; min-width: 0 !important; }
+          .monitor-live-panel  { height: 220px !important; flex: none !important; width: 100% !important; min-width: 0 !important; }
+          /* Log lines: break long URLs cleanly, not mid-character */
+          .log-line { word-break: break-word !important; overflow-wrap: anywhere !important; }
         }
       `}</style>
 
@@ -1648,7 +1654,7 @@ export default function DikshaAutomationPage() {
             </div>
 
             {/* 2-COLUMN PANELS */}
-            <div style={{
+            <div className="monitor-panels-wrap" style={{
               display: 'flex',
               gap: '14px',
               alignItems: 'stretch',
@@ -1658,7 +1664,7 @@ export default function DikshaAutomationPage() {
             }}>
 
               {/* ── LEFT: LIVE SERVER LOGS ─────────────────────────── */}
-              <div style={{
+              <div className="monitor-log-panel" style={{
                 flex: '1 1 400px',
                 minWidth: 0,
                 height: '420px',
@@ -1739,7 +1745,7 @@ export default function DikshaAutomationPage() {
                       const isWarn = line.includes('[WARNING]');
                       const isInfo = line.includes('[INFO]')||line.includes('100%');
                       return (
-                        <p key={i} style={{margin:0,wordBreak:'break-all',
+                        <p key={i} className="log-line" style={{margin:0,wordBreak:'break-word',overflowWrap:'anywhere',
                           color:isErr?'#f87171':isWarn?'#fbbf24':isInfo?'#34d399':'#94a3b8'}}>
                           {line}
                         </p>
@@ -1750,7 +1756,7 @@ export default function DikshaAutomationPage() {
               </div>
 
               {/* ── RIGHT: LIVE BROWSER VIEW ────────────────────────── */}
-              <div style={{
+              <div className="monitor-live-panel" style={{
                 flex: '1 1 360px',
                 minWidth: 0,
                 height: '420px',
