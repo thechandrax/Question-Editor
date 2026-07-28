@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 
@@ -31,14 +31,14 @@ interface StatusType {
 }
 
 const STEP_KEYWORDS: { keywords: string[]; label: string; icon: string }[] = [
-  { keywords: ["starting", "launching", "bot"], label: "Launching bot on Railway", icon: "ðŸš€" },
-  { keywords: ["login", "authenticat", "signing", "keycloak"], label: "Authenticating with DIKSHA", icon: "ðŸ”" },
-  { keywords: ["course", "navig", "diksha", "explore", "learning", "listing"], label: "Navigating to course listing", icon: "ðŸŒ" },
-  { keywords: ["incomplete", "scanning", "check"], label: "Scanning incomplete modules", icon: "ðŸ”" },
-  { keywords: ["playing", "video", "module", "content", "opening"], label: "Playing module content", icon: "â–¶ï¸" },
-  { keywords: ["pdf", "document", "reading", "scrolling"], label: "Reading PDF material", icon: "ðŸ“„" },
-  { keywords: ["assessment", "quiz", "question"], label: "Completing assessment", icon: "ðŸ“" },
-  { keywords: ["completed", "finished", "done", "next module"], label: "Module / Course completed", icon: "âœ…" },
+  { keywords: ["starting", "launching", "bot"], label: "Launching bot on Railway", icon: "🚀" },
+  { keywords: ["login", "authenticat", "signing", "keycloak"], label: "Authenticating with DIKSHA", icon: "🔐" },
+  { keywords: ["course", "navig", "diksha", "explore", "learning", "listing"], label: "Navigating to course listing", icon: "🌐" },
+  { keywords: ["incomplete", "scanning", "check"], label: "Scanning incomplete modules", icon: "🔍" },
+  { keywords: ["playing", "video", "module", "content", "opening"], label: "Playing module content", icon: "▶️" },
+  { keywords: ["pdf", "document", "reading", "scrolling"], label: "Reading PDF material", icon: "📄" },
+  { keywords: ["assessment", "quiz", "question"], label: "Completing assessment", icon: "📝" },
+  { keywords: ["completed", "finished", "done", "next module"], label: "Module / Course completed", icon: "✅" },
 ];
 
 function inferStep(logs: string[]): number {
@@ -55,7 +55,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s}`;
 }
 
-/* â”€â”€â”€ SVG Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── SVG Icons ────────────────────────────────────────────────────────── */
 const IconGraduate = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
@@ -147,7 +147,7 @@ const IconCheck = () => (
   </svg>
 );
 
-/* â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Main Component ───────────────────────────────────────────────────── */
 interface ModalConfig {
   open: boolean;
   title: string;
@@ -386,7 +386,7 @@ export default function DikshaAutomationPage() {
         setStatus(data);
         setCurrentStepIdx(inferStep(data.logs || []));
         // Only update courses from polling if automation is actively running
-        // AND the poll returned real course data â€” NEVER wipe existing courses
+        // AND the poll returned real course data — NEVER wipe existing courses
         if (data.running && Array.isArray(data.courses) && data.courses.length > 0) {
           setCourses(data.courses);
           setHasScanned(true);
@@ -400,7 +400,7 @@ export default function DikshaAutomationPage() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [status?.logs]);
 
-  // â”€â”€ Live Screenshot Polling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Live Screenshot Polling ────────────────────────────────────────────────
   // Polls /api/diksha/screenshot every 2s while automation is running.
   // When stopped, clears the screenshot to show idle state.
   const liveScreenshotRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -430,7 +430,7 @@ export default function DikshaAutomationPage() {
   const isStopped = status?.status === "stopped";
   const isError = status?.status === "error";
   const overallProgress = status?.progress ?? 0;
-  const currentStepMsg = status?.step || "Idle â€” click 'Scan Enrolled Courses' to begin";
+  const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
   const logsList = status?.logs || [];
 
   const activeModule = useMemo(() => {
@@ -447,7 +447,7 @@ export default function DikshaAutomationPage() {
   const activeTopic = useMemo(() => {
     for (let i = logsList.length - 1; i >= 0; i--) {
       const line = logsList[i];
-      if (line.includes("â†’ Opening:") || line.includes("Opening:")) {
+      if (line.includes("→ Opening:") || line.includes("Opening:")) {
         const match = line.match(/Opening:\s*'([^']+)'/);
         if (match) return match[1];
       }
@@ -461,10 +461,10 @@ export default function DikshaAutomationPage() {
       const line = logsList[i];
       const vidMatch = line.match(/Video progress:.*\((\d+)%\)/);
       if (vidMatch) return parseInt(vidMatch[1], 10);
-      if (line.includes("[âœ”] Processed") || line.includes("Video done")) return 100;
+      if (line.includes("[✔] Processed") || line.includes("Video done")) return 100;
       if (line.includes("PDF scrolled")) return 90;
       if (line.includes("PDF / Resource Document detected")) return 30;
-      if (line.includes("â†’ Opening:")) return 1;
+      if (line.includes("→ Opening:")) return 1;
     }
     return isRunning ? 5 : 0;
   }, [logsList, isRunning, isDone]);
@@ -641,7 +641,7 @@ export default function DikshaAutomationPage() {
       subtitle: isCurrentlyPaused
         ? "Do you want to resume the active DIKSHA course automation process now?"
         : "Are you sure you want to temporarily pause the current automation process?",
-      confirmText: isCurrentlyPaused ? "â–¶ Resume" : "â¸ Pause",
+      confirmText: isCurrentlyPaused ? "▶ Resume" : "⏸ Pause",
       cancelText: "Cancel",
       variant: "warning",
       icon: isCurrentlyPaused ? (
@@ -738,7 +738,7 @@ export default function DikshaAutomationPage() {
     }
   };
 
-  /* â”€â”€â”€ INITIALIZING AMBIENT SPLASH (Zero Flash on Refresh) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ─── INITIALIZING AMBIENT SPLASH (Zero Flash on Refresh) ─────────────── */
   if (isInitializing) {
     return (
       <div style={{minHeight:'100vh',background:'linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -756,7 +756,7 @@ export default function DikshaAutomationPage() {
     );
   }
 
-  /* â”€â”€â”€ LOGIN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ─── LOGIN PAGE ──────────────────────────────────────────────────────── */
   if (stage === "login") {
     return (
       <>
@@ -895,7 +895,7 @@ export default function DikshaAutomationPage() {
                     <input
                       type={showPass ? "text" : "password"}
                       required
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
@@ -926,7 +926,7 @@ export default function DikshaAutomationPage() {
                     type="password"
                     maxLength={6}
                     required
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••••••"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     className="input-field"
@@ -948,7 +948,7 @@ export default function DikshaAutomationPage() {
                   }}
                 >
                   {loginVerified ? (
-                    <>Verified! Opening Dashboardâ€¦</>
+                    <>Verified! Opening Dashboard...</>
                   ) : loginLoading ? (
                     <>
                       <span style={{
@@ -960,7 +960,7 @@ export default function DikshaAutomationPage() {
                         animation:'spin 0.8s linear infinite',
                         flexShrink:0,
                       }}/>
-                      Verifying credentialsâ€¦
+                      Verifying credentials...
                     </>
                   ) : (
                     <>
@@ -977,7 +977,7 @@ export default function DikshaAutomationPage() {
     );
   }
 
-  /* â”€â”€â”€ DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ─── DASHBOARD ───────────────────────────────────────────────────────── */
   const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
   const finishedCourses = courses.filter((c) => c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
@@ -1074,7 +1074,7 @@ export default function DikshaAutomationPage() {
 
         <div style={{maxWidth:'1200px',margin:'0 auto',position:'relative',zIndex:1,display:'flex',flexDirection:'column',gap:'20px',width:'100%'}}>
 
-          {/* â”€â”€ TOP NAVBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── TOP NAVBAR ─────────────────────────────────────────────── */}
           <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'16px 24px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',width:'100%'}}>
             <div className="mobile-brand-block" style={{display:'flex',flexDirection:'column',gap:'10px',minWidth:0,flex:1}}>
               {/* Row 1: Logo emblem on left middle + Titles on right */}
@@ -1150,7 +1150,7 @@ export default function DikshaAutomationPage() {
                       boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
                     }}
                   >
-                    {isPaused ? 'â–¶ Resume' : 'â¸ Pause'}
+                    {isPaused ? '▶ Resume' : '⏸ Pause'}
                   </button>
                   <button
                     onClick={handleStop}
@@ -1165,7 +1165,7 @@ export default function DikshaAutomationPage() {
                       boxShadow:'0 2px 8px rgba(0,0,0,0.03)'
                     }}
                   >
-                    â¹ Stop
+                    ⏹ Stop
                   </button>
                 </>
               )}
@@ -1200,7 +1200,7 @@ export default function DikshaAutomationPage() {
             }}>
               <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
                 <span style={{fontSize: '12.5px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                  âš¡ Method 2: API Telemetry Fallback Engine
+                  ⚡ Method 2: API Telemetry Fallback Engine
                 </span>
                 <span style={{fontSize: '11px', color: '#64748b', fontWeight: '600'}}>
                   Intercepts & replays HTTP telemetry sessions if browser video/PDF playback is blocked.
@@ -1237,7 +1237,7 @@ export default function DikshaAutomationPage() {
             }}>
               <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
                 <span style={{fontSize:'12.5px',fontWeight:'800',color:'#15803d',display:'flex',alignItems:'center',gap:'6px'}}>
-                  ðŸ¤– MCQ AI Mode â€” Gemini API Key (Optional)
+                  🤖 MCQ AI Mode — Gemini API Key (Optional)
                 </span>
                 <span style={{fontSize:'11px',color:'#4b7a5b',fontWeight:'600'}}>
                   If set, Gemini AI will auto-answer MCQ questions. Leave blank to use Brute Force mode.
@@ -1265,7 +1265,7 @@ export default function DikshaAutomationPage() {
             </div>
           </div>
 
-          {/* â”€â”€ STREAMLINED AUTOMATION PROGRESS CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── STREAMLINED AUTOMATION PROGRESS CARD ──────────────────── */}
           {(isRunning || isDone || isStopped || isError) && (
             <div className="glass-card-light fade-in-up mobile-card" style={{borderRadius:'20px',padding:'16px 20px',border:`1.5px solid ${statusColor}40`,width:'100%'}}>
               <div style={{
@@ -1280,7 +1280,7 @@ export default function DikshaAutomationPage() {
                 {/* Module Badge & Live Topic % */}
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px'}}>
                   <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: '#4338ca', background: '#e0e7ff', padding: '4px 10px', borderRadius: '8px'}}>
-                    ðŸ“ {activeModule || "Active Module"}
+                    📁 {activeModule || "Active Module"}
                   </div>
                   <span style={{fontSize: '11px', fontWeight: '800', color: '#4f46e5', fontFamily: 'JetBrains Mono, monospace'}}>
                     Live Topic: {topicProgress}%
@@ -1293,7 +1293,7 @@ export default function DikshaAutomationPage() {
                     Currently Automating File / Topic:
                   </p>
                   <h4 style={{margin: '2px 0 0', fontSize: '13.5px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                    {activeTopic ? `â–¶ ${activeTopic}` : "Loading topic / activity..."}
+                    {activeTopic ? `▶ ${activeTopic}` : "Loading topic / activity..."}
                   </h4>
                 </div>
 
@@ -1316,11 +1316,11 @@ export default function DikshaAutomationPage() {
                 {/* Integrated Below Row: Elapsed Time & Overall Course Progress */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'4px',paddingTop:'10px',borderTop:'1px solid #cbd5e1',flexWrap:'wrap',gap:'10px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:'800',color:'#475569'}}>
-                    <span>â±ï¸ Elapsed:</span>
+                    <span>⏱️ Elapsed:</span>
                     <span style={{fontFamily:'JetBrains Mono, monospace',color:'#0f172a',background:'#ffffff',padding:'2px 8px',borderRadius:'6px',border:'1px solid #cbd5e1'}}>{formatTime(elapsed)}</span>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:'800',color:'#475569'}}>
-                    <span>ðŸ“Š Overall Progress:</span>
+                    <span>📊 Overall Progress:</span>
                     <span style={{fontFamily:'JetBrains Mono, monospace',color:statusColor,background:'#ffffff',padding:'2px 8px',borderRadius:'6px',border:'1px solid #cbd5e1'}}>{overallProgress}%</span>
                   </div>
                 </div>
@@ -1347,13 +1347,13 @@ export default function DikshaAutomationPage() {
             </div>
           )}
 
-          {/* â”€â”€ COURSES SECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── COURSES SECTION ───────────────────────────────────────── */}
           <div className="glass-card-light mobile-card" style={{borderRadius:'20px',padding:'28px',width:'100%'}}>
             {/* Header */}
             <div className="mobile-header-row" style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:'16px',marginBottom:'20px',paddingBottom:'20px',borderBottom:'1px solid #e2e8f0',width:'100%'}}>
               <div>
                 <h2 style={{margin:'0 0 4px',fontSize:'22px',fontWeight:'800',color:'#0f172a',letterSpacing:'-0.4px'}}>My Learning Journey</h2>
-                <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'500'}}>Enrolled courses Â· Progress tracking Â· Automation</p>
+                <p style={{margin:0,fontSize:'13px',color:'#64748b',fontWeight:'500'}}>Enrolled courses · Progress tracking · Automation</p>
               </div>
 
               <div className="mobile-course-actions" style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
@@ -1421,7 +1421,7 @@ export default function DikshaAutomationPage() {
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 )}
-                <span>{scanMessage.replace(/^âœ”\s*/, '')}</span>
+                <span>{scanMessage.replace(/^✔\s*/, '')}</span>
               </div>
             )}
 
@@ -1515,13 +1515,13 @@ export default function DikshaAutomationPage() {
                         ) : (
                           <div style={{textAlign:'center'}}>
                             <div style={{width:'48px',height:'48px',borderRadius:'14px',background: isFinished ? '#ecfdf5' : '#e0e7ff',border:`1px solid ${isFinished ? '#6ee7b7' : '#a5b4fc'}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 4px',fontSize:'22px'}}>
-                              {isFinished ? 'ðŸ†' : isCurrent ? 'â–¶ï¸' : 'ðŸŽ“'}
+                              {isFinished ? '🏆' : isCurrent ? '▶️' : '🎓'}
                             </div>
                             <p style={{margin:0,fontSize:'10px',color:'#64748b',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.05em'}}>DIKSHA Digital Learning</p>
                           </div>
                         )}
 
-                        {/* Status badge â€” only show for special states (Done / Automating) */}
+                        {/* Status badge — only show for special states (Done / Automating) */}
                         {(isFinished || isCurrent) && (
                           <div style={{position:'absolute',top:'10px',right:'10px'}}>
                             <span style={{
@@ -1531,7 +1531,7 @@ export default function DikshaAutomationPage() {
                               color: isFinished ? '#047857' : '#4338ca',
                               display:'flex',alignItems:'center',gap:'4px'
                             }}>
-                              {isFinished ? <><IconCheck/> 100% Done</> : 'âš¡ Automating'}
+                              {isFinished ? <><IconCheck/> 100% Done</> : '⚡ Automating'}
                             </span>
                           </div>
                         )}
@@ -1545,7 +1545,7 @@ export default function DikshaAutomationPage() {
                           </h3>
                           {c.ends_on && (
                             <p style={{margin:0,fontSize:'11px',color:'#64748b',fontWeight:'600'}}>
-                              ðŸ“… Ends: <span style={{color:'#334155'}}>{c.ends_on}</span>
+                              📅 Ends: <span style={{color:'#334155'}}>{c.ends_on}</span>
                             </p>
                           )}
                         </div>
@@ -1606,7 +1606,7 @@ export default function DikshaAutomationPage() {
             )}
           </div>
 
-          {/* â•â• MAIN MONITOR CARD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/* ══ MAIN MONITOR CARD ══════════════════════════════════════════ */}
           <div className="glass-card-light" style={{
             borderRadius: '24px',
             padding: '20px',
@@ -1614,13 +1614,13 @@ export default function DikshaAutomationPage() {
             boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+            gap: '14px',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
           }}>
 
-            {/* Main card title */}
+            {/* Card title bar */}
             <div style={{display:'flex',alignItems:'center',gap:'10px',flexShrink:0}}>
-              <span style={{fontSize:'16px'}}>ðŸ“¡</span>
+              <span style={{fontSize:'15px'}}>📡</span>
               <h2 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',
                 textTransform:'uppercase',letterSpacing:'0.08em'}}>
                 Live Automation Monitor
@@ -1628,38 +1628,36 @@ export default function DikshaAutomationPage() {
               {isRunning && (
                 <span style={{fontSize:'10px',fontWeight:700,color:'#059669',
                   background:'#d1fae5',border:'1px solid #6ee7b7',
-                  borderRadius:'20px',padding:'2px 10px',letterSpacing:'0.04em'}}>
-                  â— RUNNING
-                </span>
+                  borderRadius:'20px',padding:'2px 10px'}}>● RUNNING</span>
               )}
             </div>
 
-            {/* 2-COLUMN: FIXED HEIGHT PANELS */}
+            {/* 2-COLUMN PANELS */}
             <div style={{
               display: 'flex',
               gap: '14px',
               alignItems: 'stretch',
               width: '100%',
               flexWrap: 'wrap',
-              minHeight: '420px',
+              height: '420px',
             }}>
 
-              {/* â”€â”€ LEFT: LIVE SERVER LOGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-              <div style={{
-                flex: '1 1 400px',
-                minWidth: 0,
-                height: '420px',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}>
+            {/* ── LEFT: LIVE SERVER LOGS ─────────────────────── */}
+            <div style={{
+              flex: '1 1 400px',
+              minWidth: 0,
+              height: '420px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}>
                 {/* Header */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
                   <h3 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#0f172a',
@@ -1670,7 +1668,7 @@ export default function DikshaAutomationPage() {
                       background:'#10b981',display:'inline-block',flexShrink:0,
                       boxShadow:'0 0 6px rgba(16,185,129,0.7)'}}/>
                   </h3>
-                  <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
                     <span style={{fontSize:'10px',fontWeight:'700',color:'#64748b',
                       background:'#f1f5f9',border:'1px solid #e2e8f0',
                       borderRadius:'6px',padding:'2px 7px',
@@ -1686,7 +1684,7 @@ export default function DikshaAutomationPage() {
                         cursor:logsList.length===0?'not-allowed':'pointer',
                         display:'inline-flex',alignItems:'center',gap:'3px',
                         opacity:logsList.length===0?0.5:1}}>
-                      {copiedLogs?'âœ“':'ðŸ“‹'} Copy
+                      {copiedLogs ? '✓ Copied' : <><IconCopy size={10}/> Copy</>}
                     </button>
                     <button onClick={handleClearLogs} disabled={logsList.length===0}
                       style={{fontSize:'10px',fontWeight:'700',
@@ -1697,143 +1695,136 @@ export default function DikshaAutomationPage() {
                         cursor:logsList.length===0?'not-allowed':'pointer',
                         display:'inline-flex',alignItems:'center',gap:'3px',
                         opacity:logsList.length===0?0.5:1}}>
-                      {clearedLogs?'âœ“':'ðŸ—‘'} Clear
+                      {clearedLogs ? '✓ Cleared' : <><IconTrash size={10}/> Clear</>}
                     </button>
                   </div>
-                </div>
-
-                {/* Log scroll area */}
-                <div ref={logRef} style={{
-                  background:'#0f172a',
-                  border:'1px solid #1e293b',
-                  borderRadius:'10px',
-                  padding:'10px 12px',
-                  flex: 1,
-                  overflowY:'auto',
-                  overflowX:'hidden',
-                  minHeight: 0,
-                  fontFamily:'JetBrains Mono, monospace',
-                  fontSize:'11px',
-                  lineHeight:'1.75',
-                }}>
-                  {logsList.length === 0 ? (
-                    <p style={{margin:0,color:'#475569',fontStyle:'italic'}}>
-                      Waiting for automation to start...
-                    </p>
-                  ) : (
-                    logsList.slice(-500).map((line, i) => {
-                      const isErr  = line.includes('[ERROR]')||line.includes('[CRITICAL]')||line.includes('âŒ');
-                      const isWarn = line.includes('[WARNING]');
-                      const isInfo = line.includes('[INFO]')||line.includes('âœ”')||line.includes('100%');
-                      return (
-                        <p key={i} style={{margin:0,wordBreak:'break-all',
-                          color:isErr?'#f87171':isWarn?'#fbbf24':isInfo?'#34d399':'#94a3b8'}}>
-                          {line}
-                        </p>
-                      );
-                    })
-                  )}
-                </div>
               </div>
 
-              {/* â”€â”€ RIGHT: LIVE BROWSER VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-              <div style={{
-                flex: '1 1 360px',
-                minWidth: 0,
-                height: '420px',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              {/* Log scroll box */}
+              <div ref={logRef} style={{
+                background:'#0f172a',
+                border:'1px solid #1e293b',
+                borderRadius:'10px',
+                padding:'12px',
+                flex: 1,
+                overflowY:'auto',
+                overflowX:'hidden',
+                minHeight: 0,
+                fontFamily:'JetBrains Mono, monospace',
+                fontSize:'11px',
+                lineHeight:'1.7',
               }}>
-                {/* Header â€” same style as left */}
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                  <h3 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#0f172a',
-                    textTransform:'uppercase',letterSpacing:'0.07em',
-                    display:'flex',alignItems:'center',gap:'7px',whiteSpace:'nowrap'}}>
-                    <span style={{fontSize:'13px'}}>ðŸ–¥ï¸</span> Live Browser View
-                    <span style={{
-                      width:'7px',height:'7px',borderRadius:'50%',flexShrink:0,
-                      display:'inline-block',
-                      background: liveScreenshot && isRunning ? '#22c55e' : '#94a3b8',
-                      boxShadow: liveScreenshot && isRunning ? '0 0 6px #22c55e' : 'none',
-                    }}/>
-                  </h3>
-                  <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
-                    {liveScreenshot && isRunning ? (
-                      <span style={{fontSize:'10px',fontWeight:700,color:'#059669',
-                        background:'#d1fae5',border:'1px solid #6ee7b7',
-                        borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>â— LIVE</span>
-                    ) : (
-                      <span style={{fontSize:'10px',color:'#94a3b8',
-                        background:'#f1f5f9',border:'1px solid #e2e8f0',
-                        borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>
-                        {isRunning ? 'Loading...' : 'IDLE'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Screenshot area */}
-                <div style={{
-                  background:'#f8fafc',
-                  border:'1px solid #e2e8f0',
-                  borderRadius:'10px',
-                  overflow:'hidden',
-                  flex:1,
-                  minHeight:0,
-                  display:'flex',
-                  alignItems:'center',
-                  justifyContent:'center',
-                  position:'relative',
-                }}>
-                  {liveScreenshot ? (
-                    <>
-                      <img
-                        src={`data:image/jpeg;base64,${liveScreenshot}`}
-                        alt="Live browser view"
-                        style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}
-                      />
-                      <div style={{position:'absolute',bottom:6,right:8,
-                        fontSize:'10px',color:'#64748b',
-                        background:'rgba(255,255,255,0.9)',
-                        border:'1px solid #e2e8f0',
-                        padding:'2px 6px',borderRadius:'6px',
-                        fontFamily:'JetBrains Mono, monospace'}}>â†» 2s</div>
-                    </>
-                  ) : (
-                    <div style={{textAlign:'center',padding:'30px 16px'}}>
-                      <div style={{fontSize:'36px',marginBottom:'10px',opacity:0.15}}>ðŸ–¥ï¸</div>
-                      <p style={{color:'#94a3b8',fontSize:'11px',margin:0,
-                        fontFamily:'JetBrains Mono, monospace'}}>
-                        {isRunning ? 'Waiting for first screenshot...' : 'Start automation to watch live'}
+                {logsList.length === 0 ? (
+                  <p style={{margin:0,color:'#64748b',fontStyle:'italic'}}>
+                    Waiting for live log stream...
+                  </p>
+                ) : (
+                  logsList.slice(-500).map((line, i) => {
+                    const isErr  = line.includes('[ERROR]')||line.includes('[CRITICAL]')||line.includes('❌');
+                    const isWarn = line.includes('[WARNING]');
+                    const isInfo = line.includes('[INFO]')||line.includes('✔')||line.includes('100%');
+                    return (
+                      <p key={i} style={{margin:0,wordBreak:'break-all',
+                        color:isErr?'#f87171':isWarn?'#fbbf24':isInfo?'#34d399':'#94a3b8'}}>
+                        {line}
                       </p>
-                      {isRunning && (
-                        <p style={{color:'#cbd5e1',fontSize:'10px',margin:'6px 0 0',
-                          fontFamily:'JetBrains Mono, monospace'}}>
-                          Check logs for [LiveView] messages
-                        </p>
-                      )}
-                    </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* ── RIGHT: LIVE BROWSER VIEW ─────────────────────── */}
+            <div style={{
+              flex: '1 1 360px',
+              minWidth: 0,
+              height: '420px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}>
+              {/* Header */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                <h3 style={{margin:0,fontSize:'12px',fontWeight:'800',color:'#0f172a',
+                  textTransform:'uppercase',letterSpacing:'0.07em',
+                  display:'flex',alignItems:'center',gap:'7px',whiteSpace:'nowrap'}}>
+                  🖥️ Live Browser View
+                  <span style={{
+                    width:'7px',height:'7px',borderRadius:'50%',flexShrink:0,
+                    display:'inline-block',
+                    background: liveScreenshot && isRunning ? '#22c55e' : '#94a3b8',
+                    boxShadow: liveScreenshot && isRunning ? '0 0 6px #22c55e' : 'none',
+                  }}/>
+                </h3>
+                <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
+                  {liveScreenshot && isRunning ? (
+                    <span style={{fontSize:'10px',fontWeight:700,color:'#059669',
+                      background:'#d1fae5',border:'1px solid #6ee7b7',
+                      borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>● LIVE</span>
+                  ) : (
+                    <span style={{fontSize:'10px',color:'#94a3b8',
+                      background:'#f1f5f9',border:'1px solid #e2e8f0',
+                      borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>
+                      {isRunning ? 'Loading...' : 'IDLE'}
+                    </span>
                   )}
                 </div>
               </div>
 
-            </div>{/* end 2-col */}
+              {/* Screenshot area */}
+              <div style={{
+                background:'#f8fafc',
+                border:'1px solid #e2e8f0',
+                borderRadius:'10px',
+                overflow:'hidden',
+                flex:1,
+                minHeight:0,
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                position:'relative',
+              }}>
+                {liveScreenshot ? (
+                  <>
+                    <img
+                      src={`data:image/jpeg;base64,${liveScreenshot}`}
+                      alt="Live browser view"
+                      style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}
+                    />
+                    <div style={{position:'absolute',bottom:6,right:8,
+                      fontSize:'10px',color:'#64748b',
+                      background:'rgba(255,255,255,0.92)',
+                      border:'1px solid #e2e8f0',
+                      padding:'2px 6px',borderRadius:'6px',
+                      fontFamily:'JetBrains Mono, monospace'}}>↻ 2s</div>
+                  </>
+                ) : (
+                  <div style={{textAlign:'center',padding:'30px 16px'}}>
+                    <div style={{fontSize:'36px',marginBottom:'10px',opacity:0.2}}>🖥️</div>
+                    <p style={{color:'#334155',fontSize:'11px',margin:0,
+                      fontFamily:'JetBrains Mono, monospace'}}>
+                      {isRunning ? 'Waiting for first screenshot...' : 'Start automation to watch live'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
-          {/* â•â• END MAIN MONITOR CARD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/* ══ END 2-COLUMN ════════════════════════════════════════════════ */}
 
 
         </div>
       </div>
 
-      {/* â”€â”€â”€ COURSE DETAILS MODAL â”€â”€â”€ */}
+      {/* ─── COURSE DETAILS MODAL ─── */}
       {showDetailsModal ? (
         <div style={{
           position:'fixed',inset:0,zIndex:9999,
@@ -1865,7 +1856,7 @@ export default function DikshaAutomationPage() {
                   cursor:'pointer',fontWeight:'700',transition:'all 0.2s',flexShrink:0
                 }}
               >
-                âœ•
+                ✕
               </button>
             </div>
 
@@ -1913,7 +1904,7 @@ export default function DikshaAutomationPage() {
                 </div>
               ) : detailsError ? (
                 <div style={{textAlign:'center',padding:'40px 0'}}>
-                  <div style={{fontSize:'32px',marginBottom:'10px'}}>âš ï¸</div>
+                  <div style={{fontSize:'32px',marginBottom:'10px'}}>⚠️</div>
                   <h3 style={{color:'#0f172a',margin:'0 0 6px',fontSize:'15px'}}>{detailsError}</h3>
                   <p style={{color:'#64748b',fontSize:'12px',maxWidth:'400px',margin:'0 auto'}}>
                     Please make sure initial scanning was completed and your session is active.
@@ -1954,7 +1945,7 @@ export default function DikshaAutomationPage() {
                           opacity: (isRunning || actionLoading || selectedCourse?.progress === 100) ? 0.5 : 1
                         }}
                       >
-                        âš¡ Start Automation
+                        ⚡ Start Automation
                       </button>
                     </div>
                   </div>
@@ -2007,7 +1998,7 @@ export default function DikshaAutomationPage() {
                                   color: isDone ? '#047857' : '#475569',fontSize:'12px',fontWeight:'800',
                                   flexShrink:0
                                 }}>
-                                  {isDone ? 'âœ“' : idx + 1}
+                                  {isDone ? '✓' : idx + 1}
                                 </span>
 
                                 <div style={{flex:1,minWidth:0}}>
@@ -2026,7 +2017,7 @@ export default function DikshaAutomationPage() {
                                         {displayPct}%
                                       </span>
                                       <span style={{fontSize:'11px',color:'#94a3b8',fontWeight:'800',width:'12px',textAlign:'center'}}>
-                                        {isExpanded ? 'â–²' : 'â–¼'}
+                                        {isExpanded ? '▲' : '▼'}
                                       </span>
                                     </div>
                                   </div>
@@ -2060,10 +2051,10 @@ export default function DikshaAutomationPage() {
                                   }}>
                                     <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
                                       <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#fef2f2',border:'1px solid #fecaca',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
-                                        ðŸ“„
+                                        📄
                                       </div>
                                       <div>
-                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} â€” Reading Material (PDF)</p>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Reading Material (PDF)</p>
                                         <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>DIKSHA Official PDF Guide & Notes</p>
                                       </div>
                                     </div>
@@ -2084,10 +2075,10 @@ export default function DikshaAutomationPage() {
                                   }}>
                                     <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
                                       <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#eff6ff',border:'1px solid #bfdbfe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
-                                        ðŸŽ¬
+                                        🎬
                                       </div>
                                       <div>
-                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} â€” Interactive Video Lecture</p>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Interactive Video Lecture</p>
                                         <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>Full Video Playback & Audio Stream</p>
                                       </div>
                                     </div>
@@ -2108,10 +2099,10 @@ export default function DikshaAutomationPage() {
                                   }}>
                                     <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
                                       <div style={{width:'36px',height:'36px',borderRadius:'10px',background:'#fef3c7',border:'1px solid #fde68a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>
-                                        ðŸ“
+                                        📝
                                       </div>
                                       <div>
-                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} â€” Assessment & Evaluation</p>
+                                        <p style={{margin:0,fontSize:'13px',fontWeight:'700',color:'#0f172a'}}>{m.name} — Assessment & Evaluation</p>
                                         <p style={{margin:'2px 0 0',fontSize:'11px',color:'#64748b'}}>Module Quiz & Question Submission</p>
                                       </div>
                                     </div>
@@ -2161,7 +2152,7 @@ export default function DikshaAutomationPage() {
         </div>
       ) : null}
 
-      {/* â”€â”€â”€ PREMIUM CUSTOM CONFIRMATION DIALOG MODAL â”€â”€â”€ */}
+      {/* ─── PREMIUM CUSTOM CONFIRMATION DIALOG MODAL ─── */}
       {confirmModal?.open ? (
         <ConfirmModalDialog
           modal={confirmModal}
