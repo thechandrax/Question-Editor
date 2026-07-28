@@ -402,106 +402,170 @@ class VideoPlayer:
     # ------------------------------------------------------------------ #
 
     def _get_active_module_container(self, mod_id: str, mod_name: str):
-        """Finds the DOM element representing the active module container."""
-        # 1. Make sure we are on the "Lessons" tab where the activities are displayed
+        """
+        Finds and EXPANDS the active module section on the DIKSHA course page.
+
+        DIKSHA page structure (from UI observation):
+        ┌─────────────────────────────────────────┐
+        │  Lessons | Assignments | Scores ...     │  ← tabs
+        │  ▼ পাঠ্যক্রম অবলোকন (Course overview) │  ← collapsed section
+        │  ▲ মডিউল ১ - [name]                    │  ← EXPANDED module accordion
+        │    [icon] Activity 1          [View]    │  ← activity row
+        │    [icon] Activity 2          [View]    │
+        │    [icon] Activity 3 (locked) [View]    │
+        │  ▼ মডিউল ২ - [name]                    │  ← collapsed
+        └─────────────────────────────────────────┘
+
+        The LEFT sidebar (#nav-modules) is Dashboard/My Learning nav — NOT activities!
+        Activities are in #region-main / .course-content area.
+        """
+
+        # ── Step 1: Ensure Lessons tab is active ─────────────────────────────
         try:
             lessons_tab = (
                 self.page.query_selector('a:has-text("Lessons")') or
-                self.page.query_selector('button:has-text("Lessons")') or
-                self.page.query_selector('text="Lessons"')
+                self.page.query_selector('button:has-text("Lessons")')
             )
             if lessons_tab and lessons_tab.is_visible():
                 class_attr = lessons_tab.get_attribute("class") or ""
-                aria_sel = lessons_tab.get_attribute("aria-selected") or ""
-                is_active = 'active' in class_attr or aria_sel == "true"
-                if not is_active:
+                aria_sel   = lessons_tab.get_attribute("aria-selected") or ""
+                if 'active' not in class_attr and aria_sel != "true":
                     logger.info("  Switching to 'Lessons' tab...")
                     lessons_tab.click(force=True)
                     time.sleep(2.5)
         except Exception as e:
-            logger.debug(f"Lessons tab check note: {e}")
+            logger.debug(f"Lessons tab check: {e}")
 
-        # 2. Find the module trigger element by ID/attributes (prefer #nav-modules pane first)
-        target_el = None
-        for sel in [
-            f"#nav-modules [data-id='{mod_id}']",
-            f"#nav-modules [id*='{mod_id}']",
-            f"#nav-modules #section-{mod_id}",
-            f"#nav-modules [data-sectionid='{mod_id}']",
-            f"#nav-modules [data-section-id='{mod_id}']",
-            f"#nav-modules #accordion-item-{mod_id}",
-            f"#nav-modules .section:has-text('{mod_name}')",
-            f"#nav-modules .card:has-text('{mod_name}')",
-            f"#nav-modules li:has-text('{mod_name}')",
-            f"[data-id='{mod_id}']",
-            f"[id*='{mod_id}']",
-        ]:
+        # ── Step 2: Find module accordion HEADER by name in main content ─────
+        # Main content selectors (NOT #nav-modules which is left sidebar)
+        MAIN_CONTENT_SELECTORS = [
+            "#region-main",
+            ".course-content",
+            "#maincontent",
+            "#page-content",
+            ".diksha-course-content",
+            "body",   # final fallback
+        ]
+
+        main_area = None
+        for sel in MAIN_CONTENT_SELECTORS:
             try:
                 el = self.page.query_selector(sel)
                 if el and el.is_visible():
-                    target_el = el
-                    logger.info(f"  Found module trigger element: {sel}")
-                    
-                    # Try to expand it if it's collapsed
-                    try:
-                        aria_expanded = el.get_attribute("aria-expanded")
-                        class_attr = el.get_attribute("class") or ""
-                        is_collapsed = aria_expanded == "false" or "collapsed" in class_attr
-                        if is_collapsed:
-                            logger.info("  Module is collapsed. Clicking header to expand...")
-                            el.click(force=True)
-                            time.sleep(3)
-                    except Exception as ex:
-                        logger.debug(f"Expand check note: {ex}")
+                    main_area = el
+                    logger.debug(f"  Main content area: {sel}")
                     break
             except Exception:
                 pass
 
-        if target_el:
+        scope = main_area or self.page
+
+        # ── Step 3: Find module accordion header by module name ───────────────
+        # DIKSHA renders module headers as clickable rows with the module name
+        header_el = None
+        # Try to find by mod_id first (data attributes)
+        for sel in [
+            f"[data-id='{mod_id}']",
+            f"[id='section-{mod_id}']",
+            f"[id*='{mod_id}']",
+            f"[data-sectionid='{mod_id}']",
+        ]:
             try:
-                # Find parent section/card/panel wrapper that contains the activities
-                parent = target_el.evaluate_handle("""(node) => {
+                el = scope.query_selector(sel)
+                if el and el.is_visible():
+                    header_el = el
+                    logger.info(f"  Module header found by ID: {sel}")
+                    break
+            except Exception:
+                pass
+
+        # Fallback: find by module name text in section headers
+        if not header_el and mod_name:
+            name_short = mod_name[:30]  # use first 30 chars for partial match
+            for sel in [
+                f".course-section-header:has-text('{name_short}')",
+                f".section_title:has-text('{name_short}')",
+                f".accordion-header:has-text('{name_short}')",
+                f".accordion-button:has-text('{name_short}')",
+                f"h3:has-text('{name_short}')",
+                f"h4:has-text('{name_short}')",
+                f".sectionname:has-text('{name_short}')",
+                f"[aria-expanded]:has-text('{name_short}')",
+                f"*:has-text('{name_short}')",   # broad fallback
+            ]:
+                try:
+                    el = scope.query_selector(sel)
+                    if el and el.is_visible():
+                        # Make sure this isn't a deep nested text match
+                        tag = el.evaluate("n => n.tagName").lower()
+                        if tag not in ('body', 'html', 'div') or sel.startswith('h') or 'aria' in sel:
+                            header_el = el
+                            logger.info(f"  Module header found by name: {sel[:60]}")
+                            break
+                except Exception:
+                    pass
+
+        # ── Step 4: Click header to expand if collapsed ───────────────────────
+        if header_el:
+            try:
+                aria_expanded = header_el.get_attribute("aria-expanded")
+                class_attr    = header_el.get_attribute("class") or ""
+                is_collapsed  = aria_expanded == "false" or "collapsed" in class_attr
+                if is_collapsed:
+                    logger.info(f"  Module accordion collapsed — clicking to expand '{mod_name[:40]}'...")
+                    header_el.click(force=True)
+                    time.sleep(2.5)
+                else:
+                    logger.info(f"  Module accordion already expanded.")
+            except Exception as ex:
+                logger.debug(f"  Expand click note: {ex}")
+
+            # ── Step 5: Find parent section container (the expanded content div)
+            try:
+                container = header_el.evaluate_handle("""(node) => {
                     let p = node;
-                    while (p && p.tagName !== 'BODY') {
-                        if (p.classList.contains('section') || 
-                            p.classList.contains('card') || 
-                            p.tagName === 'LI' || 
-                            p.classList.contains('course-section') ||
-                            p.classList.contains('accordion-item') ||
-                            p.classList.contains('panel') ||
-                            p.classList.contains('panel-default') ||
-                            p.classList.contains('modules_full_accordian_div')) {
+                    for (let i = 0; i < 8; i++) {
+                        if (!p || p.tagName === 'BODY') break;
+                        const cls = p.className || '';
+                        if (cls.includes('course-section') ||
+                            cls.includes('section-main') ||
+                            cls.includes('accordion-item') ||
+                            cls.includes('panel-default') ||
+                            cls.includes('modules_full_accordian_div') ||
+                            cls.includes('section') && p.tagName === 'LI') {
                             return p;
                         }
                         p = p.parentElement;
                     }
-                    return node; // fallback
+                    return node;
                 }""")
-                container = parent.as_element()
-                if container and container.is_visible():
+                container_el = container.as_element()
+                if container_el and container_el.is_visible():
                     logger.info("  Scoped module container found (wrapper)")
-                    return container
+                    return container_el
             except Exception as e:
-                logger.warning(f"Parent traversal error: {e}")
+                logger.warning(f"  Parent traversal error: {e}")
 
-        # Try finding the currently expanded/visible section container as fallback
+        # ── Step 6: Fallback — find ANY expanded/visible section in main area ─
         for sel in [
+            '.course-section.current',
             '.section.show',
             '.section.active',
             '.collapse.show',
             '.panel-collapse.in',
-            '.content:visible',
+            '.accordion-collapse.show',
         ]:
             try:
-                el = self.page.query_selector(sel)
+                el = (scope or self.page).query_selector(sel)
                 if el and el.is_visible():
                     logger.info(f"  Scoped module container found (fallback): {sel}")
                     return el
             except Exception:
                 pass
-        
+
         logger.info("  No module container found — searching full page.")
         return self.page
+
 
     def _process_all_activities_in_module(self, module_url: str, mod_id: str, mod_name: str, module_progress: int = 0) -> int:
         """
@@ -775,6 +839,7 @@ class VideoPlayer:
             retry_prereq_attempts = 0
 
             logger.info(f"  → Opening: '{item_title[:50]}'")
+            url_before = self.page.url
             try:
                 unlocked_btn.click(force=True, timeout=5000)
             except Exception:
@@ -785,13 +850,40 @@ class VideoPlayer:
 
             time.sleep(3)
 
-            # Process the activity then return to the module page
-            self._process_activity_then_return(module_url)
+            # ── Detect if View opened a popup modal (DIKSHA shows content in dialog)
+            # or navigated to a new page
+            popup_detected = False
+            try:
+                popup = (
+                    self.page.query_selector(".modal.show, .modal.in, [role='dialog']:visible, "
+                                            ".diksha-player-modal, .mfp-container, "
+                                            ".ui-dialog[style*='display: block'], "
+                                            ".modal-dialog, .modal-content") or
+                    self.page.query_selector("dialog[open]")
+                )
+                if popup and popup.is_visible():
+                    popup_detected = True
+                    logger.info("  Popup/modal dialog detected — processing content inside...")
+            except Exception:
+                pass
+
+            if popup_detected:
+                # Process content inside the popup
+                self._process_activity_then_return(module_url)
+                # Try to close popup after processing
+                self._close_content_popup()
+            elif self.page.url != url_before:
+                # Navigated to new page
+                self._process_activity_then_return(module_url)
+            else:
+                # No popup and no navigation — still try to process
+                self._process_activity_then_return(module_url)
 
             activity_attempts[item_key] = activity_attempts.get(item_key, 0) + 1
             completed_count += 1
-            logger.info("  Waiting 7s for server checkmark sync...")
-            time.sleep(7)
+            logger.info("  Waiting 8s for server checkmark sync...")
+            time.sleep(8)
+
 
         return completed_count
 
@@ -1261,6 +1353,56 @@ class VideoPlayer:
                         time.sleep(1)
             except Exception:
                 pass
+
+    def _close_content_popup(self):
+        """
+        Closes the DIKSHA content player popup/modal that opens when 'View' is clicked.
+        DIKSHA shows activity content in a modal dialog with an × close button.
+        """
+        logger.info("  Closing content popup/modal...")
+        closed = False
+        # Try close selectors in order of specificity
+        close_selectors = [
+            # Modal header close button (× / ✕)
+            ".modal-header .close",
+            ".modal-header button.close",
+            ".modal .close",
+            "button[data-dismiss='modal']",
+            "button[data-bs-dismiss='modal']",
+            # Dialog close
+            "dialog button.close",
+            "[role='dialog'] .close",
+            "[role='dialog'] button:has-text('×')",
+            # Generic × buttons visible in dialogs
+            ".ui-dialog-titlebar-close",
+            ".mfp-close",
+            ".fancybox-close",
+            # Any visible × button on page
+            "button:has-text('×')",
+            "span:has-text('×')",
+            ".close[aria-label='Close']",
+        ]
+        for sel in close_selectors:
+            try:
+                btn = self.page.query_selector(sel)
+                if btn and btn.is_visible():
+                    btn.click(force=True)
+                    time.sleep(1.5)
+                    closed = True
+                    logger.info(f"  Content popup closed via: {sel}")
+                    break
+            except Exception:
+                pass
+
+        if not closed:
+            # Try Escape key to close modal
+            try:
+                self.page.keyboard.press("Escape")
+                time.sleep(1.5)
+                logger.info("  Sent Escape key to close popup.")
+            except Exception:
+                pass
+
 
     # ──────────────────────────────────────────────────────────────────────
     # APPROACH B — API Intercept (Fastest: reads answers from DIKSHA API)
