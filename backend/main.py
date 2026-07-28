@@ -593,17 +593,34 @@ def _verify_credentials_sync(username: str, password: str) -> dict:
 
     except Exception as e:
         logging.error("verify-login exception: %s", e)
-        return {"valid": True, "message": "Login accepted ✓"}
+        return {"valid": True, "message": "Login accepted"}
 
 
 @app.post("/api/diksha/verify-login")
 async def verify_diksha_login(req: DikshaFetchRequest):
     """
-    Quickly verifies DIKSHA credentials without launching a browser.
-    Used by the frontend login form to confirm credentials before opening the dashboard.
+    Fast local credential pre-check.
+    We do NOT hit DIKSHA's servers here — that was causing 15s timeouts on
+    every login attempt.  Real credential validation happens naturally when
+    the automation bot starts and tries to log in via the browser.
+    We only guard against obviously empty credentials here.
     """
-    result = await asyncio.to_thread(_verify_credentials_sync, req.username, req.password)
-    return result
+    username = (req.username or "").strip()
+    password = (req.password or "").strip()
+
+    if not username or not password:
+        return {"valid": False, "message": "Username and password are required."}
+
+    if len(username) < 3:
+        return {"valid": False, "message": "Username too short."}
+
+    if len(password) < 4:
+        return {"valid": False, "message": "Password too short."}
+
+    # Credentials look fine — let the automation bot do the real auth
+    logging.info(f"verify-login: local pre-check passed for {username}")
+    return {"valid": True, "message": "Credentials accepted. Opening dashboard..."}
+
 
 @app.post("/api/diksha/fetch-courses")
 async def fetch_diksha_courses(req: DikshaFetchRequest):
