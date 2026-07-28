@@ -42,7 +42,8 @@ const STEP_KEYWORDS: { keywords: string[]; label: string; icon: string }[] = [
 ];
 
 function inferStep(logs: string[]): number {
-  const combined = logs.slice(-30).join(" ").toLowerCase();
+  if (!Array.isArray(logs)) return 0;
+  const combined = logs.slice(-30).map(l => String(l || "")).join(" ").toLowerCase();
   for (let i = STEP_KEYWORDS.length - 1; i >= 0; i--) {
     if (STEP_KEYWORDS[i].keywords.some((k) => combined.includes(k))) return i;
   }
@@ -431,7 +432,7 @@ export default function DikshaAutomationPage() {
   const isError = status?.status === "error";
   const overallProgress = status?.progress ?? 0;
   const currentStepMsg = status?.step || "Idle — click 'Scan Enrolled Courses' to begin";
-  const logsList = status?.logs || [];
+  const logsList = Array.isArray(status?.logs) ? status!.logs : [];
 
   const activeModule = useMemo(() => {
     for (let i = logsList.length - 1; i >= 0; i--) {
@@ -488,8 +489,13 @@ export default function DikshaAutomationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, pin }),
       });
-      const data = await res.json();
-      if (data.valid) {
+      if (!res.ok) {
+        setLoginLoading(false);
+        setLoginError(`Verification failed (HTTP ${res.status}). Check server status.`);
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      if (data && data.valid) {
         setLoginVerified(true);
         try { localStorage.setItem("diksha_session", JSON.stringify({ username, password, pin })); } catch {}
         // Clear old session state on new login
@@ -978,8 +984,8 @@ export default function DikshaAutomationPage() {
   }
 
   /* ─── DASHBOARD ───────────────────────────────────────────────────────── */
-  const ongoingCourses  = courses.filter((c) => c.status === "ongoing");
-  const finishedCourses = courses.filter((c) => c.status === "finished");
+  const ongoingCourses  = (courses || []).filter((c) => c && c.status === "ongoing");
+  const finishedCourses = (courses || []).filter((c) => c && c.status === "finished");
   const displayedCourses = activeTab === "ongoing" ? ongoingCourses : finishedCourses;
 
   const statusColor = isDone ? "#10b981" : isPaused ? "#f59e0b" : isStopped ? "#64748b" : isError ? "#ef4444" : "#6366f1";
@@ -1401,9 +1407,9 @@ export default function DikshaAutomationPage() {
                 display:'flex',
                 alignItems:'center',
                 gap:'8px',
-                background: scanning ? '#eff6ff' : scanMessage.includes('Error') ? '#fff1f2' : '#ecfdf5',
-                border: `1px solid ${scanning ? '#bfdbfe' : scanMessage.includes('Error') ? '#fecdd3' : '#a7f3d0'}`,
-                color: scanning ? '#1e40af' : scanMessage.includes('Error') ? '#e11d48' : '#047857',
+                background: scanning ? '#eff6ff' : (scanMessage || '').includes('Error') ? '#fff1f2' : '#ecfdf5',
+                border: `1px solid ${scanning ? '#bfdbfe' : (scanMessage || '').includes('Error') ? '#fecdd3' : '#a7f3d0'}`,
+                color: scanning ? '#1e40af' : (scanMessage || '').includes('Error') ? '#e11d48' : '#047857',
                 wordBreak: 'break-word',
                 width: '100%',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
@@ -1412,7 +1418,7 @@ export default function DikshaAutomationPage() {
                   <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'#2563eb',flexShrink:0}}>
                     <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                   </svg>
-                ) : scanMessage.includes('Error') ? (
+                ) : (scanMessage || '').includes('Error') ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
                     <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                   </svg>
@@ -1964,7 +1970,7 @@ export default function DikshaAutomationPage() {
                       display:'flex',flexDirection:'column',gap:'12px'
                     }}>
                       {Array.isArray(courseDetails.modules) && (courseDetails.modules as any[]).length > 0 ? (
-                        (courseDetails.modules as any[]).map((m: any, idx: number) => {
+                        (Array.isArray(courseDetails?.modules) ? courseDetails.modules : []).map((m: any, idx: number) => {
                           const isCourseComplete = selectedCourse?.progress === 100;
                           const rawPct = m.progress ?? (isCourseComplete || m.iscompleted ? 100 : 0);
                           const isDone = isCourseComplete || m.iscompleted || rawPct === 100;
