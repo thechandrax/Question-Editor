@@ -980,12 +980,12 @@ class VideoPlayer:
             time.sleep(1.5)
 
         if video_element:
-            logger.info("  Video detected — running 10x speed (up to 600s real-time)...")
+            logger.info("  Video detected — fast playback (6x) with last-20s at 1x (up to 3h real-time max)...")
             start = time.time()
             last_log_time = 0.0
             last_time = -1.0
             stuck_count = 0
-            while (time.time() - start) < 600 and not STOP_EVENT.is_set():
+            while (time.time() - start) < 10800 and not STOP_EVENT.is_set():
                 self._simulate_mouse()
                 time.sleep(2)
                 self._inject_speed_override() # keep applying speed override
@@ -1405,13 +1405,31 @@ class VideoPlayer:
                 pass
 
         if not closed:
-            # Try Escape key to close modal
+            # Strategy 2: Escape key
             try:
                 self.page.keyboard.press("Escape")
                 time.sleep(1.5)
                 logger.info("  Sent Escape key to close popup.")
+                # Check if popup is gone
+                try:
+                    still_open = self.page.query_selector(".modal.show, .modal.in, [role='dialog']:visible")
+                    if not still_open or not still_open.is_visible():
+                        closed = True
+                except Exception:
+                    closed = True  # assume closed
             except Exception:
                 pass
+
+        if not closed:
+            # Strategy 3: Page reload — ALWAYS closes JS modals/popups
+            logger.info("  × and Escape failed — reloading page to close popup (reload strategy)...")
+            try:
+                current_url = self.page.url
+                self.page.reload(wait_until="networkidle", timeout=30000)
+                time.sleep(4)
+                logger.info("  Page reloaded — popup dismissed.")
+            except Exception as reload_err:
+                logger.warning(f"  Reload fallback error: {reload_err}")
 
 
     # ──────────────────────────────────────────────────────────────────────
@@ -2092,49 +2110,60 @@ class VideoPlayer:
 
     def _inject_speed_override(self):
         """
-        Video speed controller injected into every video element on the page.
+        Video speed controller — injected/refreshed every call.
 
         Behaviour:
-          • Normal play  → 6x speed, MUTED  (fast, silent)
-          • Last 20 sec  → 1x speed, UNMUTED (normal, audible — DIKSHA syncs completion here)
+          • Fast phase   → 6x speed, MUTED  (silent, completes quickly)
+          • Last 20 sec  → 1x speed, UNMUTED (DIKSHA server syncs completion here)
           • Auto-resumes if video pauses unexpectedly
+
+        Uses window.__speedVersion so a new deploy always replaces the old interval.
         """
+        # Increment version each time we want a fresh interval (clears old stuck ones)
         script = """
-            if (!window.__speedOverrideActive) {
-                window.__speedOverrideActive = true;
-                setInterval(() => {
+            (function() {
+                const VERSION = 4;  // bump this to force-replace old interval
+                if (window.__speedVersion === VERSION) return;
+
+                // Clear any old interval
+                if (window.__speedIntervalId) {
+                    clearInterval(window.__speedIntervalId);
+                    window.__speedIntervalId = null;
+                }
+                window.__speedVersion = VERSION;
+
+                window.__speedIntervalId = setInterval(() => {
                     document.querySelectorAll('video').forEach(v => {
                         if (!v.duration) return;
                         const remaining = v.duration - v.currentTime;
 
                         if (remaining <= 20) {
-                            // ── LAST 20 SECONDS: slow to 1x, unmute ──────────────
+                            // ── LAST 20 SECONDS: 1x speed, UNMUTED ───────────────
                             if (v.playbackRate !== 1.0) {
                                 v.playbackRate = 1.0;
                                 v.defaultPlaybackRate = 1.0;
                             }
-                            if (v.muted) {
-                                v.muted = false;
-                                v.volume = 1.0;
-                            }
+                            // Force unmute (try multiple methods for compatibility)
+                            v.muted = false;
+                            v.volume = Math.max(v.volume || 0, 0.8);
+                            // Dispatch volumechange so player UI updates
+                            v.dispatchEvent(new Event('volumechange'));
                         } else {
-                            // ── FAST PHASE: 6x speed, muted ──────────────────────
+                            // ── FAST PHASE: 6x speed, MUTED ──────────────────────
                             if (v.playbackRate !== 6.0) {
                                 v.playbackRate = 6.0;
                                 v.defaultPlaybackRate = 6.0;
                             }
-                            if (!v.muted) {
-                                v.muted = true;
-                            }
+                            v.muted = true;
                         }
 
-                        // Auto-resume if paused (and not at end)
+                        // Auto-resume if paused mid-video
                         if (v.paused && remaining > 1) {
                             v.play().catch(() => {});
                         }
                     });
                 }, 300);
-            }
+            })();
         """
         try:
             self.page.evaluate(script)
