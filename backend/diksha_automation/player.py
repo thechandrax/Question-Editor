@@ -529,25 +529,48 @@ class VideoPlayer:
             # Always start from the clean module page
             if self.page.url.split("?")[0] != module_url.split("?")[0]:
                 try:
-                    self.page.goto(module_url, wait_until="domcontentloaded", timeout=60000)
+                    # Use networkidle — DIKSHA is JS-heavy, domcontentloaded fires too early
+                    self.page.goto(module_url, wait_until="networkidle", timeout=60000)
                 except Exception as e:
                     logger.warning(f"Activity loop page navigation note (proceeding anyway): {e}")
-                time.sleep(5)
+                time.sleep(7)  # Extra wait for JS-rendered module content
+            else:
+                # Already on right page — wait for any in-flight AJAX to settle
+                try:
+                    self.page.wait_for_load_state("networkidle", timeout=10000)
+                except Exception:
+                    time.sleep(3)
 
             # Find active module container to scope the buttons search
             scope = self._get_active_module_container(mod_id, mod_name)
 
-            # Find action buttons ONLY inside the active module container (supports English & regional DIKSHA layouts)
+            # Find activity links — covers Moodle-standard AND DIKSHA-custom layouts
             view_buttons = []
             selectors = (
+                # ── Moodle standard activity links (DIKSHA is Moodle-based) ──────────
+                '.activity .activityname a, '          # Moodle 3.x main activity link
+                '.activity .aalink, '                  # Moodle activity anchor
+                '.activity-item .activityname a, '     # Moodle 4.x
+                '.activityinstance a, '                # Moodle instance link
+                '.mod-indent-outer a.aalink, '
+                'a[href*="/mod/resource/"], a[href*="/mod/scorm/"], '
+                'a[href*="/mod/quiz/"], a[href*="/mod/page/"], '
+                'a[href*="/mod/url/"], a[href*="/mod/lesson/"], '
+                'a[href*="/mod/h5pactivity/"], '
+                '.courses_modules_desc a[href*="mod/"], '  # DIKSHA course module link
+                # ── Action buttons (English) ──────────────────────────────────────────
                 'button:has-text("View"),   a:has-text("View"), '
                 'button:has-text("Start"),  a:has-text("Start"), '
                 'button:has-text("Resume"), a:has-text("Resume"), '
                 'button:has-text("Open"),   a:has-text("Open"), '
+                'button:has-text("Launch"), a:has-text("Launch"), '
+                'button:has-text("Enter"),  a:has-text("Enter"), '
+                # ── Regional languages ────────────────────────────────────────────────
                 'button:has-text("চাওক"),   a:has-text("চাওক"), '
                 'button:has-text("আৰম্ভ"),   a:has-text("আৰম্ভ"), '
-                'button:has-text("দেখें"),   a:has-text("দেখें"), '
+                'button:has-text("দেখেন"),  a:has-text("দেখেন"), '
                 'button:has-text("শুরু"),   a:has-text("শুরু"), '
+                # ── CSS class based ───────────────────────────────────────────────────
                 'a.btn-primary, button.btn-primary, '
                 'a.btn-outline-primary, button.btn-outline-primary, '
                 '.view-btn, .start-btn, [data-action="view"]'
@@ -583,9 +606,11 @@ class VideoPlayer:
                 except Exception:
                     pass
 
-            # If 0 visible buttons are found, try clicking the trigger to expand it!
+            # If 0 visible buttons are found — DIKSHA-specific recovery strategies
             if not has_visible_activities:
                 logger.info("  No visible activities found. Module might be collapsed. Toggling accordion...")
+
+                # Strategy A: click module trigger in sidebar to expand
                 try:
                     trigger = (
                         self.page.query_selector(f"#nav-modules [data-id='{mod_id}']") or
@@ -596,11 +621,49 @@ class VideoPlayer:
                     if trigger:
                         trigger.click(force=True)
                         time.sleep(3)
-                        # Re-read
                         scope = self._get_active_module_container(mod_id, mod_name)
                         view_buttons = scope.query_selector_all(selectors)
                 except Exception as ex:
                     logger.debug(f"Accordion toggle error: {ex}")
+
+                # Strategy B: JS DOM scan — find ALL activity links on page
+                if not any(b.is_visible() for b in view_buttons if b):
+                    try:
+                        all_hrefs = self.page.evaluate("""() => {
+                            const mods = ['resource', 'scorm', 'quiz', 'page', 'url',
+                                          'lesson', 'assign', 'forum', 'h5pactivity'];
+                            const links = [];
+                            document.querySelectorAll('a[href]').forEach(a => {
+                                const h = a.href || '';
+                                const t = (a.innerText || '').trim();
+                                if (mods.some(m => h.includes('/mod/' + m + '/')) && t) {
+                                    links.push({href: h, text: t});
+                                }
+                            });
+                            return links;
+                        }""")
+                        if all_hrefs:
+                            logger.info(f"  JS scan found {len(all_hrefs)} activity link(s): {[x['text'][:30] for x in all_hrefs[:5]]}")
+                            # Navigate to first unvisited link
+                            for lnk in all_hrefs:
+                                href = lnk['href']
+                                if href not in getattr(self, '_visited_hrefs', set()):
+                                    if not hasattr(self, '_visited_hrefs'):
+                                        self._visited_hrefs = set()
+                                    self._visited_hrefs.add(href)
+                                    logger.info(f"  JS-found activity: navigating to {href[:80]}")
+                                    try:
+                                        self.page.goto(href, wait_until="networkidle", timeout=30000)
+                                        time.sleep(5)
+                                        self._handle_content_player()
+                                        self.page.goto(module_url, wait_until="networkidle", timeout=30000)
+                                        time.sleep(5)
+                                        completed_count += 1
+                                    except Exception as js_nav_err:
+                                        logger.warning(f"  JS activity nav error: {js_nav_err}")
+                                    break
+                    except Exception as js_err:
+                        logger.debug(f"JS scan error: {js_err}")
 
             unlocked_btn = None
             item_title   = f"Activity_{act_num}"
