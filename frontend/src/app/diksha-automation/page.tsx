@@ -1281,7 +1281,7 @@ export default function DikshaAutomationPage() {
           </div>
 
           {/* ── STREAMLINED AUTOMATION PROGRESS CARD ──────────────────── */}
-          {(isRunning || isDone || isStopped || isError) && (
+          {(isRunning || isDone || isError) && (
             <div className="glass-card-light fade-in-up mobile-card" style={{borderRadius:'20px',padding:'16px 20px',border:`1.5px solid ${statusColor}40`,width:'100%'}}>
               <div style={{
                 background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
