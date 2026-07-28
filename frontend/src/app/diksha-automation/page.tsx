@@ -1829,9 +1829,10 @@ export default function DikshaAutomationPage() {
                       }}>● LIVE</span>
                     ) : (
                       <span style={{
-                        fontSize:'10px',fontWeight:600,color:'#94a3b8',
+                        fontSize:'10px',fontWeight:700,color:'#64748b',
                         background:'#f1f5f9',border:'1px solid #e2e8f0',
-                        borderRadius:'20px',padding:'3px 10px',whiteSpace:'nowrap',
+                        borderRadius:'6px',padding:'2px 8px',whiteSpace:'nowrap',
+                        fontFamily:'JetBrains Mono, monospace',
                         letterSpacing:'0.04em',
                       }}>
                         {isRunning ? 'Loading...' : 'IDLE'}
@@ -1877,7 +1878,7 @@ export default function DikshaAutomationPage() {
                       </div>
                     </>
                   ) : (
-                    <div style={{textAlign:'center',padding:'30px 16px'}}>
+                    <div style={{textAlign:'center'}}>
                       {/* Monitor icon */}
                       <div style={{marginBottom:'14px',opacity:0.25}}>
                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
