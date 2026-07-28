@@ -1,11 +1,38 @@
 import logging
 import time
+import threading
+import base64 as _base64
 from urllib.parse import urlparse, parse_qs
 from auth import DikshaAuthenticator
 from navigator import CourseNavigator
 from player import VideoPlayer
 from api_client import DikshaAPIClient
+import utils as _utils_module
 from utils import logger, take_screenshot_sync, log_error_diagnostic, STOP_EVENT
+
+
+def _start_global_screenshot_thread(page):
+    """
+    Starts a daemon thread that captures a JPEG screenshot every 2 seconds
+    and stores it in _utils_module.LATEST_SCREENSHOT for the live view API.
+    Returns the stop event so caller can stop the thread.
+    """
+    stop = threading.Event()
+    def _loop():
+        while not stop.is_set() and not STOP_EVENT.is_set():
+            try:
+                img = page.screenshot(type='jpeg', quality=55, full_page=False)
+                _utils_module.LATEST_SCREENSHOT = _base64.b64encode(img).decode('utf-8')
+                _utils_module.LATEST_SCREENSHOT_LABEL = 'live'
+            except Exception:
+                pass
+            stop.wait(2)
+        # Clear on stop
+        _utils_module.LATEST_SCREENSHOT = ''
+        _utils_module.LATEST_SCREENSHOT_LABEL = ''
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
+    return stop
 
 
 def fetch_courses_only(username=None, password=None, headless=True):
@@ -48,6 +75,11 @@ def run_automation(username=None, password=None, headless=False, target_course_u
     try:
         # Step 1 & 2: Login
         page = auth.login()
+
+        # ── Start live screenshot thread immediately after login ─────────
+        # Captures every 2s for the entire automation lifetime (auth + nav + modules)
+        _screenshot_stop = _start_global_screenshot_thread(page)
+        # ────────────────────────────────────────────────
 
         # ── Wire API client ────────────────────────────────────────────────
         api = DikshaAPIClient(auth.context)
@@ -151,6 +183,11 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         log_error_diagnostic(e, "Complete Course Automation Flow")
         raise e
     finally:
+        # Stop live screenshot thread and clear screenshot
+        try:
+            _screenshot_stop.set()
+        except Exception:
+            pass
         auth.close()
 
 
