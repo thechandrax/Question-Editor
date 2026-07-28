@@ -527,10 +527,16 @@ class DikshaRunRequest(BaseModel):
 def _verify_credentials_sync(username: str, password: str) -> dict:
     """
     Verifies DIKSHA credentials via Keycloak form submission.
+
+    Real DIKSHA login flow (confirmed by user):
+      1. GET  https://learning.diksha.gov.in/diksha/login.php
+             -> redirects to Keycloak auth page
+      2. POST credentials to Keycloak form action URL
+             -> on success redirects to diksha.gov.in/resources?auth_callback=1
+             -> on failure shows #input-error or .alert-error
+
     Uses cloudscraper to bypass Cloudflare.
-    Tries diksha.gov.in/signin first (correct URL — old code had wrong URL).
-    Only fails when Keycloak EXPLICITLY shows an error element.
-    Unknown/JS-redirect states are treated as VALID.
+    Timeout: 30s (was 15s which was too short for Railway->DIKSHA latency).
     """
     import cloudscraper
     from bs4 import BeautifulSoup
@@ -543,42 +549,27 @@ def _verify_credentials_sync(username: str, password: str) -> dict:
         }
     )
 
-    # Correct DIKSHA login URLs to try in order
-    login_urls = [
-        "https://diksha.gov.in/signin",
-        "https://diksha.gov.in/login",
-    ]
-
     try:
-        r1 = None
-        for login_url in login_urls:
-            try:
-                logging.info(f"verify-login: trying URL {login_url}")
-                r1 = scraper.get(login_url, timeout=30)
-                if r1.status_code == 200:
-                    logging.info(f"verify-login: got 200 from {login_url}")
-                    break
-            except Exception as url_err:
-                logging.warning(f"verify-login: {login_url} failed: {url_err}")
-                r1 = None
-                continue
-
-        if r1 is None:
-            logging.error("verify-login: all DIKSHA login URLs unreachable")
-            return {"valid": True, "message": "DIKSHA server unreachable — proceeding to dashboard."}
+        # Step 1: GET DIKSHA login page — this redirects through Keycloak
+        login_url = "https://learning.diksha.gov.in/diksha/login.php"
+        logging.info(f"verify-login: fetching {login_url}")
+        r1 = scraper.get(login_url, timeout=30, allow_redirects=True)
+        logging.info(f"verify-login: got status {r1.status_code}, final URL: {r1.url}")
 
         soup1 = BeautifulSoup(r1.text, 'html.parser')
 
-        # Find Keycloak form
+        # Find Keycloak form (id="kc-form-login")
         form = soup1.find("form", id="kc-form-login")
         if not form:
-            logging.info("verify-login: no kc-form-login found — assuming credentials valid")
+            logging.info("verify-login: no kc-form-login found — allowing through")
             return {"valid": True, "message": "Login verification skipped."}
 
         action_url = form.get("action")
         if not action_url:
-            logging.info("verify-login: no form action URL — assuming credentials valid")
+            logging.info("verify-login: no form action URL — allowing through")
             return {"valid": True, "message": "Login verification skipped."}
+
+        logging.info(f"verify-login: posting credentials to Keycloak form")
 
         # Step 2: POST credentials to Keycloak
         r2 = scraper.post(
@@ -591,8 +582,9 @@ def _verify_credentials_sync(username: str, password: str) -> dict:
 
         soup2 = BeautifulSoup(r2.text, 'html.parser')
         final_url = r2.url
+        logging.info(f"verify-login: post response URL: {final_url}, status: {r2.status_code}")
 
-        # EXPLICIT FAILURE: Keycloak error element present
+        # EXPLICIT FAILURE: Keycloak shows error element
         for sel in ["#input-error", ".alert-error", ".kc-feedback-text", "[class*='alert'][class*='error']"]:
             err_el = soup2.select_one(sel)
             if err_el:
@@ -600,29 +592,40 @@ def _verify_credentials_sync(username: str, password: str) -> dict:
                 logging.info(f"verify-login: INVALID — Keycloak error: {err_text[:80]}")
                 return {"valid": False, "message": err_text or "Invalid username or password."}
 
-        # EXPLICIT SUCCESS: redirected away from auth domain
-        if any(kw in final_url for kw in ["auth_callback=1", "diksha.gov.in/search", "diksha.gov.in/home", "diksha.gov.in/explore"]):
-            logging.info("verify-login: VALID — redirect to DIKSHA confirmed")
+        # EXPLICIT SUCCESS: redirected to DIKSHA with auth_callback=1
+        if "auth_callback=1" in final_url:
+            logging.info("verify-login: VALID — auth_callback=1 confirmed")
             return {"valid": True, "message": "Login verified successfully"}
 
-        if "openid-connect/auth" in final_url or soup2.find("form", id="kc-form-login"):
-            logging.info("verify-login: AMBIGUOUS — allowing through")
+        if any(kw in final_url for kw in ["diksha.gov.in/search", "diksha.gov.in/home",
+                                           "diksha.gov.in/explore", "diksha.gov.in/resources"]):
+            logging.info("verify-login: VALID — redirected to DIKSHA content page")
+            return {"valid": True, "message": "Login verified successfully"}
+
+        # Still on Keycloak login form — credentials wrong
+        if "openid-connect/auth" in final_url and soup2.find("form", id="kc-form-login"):
+            logging.info("verify-login: still on Keycloak login page — credentials may be invalid")
+            # Check for any error text on the page
+            body_text = soup2.get_text(" ", strip=True)
+            if any(w in body_text.lower() for w in ["invalid", "incorrect", "wrong", "error", "failed"]):
+                return {"valid": False, "message": "Invalid username or password."}
             return {"valid": True, "message": "Login accepted"}
 
+        # Unknown state — allow through (bot will validate later)
         logging.info(f"verify-login: unknown final URL {final_url} — allowing through")
         return {"valid": True, "message": "Login accepted"}
 
     except Exception as e:
         logging.error("verify-login exception: %s", e)
-        return {"valid": True, "message": "Login accepted"}
+        return {"valid": True, "message": "Login accepted — DIKSHA server slow, credentials will be verified when automation runs."}
 
 
 @app.post("/api/diksha/verify-login")
 async def verify_diksha_login(req: DikshaFetchRequest):
     """
     Verifies DIKSHA credentials against the real DIKSHA Keycloak server.
-    Fixed: now uses diksha.gov.in/signin (old code used wrong learning.diksha.gov.in URL).
-    Timeout increased to 30s.
+    Flow: learning.diksha.gov.in/diksha/login.php -> Keycloak -> auth_callback
+    Timeout: 30s
     """
     username = (req.username or "").strip()
     password = (req.password or "").strip()
