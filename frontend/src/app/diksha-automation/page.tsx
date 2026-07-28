@@ -910,7 +910,7 @@ export default function DikshaAutomationPage() {
                     <input
                       type={showPass ? "text" : "password"}
                       required
-                      placeholder="************"
+                      placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
@@ -941,7 +941,7 @@ export default function DikshaAutomationPage() {
                     type="password"
                     maxLength={6}
                     required
-                    placeholder="******"
+                    placeholder="••••••"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     className="input-field"
