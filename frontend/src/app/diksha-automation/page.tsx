@@ -1606,66 +1606,103 @@ export default function DikshaAutomationPage() {
             )}
           </div>
 
-          {/* ══ 2-COLUMN: LOGS LEFT + LIVE VIEW RIGHT ══════════════════════ */}
+          {/* ══ 2-COLUMN FIXED HEIGHT: LOGS LEFT + LIVE VIEW RIGHT ══════════ */}
           <div style={{
             display: 'flex',
             gap: '16px',
             alignItems: 'stretch',
             width: '100%',
             flexWrap: 'wrap',
+            height: '480px',   /* ← FIXED height — never grows */
           }}>
 
-            {/* ── LEFT: LIVE SERVER LOGS ────────────────────────────────── */}
-            <div className="glass-card-light mobile-card" style={{
+            {/* ── LEFT: LIVE SERVER LOGS ────────────────────────── */}
+            <div className="glass-card-light" style={{
               flex: '1 1 420px',
               minWidth: 0,
+              height: '480px',            /* fixed */
               borderRadius: '20px',
-              padding: '20px 24px',
+              padding: '16px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
-              overflow: 'hidden',
+              gap: '10px',
+              overflow: 'hidden',         /* never expands */
+              boxSizing: 'border-box',
             }}>
-              <div className="mobile-header-row" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px',width:'100%'}}>
-                <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'8px'}}>
+              {/* Header — fixed, never moves */}
+              <div style={{
+                display:'flex', alignItems:'center',
+                justifyContent:'space-between',
+                flexShrink: 0,             /* header never shrinks */
+              }}>
+                <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#0f172a',
+                  textTransform:'uppercase',letterSpacing:'0.06em',
+                  display:'flex',alignItems:'center',gap:'8px',
+                  whiteSpace:'nowrap',
+                }}>
                   <IconTerminal /> Live Server Output Logs
-                  <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 8px rgba(16,185,129,0.6)'}}/>
+                  <span style={{width:'8px',height:'8px',borderRadius:'50%',
+                    background:'#10b981',display:'inline-block',
+                    boxShadow:'0 0 8px rgba(16,185,129,0.6)',flexShrink:0}}/>
                 </h3>
-                <div className="mobile-log-controls" style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
-                  <div style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',display:'inline-flex',alignItems:'center',gap:'4px',fontFamily:'JetBrains Mono, monospace'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
+                  <div style={{fontSize:'11px',fontWeight:'700',color:'#475569',
+                    background:'#f1f5f9',border:'1px solid #cbd5e1',
+                    borderRadius:'8px',padding:'3px 8px',
+                    fontFamily:'JetBrains Mono, monospace',whiteSpace:'nowrap'}}>
                     {logsList.length} lines
                   </div>
-                  <button onClick={() => setShowLogs(!showLogs)} style={{fontSize:'11px',fontWeight:'700',color:'#475569',background:'#f1f5f9',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'4px 10px',cursor:'pointer'}}>
-                    {showLogs ? 'Collapse' : 'Expand'}
+                  <button onClick={handleCopyLogs} disabled={logsList.length===0}
+                    style={{fontSize:'11px',fontWeight:'700',
+                      color:copiedLogs?'#047857':'#475569',
+                      background:copiedLogs?'#d1fae5':'#f1f5f9',
+                      border:`1px solid ${copiedLogs?'#6ee7b7':'#cbd5e1'}`,
+                      borderRadius:'8px',padding:'3px 8px',
+                      cursor:logsList.length===0?'not-allowed':'pointer',
+                      display:'inline-flex',alignItems:'center',gap:'4px',
+                      opacity:logsList.length===0?0.5:1,whiteSpace:'nowrap'}}>
+                    {copiedLogs?'✓ Copied':<><IconCopy/> Copy</>}
                   </button>
-                  <button onClick={handleCopyLogs} disabled={logsList.length === 0} style={{fontSize:'11px',fontWeight:'700',color:copiedLogs?'#047857':'#475569',background:copiedLogs?'#d1fae5':'#f1f5f9',border:`1px solid ${copiedLogs?'#6ee7b7':'#cbd5e1'}`,borderRadius:'8px',padding:'4px 10px',cursor:logsList.length===0?'not-allowed':'pointer',display:'inline-flex',alignItems:'center',gap:'4px',transition:'all 0.2s ease',opacity:logsList.length===0?0.5:1}}>
-                    {copiedLogs ? 'Copied! ✓' : <><IconCopy /> Copy</>}
-                  </button>
-                  <button onClick={handleClearLogs} disabled={logsList.length===0} style={{fontSize:'11px',fontWeight:'700',color:clearedLogs?'#047857':'#dc2626',background:clearedLogs?'#d1fae5':'#fef2f2',border:`1px solid ${clearedLogs?'#6ee7b7':'#fca5a5'}`,borderRadius:'8px',padding:'4px 10px',cursor:logsList.length===0?'not-allowed':'pointer',display:'inline-flex',alignItems:'center',gap:'4px',transition:'all 0.2s ease',opacity:logsList.length===0?0.5:1}}>
-                    {clearedLogs ? 'Cleared! ✓' : <><IconTrash /> Clear</>}
+                  <button onClick={handleClearLogs} disabled={logsList.length===0}
+                    style={{fontSize:'11px',fontWeight:'700',
+                      color:clearedLogs?'#047857':'#dc2626',
+                      background:clearedLogs?'#d1fae5':'#fef2f2',
+                      border:`1px solid ${clearedLogs?'#6ee7b7':'#fca5a5'}`,
+                      borderRadius:'8px',padding:'3px 8px',
+                      cursor:logsList.length===0?'not-allowed':'pointer',
+                      display:'inline-flex',alignItems:'center',gap:'4px',
+                      opacity:logsList.length===0?0.5:1,whiteSpace:'nowrap'}}>
+                    {clearedLogs?'✓ Cleared':<><IconTrash/> Clear</>}
                   </button>
                 </div>
               </div>
 
-              <div ref={logRef} className="mobile-log-box" style={{
-                background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'14px',
-                height: showLogs ? '520px' : '380px',
-                overflowY:'auto',overflowX:'hidden',
-                transition:'height 0.3s ease',
-                width:'100%',
-                flex: 1,
+              {/* Log scroll box — takes remaining height, scrolls internally */}
+              <div ref={logRef} style={{
+                background:'#0f172a',
+                border:'1px solid #1e293b',
+                borderRadius:'12px',
+                padding:'12px',
+                flex: 1,                   /* fills remaining height */
+                overflowY:'auto',
+                overflowX:'hidden',
+                minHeight: 0,              /* prevents flex overflow */
+                fontFamily:'JetBrains Mono, monospace',
+                fontSize:'11px',
+                lineHeight:'1.7',
               }}>
                 {logsList.length === 0 ? (
-                  <p style={{margin:0,color:'#64748b',fontSize:'12px',fontStyle:'italic',fontFamily:'JetBrains Mono, monospace'}}>
+                  <p style={{margin:0,color:'#64748b',fontStyle:'italic'}}>
                     Waiting for live log stream from Railway automation backend...
                   </p>
                 ) : (
                   logsList.slice(-500).map((line, i) => {
-                    const isErr = line.includes('[ERROR]') || line.includes('[CRITICAL]') || line.includes('❌');
+                    const isErr  = line.includes('[ERROR]')||line.includes('[CRITICAL]')||line.includes('❌');
                     const isWarn = line.includes('[WARNING]');
-                    const isInfo = line.includes('[INFO]') || line.includes('✔') || line.includes('100%');
+                    const isInfo = line.includes('[INFO]')||line.includes('✔')||line.includes('100%');
                     return (
-                      <p key={i} className="log-line" style={{margin:0,color:isErr?'#f87171':isWarn?'#fbbf24':isInfo?'#34d399':'#cbd5e1'}}>
+                      <p key={i} style={{margin:0,wordBreak:'break-all',
+                        color:isErr?'#f87171':isWarn?'#fbbf24':isInfo?'#34d399':'#94a3b8'}}>
                         {line}
                       </p>
                     );
@@ -1674,83 +1711,89 @@ export default function DikshaAutomationPage() {
               </div>
             </div>
 
-            {/* ── RIGHT: LIVE BROWSER VIEW ──────────────────────────────── */}
+            {/* ── RIGHT: LIVE BROWSER VIEW ─────────────────────── */}
             <div style={{
               flex: '1 1 380px',
               minWidth: 0,
+              height: '480px',            /* same fixed height */
               background: '#0d1117',
               border: '1px solid #1e293b',
               borderRadius: '20px',
-              padding: '20px',
+              padding: '16px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '10px',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
             }}>
-              {/* Header */}
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                  <div style={{
-                    width:10,height:10,borderRadius:'50%',
+              {/* Header — same style as logs header */}
+              <div style={{
+                display:'flex',alignItems:'center',
+                justifyContent:'space-between',
+                flexShrink:0,
+              }}>
+                <h3 style={{margin:0,fontSize:'13px',fontWeight:'800',color:'#e2e8f0',
+                  textTransform:'uppercase',letterSpacing:'0.06em',
+                  display:'flex',alignItems:'center',gap:'8px',
+                  whiteSpace:'nowrap',
+                }}>
+                  <span style={{fontSize:'14px'}}>🖥️</span> Live Browser View
+                  <span style={{
+                    width:'8px',height:'8px',borderRadius:'50%',flexShrink:0,
                     background: liveScreenshot && isRunning ? '#22c55e' : '#475569',
                     boxShadow: liveScreenshot && isRunning ? '0 0 8px #22c55e' : 'none',
+                    display:'inline-block',
                   }}/>
-                  <span style={{fontWeight:800,fontSize:'13px',color:'#e2e8f0',letterSpacing:'0.06em',textTransform:'uppercase'}}>
-                    🖥️ Live Browser View
-                  </span>
+                </h3>
+                <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
                   {liveScreenshot && isRunning && (
-                    <span style={{fontSize:'10px',fontWeight:700,color:'#22c55e',background:'#052e16',border:'1px solid #166534',borderRadius:'20px',padding:'2px 8px'}}>● LIVE</span>
+                    <span style={{fontSize:'10px',fontWeight:700,color:'#22c55e',
+                      background:'#052e16',border:'1px solid #166534',
+                      borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>● LIVE</span>
                   )}
                   {!isRunning && (
-                    <span style={{fontSize:'10px',color:'#64748b',background:'#1e293b',border:'1px solid #334155',borderRadius:'20px',padding:'2px 8px'}}>IDLE</span>
-                  )}
-                </div>
-                <div style={{display:'flex',gap:'6px'}}>
-                  {liveScreenshot && (
-                    <button onClick={() => setLiveViewFull(!liveViewFull)} style={{fontSize:'11px',fontWeight:'700',color:'#94a3b8',background:'#1e293b',border:'1px solid #334155',borderRadius:'8px',padding:'4px 8px',cursor:'pointer'}}>
-                      {liveViewFull ? '⊡' : '⛶'}
-                    </button>
+                    <span style={{fontSize:'10px',color:'#64748b',
+                      background:'#1e293b',border:'1px solid #334155',
+                      borderRadius:'20px',padding:'2px 8px',whiteSpace:'nowrap'}}>IDLE</span>
                   )}
                 </div>
               </div>
 
-              {/* Screenshot */}
+              {/* Screenshot — fills remaining height */}
               <div style={{
                 background:'#020617',
                 border:'1px solid #0f172a',
-                borderRadius:'10px',
+                borderRadius:'12px',
                 overflow:'hidden',
                 flex:1,
-                minHeight: liveViewFull ? '600px' : '340px',
+                minHeight:0,
                 display:'flex',
                 alignItems:'center',
                 justifyContent:'center',
                 position:'relative',
-                transition:'min-height 0.3s ease',
               }}>
                 {liveScreenshot ? (
                   <>
                     <img
                       src={`data:image/jpeg;base64,${liveScreenshot}`}
                       alt="Live browser view"
-                      style={{width:'100%',height:'auto',display:'block',objectFit:'contain'}}
+                      style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}
                     />
-                    <div style={{position:'absolute',bottom:6,right:8,fontSize:'10px',color:'#64748b',background:'rgba(2,6,23,0.85)',padding:'2px 6px',borderRadius:'6px',fontFamily:'JetBrains Mono, monospace'}}>
-                      ↻ 2s
-                    </div>
+                    <div style={{position:'absolute',bottom:6,right:8,
+                      fontSize:'10px',color:'#475569',
+                      background:'rgba(2,6,23,0.85)',
+                      padding:'2px 6px',borderRadius:'6px',
+                      fontFamily:'JetBrains Mono, monospace'}}>↻ 2s</div>
                   </>
                 ) : (
-                  <div style={{textAlign:'center',padding:'40px 20px'}}>
-                    <div style={{fontSize:'40px',marginBottom:'10px',opacity:0.25}}>🖥️</div>
-                    <p style={{color:'#334155',fontSize:'12px',margin:0,fontFamily:'JetBrains Mono, monospace'}}>
-                      {isRunning ? 'Waiting for screenshot...' : 'Start automation to watch live'}
+                  <div style={{textAlign:'center',padding:'30px 16px'}}>
+                    <div style={{fontSize:'36px',marginBottom:'10px',opacity:0.2}}>🖥️</div>
+                    <p style={{color:'#334155',fontSize:'11px',margin:0,
+                      fontFamily:'JetBrains Mono, monospace'}}>
+                      {isRunning ? 'Waiting for first screenshot...' : 'Start automation to watch live'}
                     </p>
                   </div>
                 )}
-              </div>
-
-              {/* Info footer */}
-              <div style={{fontSize:'11px',color:'#334155',textAlign:'center',fontFamily:'JetBrains Mono, monospace'}}>
-                Auto-refreshes every 2 seconds during automation
               </div>
             </div>
 
