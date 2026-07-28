@@ -31,7 +31,9 @@ class DikshaAuthenticator:
             raise ValueError("DIKSHA_USERNAME and DIKSHA_PASSWORD must be provided or set in .env file")
         
         self.home_url = "https://diksha.gov.in/index.html"
-        self.learning_sso_url = "https://learning.diksha.gov.in/diksha/course_listing.php"
+        # Real post-login order: course_library.php first, then course_listing.php
+        self.course_library_url = "https://learning.diksha.gov.in/diksha/course_library.php"
+        self.learning_sso_url   = "https://learning.diksha.gov.in/diksha/course_listing.php"
         # Direct Keycloak login URL — includes state UUID (OAuth2 PKCE) to match real browser flow
         _state = str(uuid.uuid4())
         self.keycloak_login_url = (
@@ -149,14 +151,23 @@ class DikshaAuthenticator:
 
         logger.info("--- SSO Sync: learning.diksha.gov.in ---")
         try:
-            self.page.goto(self.learning_sso_url, wait_until="domcontentloaded", timeout=30000)
+            # Real DIKSHA post-login order:
+            # 1. course_library.php (Explore Courses) — loads first after SSO
+            # 2. course_listing.php (My Learning)     — navigated to after
+            logger.info("SSO Sync Step 1: navigating to course_library.php (Explore Courses)...")
+            self.page.goto(self.course_library_url, wait_until="domcontentloaded", timeout=30000)
             time.sleep(1)
 
             current_url = self.page.url
             logger.info(f"SSO landing URL: {current_url}")
 
             if "login.php" not in current_url:
-                logger.info("SSO sync: already authenticated on learning portal ✓")
+                logger.info("SSO sync: authenticated on course_library.php ✓")
+                # Now navigate to course_listing.php (My Learning) — the actual target
+                logger.info("SSO Sync Step 2: navigating to course_listing.php (My Learning)...")
+                self.page.goto(self.learning_sso_url, wait_until="domcontentloaded", timeout=25000)
+                time.sleep(1)
+                logger.info(f"course_listing.php URL: {self.page.url}")
                 return
 
             # ── Find SSO login link on login.php ────────────────────────────
