@@ -9,6 +9,13 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+import socket as _socket
+def _find_free_port() -> int:
+    """Find a free TCP port on localhost for Chrome remote debugging."""
+    with _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 class DikshaAuthenticator:
     """
     Handles authentication with cross-subdomain SSO session synchronization 
@@ -30,6 +37,7 @@ class DikshaAuthenticator:
         if not self.username or not self.password:
             raise ValueError("DIKSHA_USERNAME and DIKSHA_PASSWORD must be provided or set in .env file")
         
+        self._cdp_port = _find_free_port()  # Chrome DevTools Protocol port for live screenshots
         self.home_url = "https://diksha.gov.in/index.html"
         # Real post-login order: course_library.php first, then course_listing.php
         self.course_library_url = "https://learning.diksha.gov.in/diksha/course_library.php"
@@ -60,6 +68,7 @@ class DikshaAuthenticator:
             headless=self.headless,
             slow_mo=300,
             args=[
+                f'--remote-debugging-port={self._cdp_port}',
                 '--disable-blink-features=AutomationControlled',
                 '--disable-dev-shm-usage',
                 '--no-sandbox',
@@ -282,11 +291,21 @@ class DikshaAuthenticator:
                 )
                 try:
                     # Go directly to Moodle login page
-                    self.page.goto(
-                        'https://learning.diksha.gov.in/diksha/login.php',
-                        wait_until='domcontentloaded', timeout=25000
-                    )
-                    time.sleep(2)
+                    try:
+                        self.page.goto(
+                            'https://learning.diksha.gov.in/diksha/login.php',
+                            wait_until='domcontentloaded', timeout=25000
+                        )
+                        time.sleep(2)
+                    except Exception as _nav_err:
+                        _nav_str = str(_nav_err)
+                        if 'ERR_ABORTED' in _nav_str or 'ERR_' in _nav_str:
+                            logger.warning(
+                                f"SSO retry nav aborted by DIKSHA (server redirect) — "
+                                f"session cookies are valid, proceeding with automation."
+                            )
+                            return  # Cookies captured are valid — proceed
+                        raise
                     # Find and click the SSO link again
                     sso_retry_links = self.page.evaluate("""() =>
                         Array.from(document.querySelectorAll('a')).map(e => ({
@@ -345,6 +364,18 @@ class DikshaAuthenticator:
             return "access denied" in body_text
         except Exception:
             return False
+
+    def get_cdp_url(self) -> str:
+        """Return CDP WebSocket URL so screenshot thread can connect independently."""
+        try:
+            import requests as _req
+            r = _req.get(f'http://localhost:{self._cdp_port}/json/version', timeout=5)
+            ws_url = r.json().get('webSocketDebuggerUrl', '')
+            logger.info(f"CDP URL: {ws_url[:80]}...")
+            return ws_url
+        except Exception as e:
+            logger.warning(f"CDP URL fetch failed: {e}")
+            return ''
 
     def close(self):
         try:

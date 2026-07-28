@@ -11,30 +11,56 @@ import utils as _utils_module
 from utils import logger, take_screenshot_sync, log_error_diagnostic, STOP_EVENT
 
 
-def _start_global_screenshot_thread(page):
+def _start_global_screenshot_thread(cdp_url: str):
     """
-    Starts a daemon thread that captures a JPEG screenshot every 2 seconds
-    and stores it in _utils_module.LATEST_SCREENSHOT for the live view API.
-    Returns the stop event so caller can stop the thread.
+    Starts a screenshot thread that connects to the browser via CDP WebSocket.
+    Uses its OWN sync_playwright() instance so it runs in its own greenlet —
+    avoiding the 'Cannot switch to a different thread' greenlet error that
+    occurred when calling page.screenshot() from a background OS thread.
+
+    How it works:
+      1. Browser is launched with --remote-debugging-port=<free_port>
+      2. This thread connects via connect_over_cdp(cdp_url) independently
+      3. Each has its own greenlet — no cross-thread Playwright conflict
     """
     stop = threading.Event()
-    _fail_count = [0]  # mutable counter
+
+    if not cdp_url:
+        logger.warning("[LiveView] No CDP URL available — live screenshots disabled")
+        return stop
 
     def _loop():
-        stop.wait(3)  # wait 3s for page to stabilize after login
-        logger.info("[LiveView] 📸 Screenshot thread started")
-        while not stop.is_set() and not STOP_EVENT.is_set():
-            try:
-                img = page.screenshot(type='jpeg', quality=60, full_page=False, timeout=5000)
-                _utils_module.LATEST_SCREENSHOT = _base64.b64encode(img).decode('utf-8')
-                _utils_module.LATEST_SCREENSHOT_LABEL = 'live'
-                _fail_count[0] = 0  # reset on success
-            except Exception as e:
-                _fail_count[0] += 1
-                if _fail_count[0] <= 3:  # only log first 3 failures
-                    logger.warning(f"[LiveView] Screenshot failed (#{_fail_count[0]}): {e}")
-            stop.wait(2)
-        # Clear on stop
+        stop.wait(3)  # wait for browser to fully load after login
+        logger.info(f"[LiveView] Screenshot thread starting (CDP mode)...")
+        _fail_count = [0]
+
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                try:
+                    browser = p.chromium.connect_over_cdp(cdp_url)
+                    logger.info("[LiveView] Connected to browser via CDP successfully")
+                except Exception as conn_err:
+                    logger.error(f"[LiveView] CDP connect failed: {conn_err}")
+                    return
+
+                while not stop.is_set() and not STOP_EVENT.is_set():
+                    try:
+                        contexts = browser.contexts
+                        if contexts and contexts[0].pages:
+                            page = contexts[0].pages[-1]  # most recent page
+                            img = page.screenshot(type='jpeg', quality=60, full_page=False, timeout=5000)
+                            _utils_module.LATEST_SCREENSHOT = _base64.b64encode(img).decode('utf-8')
+                            _utils_module.LATEST_SCREENSHOT_LABEL = 'live'
+                            _fail_count[0] = 0
+                    except Exception as e:
+                        _fail_count[0] += 1
+                        if _fail_count[0] <= 3:
+                            logger.warning(f"[LiveView] Screenshot failed (#{_fail_count[0]}): {e}")
+                    stop.wait(2)
+        except Exception as e:
+            logger.error(f"[LiveView] Screenshot thread error: {e}")
+
         _utils_module.LATEST_SCREENSHOT = ''
         _utils_module.LATEST_SCREENSHOT_LABEL = ''
         logger.info("[LiveView] Screenshot thread stopped")
@@ -85,9 +111,9 @@ def run_automation(username=None, password=None, headless=False, target_course_u
         # Step 1 & 2: Login
         page = auth.login()
 
-        # ── Start live screenshot thread immediately after login ─────────
-        # Captures every 2s for the entire automation lifetime (auth + nav + modules)
-        _screenshot_stop = _start_global_screenshot_thread(page)
+        # ── Start live screenshot thread (CDP mode — no greenlet conflict) ──
+        cdp_url = auth.get_cdp_url()
+        _screenshot_stop = _start_global_screenshot_thread(cdp_url)
         # ────────────────────────────────────────────────
 
         # ── Wire API client ────────────────────────────────────────────────
